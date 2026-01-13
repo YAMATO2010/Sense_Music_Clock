@@ -14,3 +14,5 @@ val app_dir  = ContentValues().apply{
 
 val SHAREDPREFERENCES_NAME = "smc_prefs"
 val MUSIC_DIR_RELATIVE_PATHS_KEY = "music_dir_relative_paths"
+
+val IDENTIFIER_INITIAL_INDEX_PROBLEM = "  ///IDENTIFIER_INITIAL_INDEX_PROBLEM"

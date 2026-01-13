@@ -1,6 +1,9 @@
 // kotlin
 package jp.gr.java_conf.SenseMusicClock
 
+import IDENTIFIER_INITIAL_INDEX_PROBLEM
+import MUSIC_DIR_RELATIVE_PATHS_KEY
+import SHAREDPREFERENCES_NAME
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -20,6 +23,17 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
+import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
+import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryManager
 
 class Musicservice : Service() {
     inner class LocalBinder : Binder() {
@@ -27,23 +41,34 @@ class Musicservice : Service() {
         // 追加: Activity 側で MediaSession トークンを取得できるようにする
         fun getSessionToken(): MediaSessionCompat.Token = mediaSession.sessionToken
     }
+    private val _tracks = MutableStateFlow<List<localTrack>>(emptyList())
+
+    val tracksFlow: StateFlow<List<localTrack>> = _tracks.asStateFlow()
+    // 互換用に現在値を参照するプロパティ
+    val Tracks: List<localTrack> get() = _tracks.value
+
 
     private val binder = LocalBinder()
     private lateinit var player: ExoPlayer
 
-    lateinit var Tracks: List<localTrack>
+
     private lateinit var mediaSession: MediaSessionCompat
     private lateinit var notificationManager: NotificationManager
 
     private var queue: List<localTrack> = emptyList()
     private var currentIndex: Int = 0
+    private var nowSetQueue = false
+    // サービス用コルーチンスコープ
+    private val serviceJob = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.Main + serviceJob)
+
 
     // フォアグラウンド開始済みフラグ
     private var foregroundStarted = false
 
     override fun onCreate() {
         super.onCreate()
-        Tracks = LocalMusicRepository.loadLocalMusicFromAppDir(this)
+        _tracks.value = emptyList()
 
         player = ExoPlayer.Builder(this).build()
         mediaSession = MediaSessionCompat(this, "MusicService").apply {
@@ -63,11 +88,37 @@ class Musicservice : Service() {
                 updatePlaybackState()
             }
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                if (nowSetQueue ) return
                 currentIndex = player.currentMediaItemIndex
                 updateMetadataForCurrent()
             }
         })
-        setQueue(Tracks)
+
+
+        scope.launch {
+
+            val prefs = getSharedPreferences(SHAREDPREFERENCES_NAME, Context.MODE_PRIVATE)
+            // 例: キー名は必要に応じて変えてください。現在は "selected_directories" を監視する例。
+            SharedPrefsFlow.observeString(prefs, MUSIC_DIR_RELATIVE_PATHS_KEY).collect { value ->
+
+                 val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice,UserRelativePaths)
+                _tracks.value = loaded
+                setQueue(Tracks)
+
+            }
+            try {
+                val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice,UserRelativePaths)
+                _tracks.value = loaded
+                setQueue(Tracks)
+            } catch (e: Exception) {
+                Log.w("Musicservice", "failed to load local tracks", e)
+            }
+        }
+
+
+
      }
 
 
@@ -76,38 +127,49 @@ class Musicservice : Service() {
 
     override fun onDestroy() {
         player.release()
+        scope.cancel()
         mediaSession.release()
         stopForeground(true)
         super.onDestroy()
     }
 
     fun setQueue(tracks: List<localTrack>, startIndex: Int = 0) {
+        nowSetQueue = true
+        Log.i("Musicservice", "setQueue called with ${tracks.size} tracks, startIndex=$startIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
         queue = tracks
-        currentIndex = when {
-            tracks.isEmpty() -> 0
-            else -> startIndex.coerceIn(0, tracks.size - 1)
-        }
-        Log.i("Musicservice", "setQueue: size=${tracks.size} startIndex=$currentIndex")
+        currentIndex = startIndex.coerceIn(0, tracks.size - 1)
+
+
+
+        Log.i("Musicservice", "setQueue: size=${tracks.size} startIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
         player.stop()
         player.clearMediaItems()
-        for (t in tracks) {
-            t.uri?.let { uriStr ->
-                val mediaItem = MediaItem.fromUri(uriStr)
+
+        tracks.map { it.uri }
+            .forEach {  uri ->
+                val mediaItem = MediaItem.fromUri(uri)
                 player.addMediaItem(mediaItem)
             }
-        }
+
         player.prepare()
         if (player.mediaItemCount > 0) {
+            Log.i("Musicservice", "seeking to index $currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
             player.seekTo(currentIndex, 0)
         }
         updateMetadataForCurrent()
+        nowSetQueue = false
     }
 
     fun play() {
+
         if (player.mediaItemCount == 0 && queue.isNotEmpty()) {
+            Log.i("Musicservice", "play: setting queue before play./currentIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
             setQueue(queue, currentIndex)
         }
+
+        Log.i("player_beforePlay" , "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
         player.play()
+        Log.i("player" , "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
     }
 
     fun pause() { player.pause() }
@@ -151,7 +213,7 @@ class Musicservice : Service() {
             super.onCustomAction(action, extras)
             if (action == ACTION_PLAY_INDEX) {
                 val index = extras?.getInt(EXTRA_INDEX, 0) ?: 0
-                Log.i("Musicservice", "onCustomAction: play index $index")
+                Log.i("Musicservice", "onCustomAction: play index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
                 try {
                     // queue はサービス内部の現在の曲リスト（Tracks と同期済み）
                     setQueue(queue, index)
@@ -159,6 +221,20 @@ class Musicservice : Service() {
                 } catch (e: Exception) {
                     Log.w("Musicservice", "play by index failed", e)
                 }
+            }else if(action == ACTION_PLAY_UUID){
+                val uuid = extras?.getString(EXTRA_UUID, "") ?: ""
+                var index = Tracks.map { it.uuid.toString() }.indexOf(uuid)
+                Log.i("Musicservice", "onCustomAction: play index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+                if (index == -1) index = 4
+
+                try {
+                    // queue はサービス内部の現在の曲リスト（Tracks と同期済み）
+                    setQueue(queue, index)
+                    play()
+                } catch (e: Exception) {
+                    Log.w("Musicservice", "play by index failed", e)
+                }
+
             }
         }
     }
@@ -296,6 +372,8 @@ class Musicservice : Service() {
         const val ACTION_NEXT = "jp.gr.java_conf.SenseMusicClock.ACTION_NEXT"
         const val ACTION_PREV = "jp.gr.java_conf.SenseMusicClock.ACTION_PREV"
         const val ACTION_PLAY_INDEX = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY_INDEX"
+        const val ACTION_PLAY_UUID = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY_UUID"
+        const val EXTRA_UUID = "jp.gr.java_conf.SenseMusicClock.EXTRA__UUID"
         const val EXTRA_INDEX = "jp.gr.java_conf.SenseMusicClock.EXTRA_INDEX"
 
     }

@@ -18,6 +18,7 @@
         android:clipToPadding="false"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -30,6 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
 
+        android:background="@drawable/gradient3"
         android:orientation="vertical"
         app:layout_constraintTop_toTopOf="parent"
         tools:layout_editor_absoluteX="1dp">
@@ -40,7 +42,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="2"
             android:autoSizeTextType="uniform"
-            android:background="@drawable/gradient3"
+
             android:fontFamily="sans-serif-thin"
             android:gravity="center"
             android:maxLines="1"
@@ -65,7 +67,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:background="@drawable/rectanglebutton"
-                android:foreground="@drawable/gradient2"
+
                 android:text="Button"
                 app:backgroundTint="@null" />
 
@@ -75,7 +77,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:background="@drawable/rectanglebutton"
-                android:foreground="@drawable/gradient2"
+
                 android:text="Button"
                 app:backgroundTint="@null" />
         </LinearLayout>
@@ -91,6 +93,7 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@color/white_glass"
                 android:layout_weight="1" />
 
             <ProgressBar
@@ -98,13 +101,15 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@color/white_glass"
+
                 android:layout_weight="1" />
         </LinearLayout>
 
     </LinearLayout>
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/Settingsbutton"
         android:layout_width="55dp"
         android:layout_height="60dp"
         android:layout_marginStart="16dp"
@@ -125,7 +130,7 @@
         android:layout_marginBottom="100dp"
         android:orientation="vertical"
         android:background="@drawable/gradient3"
-        app:layout_constraintBottom_toTopOf="@+id/button"
+        app:layout_constraintBottom_toTopOf="@+id/Settingsbutton"
         app:layout_constraintEnd_toEndOf="@+id/recyclerJackets">
 
         <TextView

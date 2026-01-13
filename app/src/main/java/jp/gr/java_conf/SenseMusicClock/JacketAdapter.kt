@@ -10,10 +10,10 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 class JacketAdapter(
-    initialItems: List<localTrack> = emptyList(),
+    initialItems: List<Track> = emptyList(),
     private val placeholderRes: Int,
-    private val onItemClick: (localTrack) -> Unit = {}
-) : ListAdapter<localTrack, JacketAdapter.ViewHolder>(DIFF) {
+    private val onItemClick: (Track) -> Unit = {}
+) : ListAdapter<Track, JacketAdapter.ViewHolder>(DIFF) {
 
     init {
         submitList(initialItems.toList())
@@ -58,24 +58,41 @@ class JacketAdapter(
     }
 
     /** 外部から差分更新する際は submitList を使う（内部で DiffUtil が効く） */
-    fun setItems(newItems: List<localTrack>) {
+    fun setItems(newItems: List<Track>) {
         submitList(newItems.toList())
     }
 
-    fun getItems(): List<localTrack> = currentList.toList()
+    fun getItems(): List<Track> = currentList.toList()
 
     companion object {
-        private val DIFF = object : DiffUtil.ItemCallback<localTrack>() {
-            override fun areItemsTheSame(oldItem: localTrack, newItem: localTrack): Boolean {
-                return oldItem.id == newItem.id
+        private val DIFF = object : DiffUtil.ItemCallback<Track>() {
+            override fun areItemsTheSame(oldItem: Track, newItem: Track): Boolean {
+                val oldId = when (oldItem) {
+                    is localTrack -> oldItem.id
+                    is SpotifyTrack -> oldItem.trackId
+                    else -> null
+                }
+                val newId = when (newItem) {
+                    is localTrack -> newItem.id
+                    is SpotifyTrack -> newItem.trackId
+                    else -> null
+                }
+                return  oldId == newId
             }
 
-            override fun areContentsTheSame(oldItem: localTrack, newItem: localTrack): Boolean {
-                return oldItem.title == newItem.title &&
+            override fun areContentsTheSame(oldItem: Track, newItem: Track): Boolean {
+                if (oldItem::class != newItem::class) return false
+
+                val commonCriteria =  oldItem.title == newItem.title &&
                         oldItem.album == newItem.album &&
-                        oldItem.artist == newItem.artist &&
+                        oldItem.artist == newItem.artist
+                val localCriteria = if (oldItem is localTrack && newItem is localTrack) {
                         oldItem.path == newItem.path &&
                         oldItem.trackNo == newItem.trackNo
+
+                }else true
+
+                return commonCriteria && localCriteria
             }
         }
     }
