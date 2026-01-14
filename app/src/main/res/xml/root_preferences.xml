@@ -1,16 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".SettingsFragment">
 
-<PreferenceScreen
-xmlns:android="http://schemas.android.com/apk/res/android"
+    <PreferenceCategory app:title="local Music Settings">
 
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-tools:context=".ui.notifications.SettingsFragment">
+        <Preference
+            android:key="action_selectDirectory"
+            android:title="Select Music Directory"
+            android:selectable="true" />
 
-    <Preference
-        android:key="action_selectDirectory"
-        android:title="Select Music Directory"
-        android:selectable="true" />
-
+        <SeekBarPreference
+            android:key="volume_adjustment"
+            android:title="音量調整 (%)"
+            android:max="100"
+            android:defaultValue="100"
+            app:min="0"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="true" />
+    </PreferenceCategory>
 
 </PreferenceScreen>

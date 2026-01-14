@@ -17,4 +17,8 @@
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <string name="artwork">Album artwork</string>
+    <string name="VOLUME_ADJUSTMENT">volume_adjustment</string>
+    <string name="SHAREDPREFERENCES_NAME">smc_prefs</string>
+    <string name="MUSIC_DIR_RELATIVE_PATHS_KEY">music_dir_relative_paths</string>
+
 </resources>

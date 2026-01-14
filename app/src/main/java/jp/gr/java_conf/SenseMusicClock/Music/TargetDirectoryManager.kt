@@ -1,18 +1,19 @@
 // kotlin
 package jp.gr.java_conf.SenseMusicClock.Music
 
-import MUSIC_DIR_RELATIVE_PATHS_KEY
-import SHAREDPREFERENCES_NAME
+
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import jp.gr.java_conf.SenseMusicClock.MUSIC_DIR_RELATIVE_PATHS_KEY
+import jp.gr.java_conf.SenseMusicClock.SHAREDPREFERENCES_NAME
 
 class TargetDirectoryManager(
     context: Context,
 
-    private val key: String = MUSIC_DIR_RELATIVE_PATHS_KEY
 ) {
-    private val prefs = context.getSharedPreferences(SHAREDPREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val key: String = context.getString(MUSIC_DIR_RELATIVE_PATHS_KEY)
+    private val prefs = context.getSharedPreferences(context.getString(SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE)
     private val gson = Gson()
     private val listType = object : TypeToken<List<String>>() {}.type
 

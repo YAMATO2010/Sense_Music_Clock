@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SeekBarPreference
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 
 class SettingsActivity : AppCompatActivity() {
@@ -18,7 +19,20 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
 
-
+        // StorageAccessHelper は Activity の onCreate で作成しておく
+        storageAccessHelper = StorageAccessHelper(
+            activity = this,
+            onDirectoryPicked = { rel, uri ->
+                // 設定画面で選択された後の処理はここで行う（ログだけ出しておく）
+                Log.d("SettingsActivity", "directory picked: rel=$rel uri=$uri")
+            },
+            onPermissionGranted = {
+                Log.d("SettingsActivity", "read audio permission granted")
+            },
+            onPermissionDenied = {
+                Log.w("SettingsActivity", "read audio permission denied")
+            }
+        )
 
         if (savedInstanceState == null) {
             supportFragmentManager
@@ -46,8 +60,22 @@ class SettingsActivity : AppCompatActivity() {
 
             val pickPref: Preference? = findPreference("action_selectDirectory")
             pickPref?.setOnPreferenceClickListener {
+                Log.d("SettingsFragment", "action_selectDirectory clicked")
                 (activity as? SettingsActivity)?.launchDirectoryPicker()
                 true
+            }
+
+            // SeekBarPreference の変更をログに出して、SharedPreferences に保存されているか確認できるようにする
+            val volKey = getString(VOLUME_ADJUSTMENT)
+            val seek = findPreference<SeekBarPreference>(volKey)
+            seek?.let { pref ->
+                pref.summaryProvider = Preference.SummaryProvider<SeekBarPreference> { p ->
+                    "${p.value}%"
+                }
+                pref.setOnPreferenceChangeListener { _, newValue ->
+                    Log.d("SettingsFragment", "SeekBarPreference changed key=$volKey newValue=$newValue type=${newValue?.javaClass}")
+                    true
+                }
             }
         }
     }

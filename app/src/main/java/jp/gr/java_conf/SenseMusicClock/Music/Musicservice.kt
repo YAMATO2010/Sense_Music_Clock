@@ -2,8 +2,7 @@
 package jp.gr.java_conf.SenseMusicClock
 
 import IDENTIFIER_INITIAL_INDEX_PROBLEM
-import MUSIC_DIR_RELATIVE_PATHS_KEY
-import SHAREDPREFERENCES_NAME
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -75,6 +74,7 @@ class Musicservice : Service() {
             setCallback(mediaSessionCallback)
             isActive = true
         }
+
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
 
@@ -97,15 +97,47 @@ class Musicservice : Service() {
 
         scope.launch {
 
-            val prefs = getSharedPreferences(SHAREDPREFERENCES_NAME, Context.MODE_PRIVATE)
-            // 例: キー名は必要に応じて変えてください。現在は "selected_directories" を監視する例。
-            SharedPrefsFlow.observeString(prefs, MUSIC_DIR_RELATIVE_PATHS_KEY).collect { value ->
+            // PreferenceFragment や PreferenceScreen と同じ SharedPreferences を使う（デフォルトの prefs）
+            val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this@Musicservice)
+            Log.d("Musicservice", "prefs obtained (default) hash=${prefs.hashCode()}")
+            // デバッグ: 現在の SharedPreferences 全エントリを出力（キーと値の型を確認する）
+            Log.d("Musicservice", "prefs.all = ${prefs.all}")
 
-                 val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice,UserRelativePaths)
-                _tracks.value = loaded
-                setQueue(Tracks)
+            // 現在のキーの中身を安全に読み出してログに出す（型違いにも対応）
+            fun readIntSafeLocal(key: String, default: Int): Int {
+                return try {
+                    prefs.getInt(key, default)
+                } catch (_: ClassCastException) {
+                    prefs.getString(key, default.toString())?.toIntOrNull() ?: default
+                }
+            }
+            try {
+                val volNow = readIntSafeLocal(getString(VOLUME_ADJUSTMENT), 100)
+                Log.d("Musicservice", "initial ${getString(VOLUME_ADJUSTMENT)} = $volNow")
+            } catch (e: Exception) {
+                Log.w("Musicservice", "failed to read initial pref values", e)
+            }
 
+            // ディレクトリリストの監視
+            launch {
+                Log.d("Musicservice", "launching observeString collector for key=${getString(MUSIC_DIR_RELATIVE_PATHS_KEY)}")
+                SharedPrefsFlow.observeString(prefs, getString(MUSIC_DIR_RELATIVE_PATHS_KEY)).collect { value ->
+                    Log.d("Musicservice", "observeString.collect emitted value=$value")
+                    val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                    val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice, UserRelativePaths)
+                    _tracks.value = loaded
+                    setQueue(Tracks)
+                }
+            }
+
+            // 音量設定の監視
+            launch {
+                Log.d("Musicservice", "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}")
+                SharedPrefsFlow.observeInt(prefs, getString(VOLUME_ADJUSTMENT)).collect { value ->
+                    val vol = (value.coerceIn(0, 100)) / 100.0f
+                    player.volume = vol
+                    Log.i("Musicservice", "Volume adjusted to $value -> $vol")
+                }
             }
             try {
                 val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()

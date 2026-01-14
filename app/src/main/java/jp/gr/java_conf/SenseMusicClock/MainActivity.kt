@@ -49,6 +49,15 @@ class MainActivity : AppCompatActivity() {
         ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(application))
 
         createAppFolderIfNeeded()
+        storageAccessHelper = StorageAccessHelper(this,
+            onDirectoryPicked = { _, _ -> },
+            onPermissionGranted = { read_music_Granted() },
+            onPermissionDenied = {
+                //TODO 権限拒否時の処理
+                Log.w("MainActivity", "音楽読み取り権限が拒否されました。")
+            }
+
+        )
 
         val nowTime = LocalDateTime.now()
         val dtformat1 = DateTimeFormatter.ofPattern("HH")
@@ -148,15 +157,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(binding.root)
-        storageAccessHelper = StorageAccessHelper(this,
-            onDirectoryPicked = { _, _ -> },
-            onPermissionGranted = { read_music_Granted() },
-            onPermissionDenied = {
-                //TODO 権限拒否時の処理
-                Log.w("MainActivity", "音楽読み取り権限が拒否されました。")
-            }
 
-            )
     }
 
     private fun dpToPx(dp: Int): Int {
