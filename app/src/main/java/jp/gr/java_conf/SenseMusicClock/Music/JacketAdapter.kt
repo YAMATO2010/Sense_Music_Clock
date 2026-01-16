@@ -1,5 +1,4 @@
-// kotlin
-package jp.gr.java_conf.SenseMusicClock
+package jp.gr.java_conf.SenseMusicClock.Music
 
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +7,10 @@ import android.widget.ImageButton
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import jp.gr.java_conf.SenseMusicClock.R
+import jp.gr.java_conf.SenseMusicClock.SpotifyTrack
+import jp.gr.java_conf.SenseMusicClock.Track
+import jp.gr.java_conf.SenseMusicClock.localTrack
 
 class JacketAdapter(
     initialItems: List<Track> = emptyList(),
@@ -58,11 +61,32 @@ class JacketAdapter(
     }
 
     /** 外部から差分更新する際は submitList を使う（内部で DiffUtil が効く） */
-    fun setItems(newItems: List<Track>) {
-        submitList(newItems.toList())
+    // 既存のシグネチャを残しつつ、コミット完了コールバック対応のオーバーロードを追加
+
+
+    fun setItems(newItems: List<Track>, commitCallback: (() -> Unit)?) {
+        // ListAdapter#submitList の commitCallback は Runnable なので合わせる
+        submitList(newItems.toList(), Runnable {
+            try {
+                commitCallback?.invoke()
+            } catch (_: Exception) {
+            }
+        })
     }
 
     fun getItems(): List<Track> = currentList.toList()
+
+    fun getItemPosition(track: Track?): Int? {
+        if (track == null) return null
+        val idx = currentList.indexOfFirst { item ->
+            when {
+                item is localTrack && track is localTrack -> item.id == track.id
+                item is SpotifyTrack && track is SpotifyTrack -> item.trackId == track.trackId
+                else -> false
+            }
+        }
+        return if (idx >= 0) idx else null
+    }
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<Track>() {

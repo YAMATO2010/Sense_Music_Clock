@@ -8,6 +8,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/oblong_noon"
+    android:clipToPadding="true"
+    android:clipChildren="true"
     tools:context=".MainActivity">
 
 
@@ -15,10 +17,11 @@
         android:id="@+id/recyclerJackets"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:background="@drawable/gradient1"
         android:clipToPadding="false"
+        android:orientation="vertical"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -123,35 +126,173 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <LinearLayout
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/linearLayout5"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="100dp"
-        android:layout_marginBottom="100dp"
-        android:orientation="vertical"
-        android:background="@drawable/gradient3"
-        app:layout_constraintBottom_toTopOf="@+id/Settingsbutton"
-        app:layout_constraintEnd_toEndOf="@+id/recyclerJackets">
+        android:layout_marginStart="200dp"
+        android:layout_marginEnd="50dp"
+        android:background="@drawable/gradient1"
+        android:clipToPadding="true"
+        android:clipChildren="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/recyclerJackets"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/recyclerJackets">
 
-        <TextView
-            android:id="@+id/TitleView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textColor="@color/white" />
+        <FrameLayout
+            android:id="@+id/titleContainer"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:clipToPadding="true"
+            android:clipChildren="true"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/TitleView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:singleLine="true"
+                android:ellipsize="marquee"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="読み込み中"
+                android:textColor="@color/white" />
+
+        </FrameLayout>
+
         <View
-            android:layout_width="match_parent"
+            android:id="@+id/titleDivider"
+            android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_marginTop="6dp"
+            android:alpha="0.95"
             android:background="#FFFFFF"
-            android:alpha="0.95"/>
+            app:layout_constraintTop_toBottomOf="@id/titleContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/MusicEtcView"
-            android:layout_width="match_parent"
+        <FrameLayout
+            android:id="@+id/etcContainer"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:clipToPadding="true"
+            android:clipChildren="true"
+            app:layout_constraintTop_toBottomOf="@id/titleDivider"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:id="@+id/MusicEtcView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:singleLine="true"
+                android:gravity="center"
+                android:ellipsize="marquee"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="よみこみちゅう"
+                android:textColor="@color/white" />
+
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Loading overlay: placed at end so it's on top of other views -->
+
+    <ImageButton
+        android:id="@+id/currentAlbumArt"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+
+        android:background="@drawable/gradient1"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/default_album_art"
+
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="@+id/linearLayout5"
+        app:layout_constraintHorizontal_bias="0.0"
+
+
+
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
+
+    <ImageButton
+        android:id="@+id/GotoStandardPlayerButton"
+
+
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/gradient1"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+
+        android:src="@drawable/goto_st_pl"
+
+        app:layout_constraintBottom_toBottomOf="@+id/Settingsbutton"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/Settingsbutton"
+        app:layout_constraintVertical_bias="0.0"
+        app:layout_goneMarginEnd="10dp"
+       />
+
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        android:background="@android:color/transparent"
+        android:elevation="32dp"
+        android:translationZ="32dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textColor="@color/white" />
-    </LinearLayout>
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="8dp"
+            android:background="@android:color/transparent">
+
+            <ProgressBar
+                android:id="@+id/nowLoadingBar"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/teal_200" />
+
+            <TextView
+                android:id="@+id/nowLoadingTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:background="@color/black_overlay"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:text="読み込み中" />
+
+        </LinearLayout>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

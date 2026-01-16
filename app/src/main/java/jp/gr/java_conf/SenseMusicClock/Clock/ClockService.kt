@@ -1,21 +1,17 @@
-
 package jp.gr.java_conf.SenseMusicClock.Clock
 
 import android.app.*
-import android.content.Context
 import android.content.Intent
 import android.media.Ringtone
-import android.media.RingtoneManager
-import android.net.Uri
-import android.os.Binder
-import android.os.Build
+
 import android.os.CountDownTimer
 import android.os.IBinder
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.core.app.NotificationCompat
 import jp.gr.java_conf.SenseMusicClock.R
-import java.util.concurrent.TimeUnit
+import jp.gr.java_conf.SenseMusicClock.getNotificationManagerCompat
+import jp.gr.java_conf.SenseMusicClock.playDefaultAlarmRingtoneSafe
+import jp.gr.java_conf.SenseMusicClock.vibrateOnceSafe
+
 
 class ClockService : Service() {
 
@@ -91,21 +87,9 @@ class ClockService : Service() {
     }
 
     private fun notifyFinished() {
-        try {
-            val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            currentRingtone = RingtoneManager.getRingtone(this, alarmUri)
-            currentRingtone?.play()
-        } catch (e: Exception) {
-            // ignore
-        }
-
-        try {
-            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            vibrator?.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
-        } catch (e: Exception) {
-            // ignore
-        }
+        // play ringtone and vibrate using shared helpers
+        currentRingtone = playDefaultAlarmRingtoneSafe()
+        vibrateOnceSafe()
     }
 
     private fun stopRingtone() {
@@ -117,13 +101,15 @@ class ClockService : Service() {
         }
     }
 
-    private fun buildNotification(contentText: String): Notification {
+    // reuse shared helpers in AndroidUtils.kt
+    // build the PendingIntent used for the "停止" action in the notification
+    private fun buildStopPendingIntent(): PendingIntent {
         val stopIntent = Intent(this, ClockService::class.java).apply { action = ACTION_STOP_TIMER }
-        val stopPending = PendingIntent.getService(
-            this, 0, stopIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            else PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        return PendingIntent.getService(this, 0, stopIntent, jp.gr.java_conf.SenseMusicClock.pendingIntentFlags())
+    }
+
+    private fun buildNotification(contentText: String): Notification {
+        val stopPending = buildStopPendingIntent()
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
@@ -136,28 +122,23 @@ class ClockService : Service() {
 
     private fun updateNotification(contentText: String) {
         val notif = buildNotification(contentText)
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIF_ID, notif)
+        val nm = getNotificationManagerCompat()
+        nm?.notify(NOTIF_ID, notif)
     }
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
             val nm = getSystemService(NotificationManager::class.java)
             nm?.createNotificationChannel(
                 NotificationChannel(CHANNEL_ID, "SMC Timer", NotificationManager.IMPORTANCE_DEFAULT).apply {
                     description = "Timer notifications"
                 }
             )
-        }
+
     }
 
-    private fun formatRemaining(millis: Long): String {
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
-        val hours = TimeUnit.MILLISECONDS.toHours(millis)
-        return if (hours > 0) String.format("%02d:%02d:%02d", hours, minutes, seconds)
-        else String.format("%02d:%02d", minutes, seconds)
-    }
+    // reuse shared time formatter
+    private fun formatRemaining(millis: Long): String = jp.gr.java_conf.SenseMusicClock.formatMillisToTime(millis)
 
     override fun onDestroy() {
         super.onDestroy()

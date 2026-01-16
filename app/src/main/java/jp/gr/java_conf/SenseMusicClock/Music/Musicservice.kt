@@ -9,6 +9,8 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+
+import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
@@ -30,9 +32,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.collect
+
 import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryManager
+import kotlinx.coroutines.flow.onStart
 
 class Musicservice : Service() {
     inner class LocalBinder : Binder() {
@@ -45,6 +48,12 @@ class Musicservice : Service() {
     val tracksFlow: StateFlow<List<localTrack>> = _tracks.asStateFlow()
     // 互換用に現在値を参照するプロパティ
     val Tracks: List<localTrack> get() = _tracks.value
+
+    private val _currentTrack = MutableStateFlow<Track?>(null)
+
+    val currentTracksFlow: StateFlow<Track?> = _currentTrack.asStateFlow()
+    // 互換用に現在値を参照するプロパティ
+    val current_Track: Track? get() = _currentTrack.value
 
 
     private val binder = LocalBinder()
@@ -75,7 +84,7 @@ class Musicservice : Service() {
             isActive = true
         }
 
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
 
         // プレイヤー状態変化で通知更新
@@ -90,15 +99,20 @@ class Musicservice : Service() {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 if (nowSetQueue ) return
                 currentIndex = player.currentMediaItemIndex
+                _currentTrack.value = getCurrentTrack()
+
+
                 updateMetadataForCurrent()
             }
         })
 
 
+
+
         scope.launch {
 
-            // PreferenceFragment や PreferenceScreen と同じ SharedPreferences を使う（デフォルトの prefs）
-            val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this@Musicservice)
+            // Use the app's named SharedPreferences (same as TargetDirectoryManager)
+            val prefs = this@Musicservice.getSharedPreferences(getString(SHAREDPREFERENCES_NAME), MODE_PRIVATE)
             Log.d("Musicservice", "prefs obtained (default) hash=${prefs.hashCode()}")
             // デバッグ: 現在の SharedPreferences 全エントリを出力（キーと値の型を確認する）
             Log.d("Musicservice", "prefs.all = ${prefs.all}")
@@ -111,12 +125,17 @@ class Musicservice : Service() {
                     prefs.getString(key, default.toString())?.toIntOrNull() ?: default
                 }
             }
-            try {
-                val volNow = readIntSafeLocal(getString(VOLUME_ADJUSTMENT), 100)
-                Log.d("Musicservice", "initial ${getString(VOLUME_ADJUSTMENT)} = $volNow")
-            } catch (e: Exception) {
-                Log.w("Musicservice", "failed to read initial pref values", e)
+
+            // 音量設定の監視
+            launch {
+                Log.d("Musicservice", "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}")
+                SharedPrefsFlow.observeInt(prefs, getString(VOLUME_ADJUSTMENT)).collect { value ->
+                    val vol = (value.coerceIn(0, 100))  / 100.0f
+                    player.volume = vol
+                    Log.i("Musicservice", "Volume adjusted to $value -> $vol")
+                }
             }
+
 
             // ディレクトリリストの監視
             launch {
@@ -130,15 +149,19 @@ class Musicservice : Service() {
                 }
             }
 
-            // 音量設定の監視
             launch {
-                Log.d("Musicservice", "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}")
-                SharedPrefsFlow.observeInt(prefs, getString(VOLUME_ADJUSTMENT)).collect { value ->
-                    val vol = (value.coerceIn(0, 100)) / 100.0f
-                    player.volume = vol
-                    Log.i("Musicservice", "Volume adjusted to $value -> $vol")
+                SharedPrefsFlow.observeBoolean(prefs, getString(ReLoad_Tracks_KEY), false)
+                    .onStart { Log.d("Musicservice", "launching observeBoolean collector for key=${getString(ReLoad_Tracks_KEY)}") }
+                    .collect { value ->
+                    Log.i("Musicservice", "reload music directory requested (prefs key=${getString(ReLoad_Tracks_KEY)}) -> reloading")
+                    val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                    val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice, UserRelativePaths)
+                    _tracks.value = loaded
+                    setQueue(Tracks)
                 }
             }
+
+
             try {
                 val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
                 val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice,UserRelativePaths)
@@ -173,6 +196,7 @@ class Musicservice : Service() {
 
 
 
+
         Log.i("Musicservice", "setQueue: size=${tracks.size} startIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
         player.stop()
         player.clearMediaItems()
@@ -200,6 +224,7 @@ class Musicservice : Service() {
         }
 
         Log.i("player_beforePlay" , "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+
         player.play()
         Log.i("player" , "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
     }
@@ -253,20 +278,68 @@ class Musicservice : Service() {
                 } catch (e: Exception) {
                     Log.w("Musicservice", "play by index failed", e)
                 }
-            }else if(action == ACTION_PLAY_UUID){
-                val uuid = extras?.getString(EXTRA_UUID, "") ?: ""
-                var index = Tracks.map { it.uuid.toString() }.indexOf(uuid)
-                Log.i("Musicservice", "onCustomAction: play index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
-                if (index == -1) index = 4
-
+            }else if (action == ACTION_PLAY_HASH){
+                // Be tolerant: accept EXTRA_HASH but also fallback to UUID/INDEX/TITLE matching
                 try {
+                    val trackHash = extras?.getInt(EXTRA_HASH)
+                    Log.d("Musicservice", "onCustomAction ACTION_PLAY_HASH received extras=${extras?.keySet()?.joinToString()}")
+                    var index = if (trackHash != null) Tracks.indexOfFirst { it.hashCode() == trackHash } else -1
+                    Log.i("Musicservice", "onCustomAction: play hash ${trackHash} index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+
+                    // fallback: if extras contains UUID or INDEX, try them
+                    if (index == -1) {
+                        val uuid = extras?.getString(EXTRA_UUID, "") ?: ""
+                        if (!uuid.isNullOrEmpty()) {
+                            index = Tracks.indexOfFirst { it.uuid.toString() == uuid }
+                            Log.i("Musicservice", "fallback by uuid=$uuid -> index=$index")
+                        }
+                    }
+                    if (index == -1) {
+                        val idxExtra = extras?.getInt(EXTRA_INDEX, Int.MIN_VALUE) ?: Int.MIN_VALUE
+                        if (idxExtra != Int.MIN_VALUE && idxExtra in Tracks.indices) {
+                            index = idxExtra
+                            Log.i("Musicservice", "fallback by EXTRA_INDEX -> index=$index")
+                        }
+                    }
+
+                    // final fallback: attempt match by simple metadata fields if provided
+                    if (index == -1) {
+                        val t = extras?.getString("EXTRA_TITLE")
+                        val a = extras?.getString("EXTRA_ARTIST")
+                        val al = extras?.getString("EXTRA_ALBUM")
+                        val idLong = try { extras?.getLong("EXTRA_ID") } catch (_: Exception) { null }
+                        if (idLong != null) {
+                            index = Tracks.indexOfFirst { (it as? localTrack)?.id == idLong }
+                            Log.i("Musicservice", "fallback by EXTRA_ID=$idLong -> index=$index")
+                        }
+                        if (index == -1 && !t.isNullOrEmpty()) {
+                            index = Tracks.indexOfFirst { it.title == t && (a == null || it.artist == a) && (al == null || it.album == al) }
+                            Log.i("Musicservice", "fallback by title/artist/album -> index=$index")
+                        }
+                    }
+
+                    if (index == -1) {
+                        Log.w("Musicservice", "ACTION_PLAY_HASH: no matching track found (hash/uuid/index/title) - ignoring")
+                        return
+                    }
+
                     // queue はサービス内部の現在の曲リスト（Tracks と同期済み）
                     setQueue(queue, index)
                     play()
                 } catch (e: Exception) {
-                    Log.w("Musicservice", "play by index failed", e)
+                    Log.w("Musicservice", "play by hash fallback failed", e)
                 }
-
+            } else if (action == ACTION_PLAY_UUID) {
+                val uuid = extras?.getString(EXTRA_UUID, "") ?: ""
+                val index = Tracks.indexOfFirst { it.uuid.toString() == uuid }
+                Log.i("Musicservice", "onCustomAction: play uuid $uuid index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+                if (index == -1) return
+                try {
+                    setQueue(queue, index)
+                    play()
+                } catch (e: Exception) {
+                    Log.w("Musicservice", "play by uuid failed", e)
+                }
             }
         }
     }
@@ -277,6 +350,7 @@ class Musicservice : Service() {
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track?.title ?: "")
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track?.artist ?: "")
             .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track?.album ?: "")
+            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,track?.albumArt ?: BitmapFactory.decodeResource(resources,R.drawable.default_album_art))
         mediaSession.setMetadata(metaBuilder.build())
         updatePlaybackState()
         startForegroundIfNeeded()
@@ -319,11 +393,7 @@ class Musicservice : Service() {
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-        val pendingOpen = PendingIntent.getActivity(
-            this, 0, openIntent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_IMMUTABLE else 0
-        )
+        val pendingOpen = pendingActivityIntent(this, 0, openIntent)
 
         val playPauseAction = if (isPlaying)
             NotificationCompat.Action(
@@ -365,10 +435,7 @@ class Musicservice : Service() {
 
     private fun buildActionPendingIntent(action: String): PendingIntent {
         val intent = Intent(this, javaClass).apply { this.action = action }
-        return PendingIntent.getService(
-            this, action.hashCode(), intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
-        )
+        return pendingServiceIntent(this, action.hashCode(), intent)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -391,6 +458,7 @@ class Musicservice : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val chan = NotificationChannel(CHANNEL_ID, "Playback", NotificationManager.IMPORTANCE_LOW)
+            // use notificationManager instance (initialized in onCreate)
             notificationManager.createNotificationChannel(chan)
         }
     }
@@ -405,8 +473,37 @@ class Musicservice : Service() {
         const val ACTION_PREV = "jp.gr.java_conf.SenseMusicClock.ACTION_PREV"
         const val ACTION_PLAY_INDEX = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY_INDEX"
         const val ACTION_PLAY_UUID = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY_UUID"
+        const val ACTION_PLAY_HASH = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY_HASH"
         const val EXTRA_UUID = "jp.gr.java_conf.SenseMusicClock.EXTRA__UUID"
         const val EXTRA_INDEX = "jp.gr.java_conf.SenseMusicClock.EXTRA_INDEX"
+        const val EXTRA_HASH = "jp.gr.java_conf.SenseMusicClock.EXTRA_HASH"
 
+    }
+
+    fun getCurrentPositionMs(): Long {
+        return try { player.currentPosition } catch (e: Exception) { 0L }
+    }
+
+    fun getDurationMs(): Long {
+        return try {
+            val d = player.duration
+            if (d <= 0) 0L else d
+        } catch (e: Exception) { 0L }
+    }
+
+    /**
+     * Seek by percentage of the current media duration.
+     * percent: 0..100 (float). If duration is unknown, this is ignored.
+     */
+    fun seekToPercent(percent: Float) {
+        try {
+            val duration = player.duration
+            if (duration <= 0) return
+            val clamped = percent.coerceIn(0f, 100f)
+            val target = (clamped / 100f * duration).toLong()
+            player.seekTo(target)
+        } catch (e: Exception) {
+            Log.w("Musicservice", "seekToPercent failed", e)
+        }
     }
 }

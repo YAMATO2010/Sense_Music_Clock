@@ -28,6 +28,28 @@ object SharedPrefsFlow {
                 Log.d("SharedPrefsFlow", "observeString: listener unregistered for key=$key")
             }
         }.distinctUntilChanged()
+    fun observeBoolean(prefs: SharedPreferences, key: String, default: Boolean = false): Flow<Boolean?> =
+        callbackFlow {
+            Log.d("SharedPrefsFlow", "observeBoolean: registering listener for key=$key on prefs=${prefs.hashCode()}")
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
+                if (changedKey == key) {
+                    val v = prefs.getBoolean(key, default)
+                    Log.d("SharedPrefsFlow", "observeBoolean: change detected key=$key value=$v")
+                    trySend(v)
+                }
+            }
+            // 初期値を送る
+            val initial = prefs.getBoolean(key, default)
+            Log.d("SharedPrefsFlow", "observeBoolean: sending initial value for key=$key value=$initial")
+            trySend(initial)
+            prefs.registerOnSharedPreferenceChangeListener(listener)
+            awaitClose {
+                prefs.unregisterOnSharedPreferenceChangeListener(listener)
+                Log.d("SharedPrefsFlow", "observeBoolean: listener unregistered for key=$key")
+            }
+        }.distinctUntilChanged()
+
+
 
     fun observeInt(prefs: SharedPreferences, key: String, default: Int = 50): Flow<Int> =
         callbackFlow {

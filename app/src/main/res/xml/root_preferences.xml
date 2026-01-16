@@ -11,6 +11,11 @@
             android:title="Select Music Directory"
             android:selectable="true" />
 
+        <Preference
+            android:key="reLoad_Tracks"
+            android:title="再読み込み"
+            android:selectable="true" />
+
         <SeekBarPreference
             android:key="volume_adjustment"
             android:title="音量調整 (%)"

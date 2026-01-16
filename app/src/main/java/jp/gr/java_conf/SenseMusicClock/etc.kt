@@ -18,3 +18,6 @@ val app_dir  = ContentValues().apply{
 
 const val IDENTIFIER_INITIAL_INDEX_PROBLEM = "  ///IDENTIFIER_INITIAL_INDEX_PROBLEM"
 
+
+
+

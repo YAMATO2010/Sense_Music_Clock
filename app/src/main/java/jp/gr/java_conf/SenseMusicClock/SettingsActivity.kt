@@ -1,14 +1,11 @@
 package jp.gr.java_conf.SenseMusicClock
 
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SeekBarPreference
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 
 class SettingsActivity : AppCompatActivity() {
@@ -56,6 +53,10 @@ class SettingsActivity : AppCompatActivity() {
 
     class SettingsFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            // 明示的に名前付き SharedPreferences を使う（XML の属性に依存せず確実に同じ prefs を使用する）
+            preferenceManager.sharedPreferencesName = getString(SHAREDPREFERENCES_NAME)
+            preferenceManager.sharedPreferencesMode = MODE_PRIVATE
+
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
             val pickPref: Preference? = findPreference("action_selectDirectory")
@@ -64,19 +65,23 @@ class SettingsActivity : AppCompatActivity() {
                 (activity as? SettingsActivity)?.launchDirectoryPicker()
                 true
             }
+            val reloadPref: Preference? = findPreference("reLoad_Tracks")
+            reloadPref?.setOnPreferenceClickListener {
+                Log.d("SettingsFragment", "reLoad_Tracks clicked")
+                val prefs = preferenceManager.sharedPreferences
+                val current = prefs?.getBoolean(reloadPref.key, false)
+                val newValue = !(current ?: false)
 
-            // SeekBarPreference の変更をログに出して、SharedPreferences に保存されているか確認できるようにする
-            val volKey = getString(VOLUME_ADJUSTMENT)
-            val seek = findPreference<SeekBarPreference>(volKey)
-            seek?.let { pref ->
-                pref.summaryProvider = Preference.SummaryProvider<SeekBarPreference> { p ->
-                    "${p.value}%"
-                }
-                pref.setOnPreferenceChangeListener { _, newValue ->
-                    Log.d("SettingsFragment", "SeekBarPreference changed key=$volKey newValue=$newValue type=${newValue?.javaClass}")
-                    true
-                }
+                // ② 明示的に保存（これが重要）
+                prefs?.edit()
+                    ?.putBoolean(reloadPref.key, newValue)
+                    ?.apply()
+
+                true // 自動処理はここで止める
+                true
             }
+
+
         }
     }
 }

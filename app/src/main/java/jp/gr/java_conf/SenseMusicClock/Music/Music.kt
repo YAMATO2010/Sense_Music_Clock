@@ -5,6 +5,7 @@ import android.net.Uri
 import java.util.concurrent.ThreadLocalRandom
 import java.util.UUID
 
+
 interface Track {
 
      val title: String  //トラックタイトル

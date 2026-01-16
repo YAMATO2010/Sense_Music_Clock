@@ -20,5 +20,9 @@
     <string name="VOLUME_ADJUSTMENT">volume_adjustment</string>
     <string name="SHAREDPREFERENCES_NAME">smc_prefs</string>
     <string name="MUSIC_DIR_RELATIVE_PATHS_KEY">music_dir_relative_paths</string>
+    <string name="title_activity_standard_player">StandardPlayerActivity</string>
+    <string name="RELOAD_TRACKS_KEY">reLoad_Tracks</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 
 </resources>
