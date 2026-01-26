@@ -40,6 +40,9 @@ import android.graphics.PorterDuff
 import android.content.pm.ApplicationInfo
 import app_dir
 import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
+import coil.load
+import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
+import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 
 
 class MainActivity : AppCompatActivity() {
@@ -56,6 +59,10 @@ class MainActivity : AppCompatActivity() {
 
     // ViewModel を使って向きと pendingInstantScroll を保持
     private lateinit var mainViewModel: MainViewModel
+
+    private var musicSearcher : MusicSearcherByList? = null
+
+    private var currentTrack = null as Track?
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,89 +101,8 @@ class MainActivity : AppCompatActivity() {
 
         // 初期 adapter はクラスプロパティとして作成し、クリック処理もここで定義する
         binding.recyclerJackets.setHasFixedSize(false)
-        jacketAdapter = JacketAdapter(emptyList(), R.drawable.default_album_art) { clickedTrack ->
-            Log.i(
-                "MainActivity",
-                "track clicked: ${clickedTrack.title}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
-            )
-            try {
-                // If it's a local track, prefer asking the service to play by index (service has authoritative queue)
-                var sent = false
-                if (clickedTrack is localTrack) {
-                    val serviceTracks = musicService?.Tracks
-                    val serviceIndex =
-                        serviceTracks?.indexOfFirst { it.id == clickedTrack.id } ?: -1
-                    if (serviceIndex >= 0) {
-                        val extras =
-                            Bundle().apply { putInt(Musicservice.EXTRA_INDEX, serviceIndex) }
-                        sent = try {
-                            Log.d(
-                                "MainActivity",
-                                "sending custom action: ${Musicservice.ACTION_PLAY_INDEX} extras=${extras.toString()}"
-                            )
-                            mediaController?.transportControls?.sendCustomAction(
-                                Musicservice.ACTION_PLAY_INDEX,
-                                extras
-                            )
-                            true
-                        } catch (e: Exception) {
-                            Log.w("MainActivity", "sendCustomAction ACTION_PLAY_INDEX failed", e)
-                            false
-                        }
-                    }
-                }
+        jacketAdapterInitialized()
 
-                // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
-                if (!sent) {
-                    if (clickedTrack is localTrack) {
-                        val localList = jacketAdapter.getItems().filterIsInstance<localTrack>()
-                        val idxLocal = localList.indexOfFirst { it.id == clickedTrack.id }
-                        if (idxLocal >= 0) {
-                            musicService?.setQueue(localList, idxLocal)
-                            musicService?.play()
-                        } else {
-                            Log.w(
-                                "MainActivity",
-                                "clickedTrack not found in localList - skipping fallback setQueue/play"
-                            )
-                        }
-                    } else {
-                        Log.w(
-                            "MainActivity",
-                            "No play action for non-local track (or MediaController unavailable)"
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w("MainActivity", "play request failed", e)
-            }
-
-            // update texts and restart slide loop (Title -> Etc)
-            stopSlideLoop()
-            binding.TitleView.text = clickedTrack.title
-            binding.MusicEtcView.text = "${clickedTrack.artist} / ${clickedTrack.album}"
-            // update marquee state for both views
-            updateMarqueeFor(binding.TitleView)
-            updateMarqueeFor(binding.MusicEtcView)
-
-            // reset visual state
-            try {
-                binding.TitleView.translationX = 0f
-                binding.TitleView.alpha = 1f
-                binding.MusicEtcView.translationX = 0f
-                binding.MusicEtcView.alpha = 1f
-            } catch (_: Exception) {
-            }
-            currentSlideTarget = SlideTarget.TITLE
-            startSlideLoop()
-
-            binding.currentAlbumArt.setImageBitmap(
-                clickedTrack.albumArt ?: BitmapFactory.decodeResource(
-                    resources,
-                    R.drawable.default_album_art
-                )
-            )
-        }
 
 
 
@@ -283,6 +209,7 @@ class MainActivity : AppCompatActivity() {
             Log.i("musicConnection", "loaded tracks: ${tracks.size}")
 
             runOnUiThread {
+
                  // adapter にリストを渡し、コミット後に現在トラックへスクロールする
                  jacketAdapter.setItems(tracks) {
                      // commit完了後に呼ばれる。adapter に要素が入っていればローディングを消す
@@ -340,8 +267,23 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
+                    launch {
+                        val pref = getSharedPreferences(getString(SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE)
+                        SharedPrefsFlow.observeBoolean(pref,getString(TILE_TITLE_DISPLAY),).collect {
+
+                           jacketAdapter.notifyItemChanged(0, jacketAdapter.itemCount)
+                        }
+                    }
+
                     musicService?.tracksFlow?.collect { updated ->
                         // 新しいリストを反映。反映後に要素があればローディングを消す
+                        musicSearcher = MusicSearcherByList(this@MainActivity,
+                            binding.SearchResultView,
+                            updated,
+                            binding.searchKeywordInput,
+                            binding.recyclerJackets
+                        )
+                        musicSearcher?.ini()
                         jacketAdapter.setItems(updated) {
                             val hasItems = jacketAdapter.getItems().isNotEmpty()
                             Log.d("MainActivity", "tracksFlow commitCallback: hasItems=$hasItems, updatedSize=${updated.size}")
@@ -386,7 +328,21 @@ class MainActivity : AppCompatActivity() {
                     startSlideLoop()
 
 
-                    binding.currentAlbumArt.setImageBitmap(currentTrack.albumArt ?: BitmapFactory.decodeResource(resources,R.drawable.default_album_art) )
+                    try {
+                        val artUri = (currentTrack as? Track)?.albumArtUri
+                        if (artUri != null) {
+                            binding.currentAlbumArt.load(artUri) {
+                                placeholder(R.drawable.default_album_art)
+                                error(R.drawable.default_album_art)
+                                crossfade(true)
+                            }
+                        } else {
+                            binding.currentAlbumArt.load(R.drawable.default_album_art)
+                        }
+                    } catch (e: Exception) {
+                        Log.w("MainActivity", "failed to load currentTrack album art via Coil", e)
+                        try { binding.currentAlbumArt.load(R.drawable.default_album_art) } catch (_: Exception) {}
+                    }
 
 
                 }
@@ -400,6 +356,7 @@ class MainActivity : AppCompatActivity() {
             musicService = null
             mediaController = null
             musicBound = false
+            musicSearcher = null
         }
     }
 
@@ -418,6 +375,105 @@ class MainActivity : AppCompatActivity() {
 
 
 
+    }
+
+    fun jacketAdapterInitialized(): Boolean {
+        jacketAdapter = JacketAdapter(emptyList(), R.drawable.default_album_art,this) { clickedTrack ->
+            Log.i(
+                "MainActivity",
+                "track clicked: ${clickedTrack.title}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+            )
+            try {
+                // If it's a local track, prefer asking the service to play by index (service has authoritative queue)
+                var sent = false
+                if (clickedTrack is localTrack) {
+                    val serviceTracks = musicService?.Tracks
+                    val serviceIndex =
+                        serviceTracks?.indexOfFirst { it.id == clickedTrack.id } ?: -1
+                    if (serviceIndex >= 0) {
+                        val extras =
+                            Bundle().apply { putInt(Musicservice.EXTRA_INDEX, serviceIndex) }
+                        sent = try {
+                            Log.d(
+                                "MainActivity",
+                                "sending custom action: ${Musicservice.ACTION_PLAY_INDEX} extras=${extras.toString()}"
+                            )
+                            mediaController?.transportControls?.sendCustomAction(
+                                Musicservice.ACTION_PLAY_INDEX,
+                                extras
+                            )
+                            true
+                        } catch (e: Exception) {
+                            Log.w("MainActivity", "sendCustomAction ACTION_PLAY_INDEX failed", e)
+                            false
+                        }
+                    }
+                }
+
+                // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
+                if (!sent) {
+                    if (clickedTrack is localTrack) {
+                        val localList = jacketAdapter.getItems().filterIsInstance<localTrack>()
+                        val idxLocal = localList.indexOfFirst { it.id == clickedTrack.id }
+                        if (idxLocal >= 0) {
+                            musicService?.setQueue(localList, idxLocal)
+                            musicService?.play()
+                        } else {
+                            Log.w(
+                                "MainActivity",
+                                "clickedTrack not found in localList - skipping fallback setQueue/play"
+                            )
+                        }
+                    } else {
+                        Log.w(
+                            "MainActivity",
+                            "No play action for non-local track (or MediaController unavailable)"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("MainActivity", "play request failed", e)
+            }
+
+            // update texts and restart slide loop (Title -> Etc)
+            stopSlideLoop()
+            binding.TitleView.text = clickedTrack.title
+            binding.MusicEtcView.text = "${clickedTrack.artist} / ${clickedTrack.album}"
+            // update marquee state for both views
+            updateMarqueeFor(binding.TitleView)
+            updateMarqueeFor(binding.MusicEtcView)
+
+            // reset visual state
+            try {
+                binding.TitleView.translationX = 0f
+                binding.TitleView.alpha = 1f
+                binding.MusicEtcView.translationX = 0f
+                binding.MusicEtcView.alpha = 1f
+            } catch (_: Exception) {
+            }
+            currentSlideTarget = SlideTarget.TITLE
+            startSlideLoop()
+
+            // load album art with Coil; use clickedTrack.albumArtUri when present, otherwise fallback to default drawable
+            try {
+                val uri = clickedTrack.albumArtUri
+                if (uri != null) {
+                    binding.currentAlbumArt.load(uri) {
+                        placeholder(R.drawable.default_album_art)
+                        error(R.drawable.default_album_art)
+                        crossfade(true)
+                    }
+                } else {
+                    binding.currentAlbumArt.load(R.drawable.default_album_art)
+                }
+            } catch (e: Exception) {
+                Log.w("MainActivity", "failed to load clickedTrack album art via Coil", e)
+                try { binding.currentAlbumArt.load(R.drawable.default_album_art) } catch (_: Exception) {}
+            }
+        }
+
+
+        return ::jacketAdapter.isInitialized
     }
 
     override fun onResume() {
@@ -510,44 +566,8 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    // 追加: 滑らかなスクロール（アニメーション）でアイテムを表示する
-    private fun smoothScrollToPosition(position: Int) {
-        if (position < 0) return
-        val recycler = binding.recyclerJackets
-        recycler.post {
-            val lm = recycler.layoutManager
-            if (lm == null) return@post
 
-            val smoothScroller = object : androidx.recyclerview.widget.LinearSmoothScroller(this@MainActivity) {
-                // Center the target view if possible
-                override fun calculateDtToFit(viewStart: Int, viewEnd: Int, boxStart: Int, boxEnd: Int, snapPreference: Int): Int {
-                    try {
-                        val viewSize = viewEnd - viewStart
-                        val boxSize = if (lm.canScrollHorizontally()) recycler.width else recycler.height
-                        val boxStartCenter = (boxSize - viewSize) / 2
-                        // move viewStart to boxStartCenter
-                        return boxStartCenter - viewStart
-                    } catch (e: Exception) {
-                        return super.calculateDtToFit(viewStart, viewEnd, boxStart, boxEnd, snapPreference)
-                    }
-                }
 
-                // Optional: tune scrolling speed
-                override fun calculateSpeedPerPixel(displayMetrics: android.util.DisplayMetrics): Float {
-                    // milliseconds per pixel
-                    return 10f / displayMetrics.densityDpi // slower than default for more visible animation
-                }
-            }
-
-            try {
-                smoothScroller.targetPosition = position
-                lm.startSmoothScroll(smoothScroller)
-            } catch (e: Exception) {
-                // fallback
-                recycler.smoothScrollToPosition(position)
-            }
-        }
-    }
 
     // Slide target enum preserved so remaining call sites compile and can be wired to a library later
     private enum class SlideTarget { TITLE, ETC }
@@ -630,7 +650,7 @@ class MainActivity : AppCompatActivity() {
         if (track == null)        return
 
         val scrollPos = adapter.getItemPosition(track)
-        if (scrollPos != null) binding.recyclerJackets.post { smoothScrollToPosition(scrollPos) }
+        if (scrollPos != null) binding.recyclerJackets.smoothScrollToPosition(scrollPos)
 
 
 
@@ -789,10 +809,24 @@ class MainActivity : AppCompatActivity() {
                 startSlideLoop()
 
 
-                binding.currentAlbumArt.setImageBitmap(track.albumArt ?: BitmapFactory.decodeResource(resources,R.drawable.default_album_art) )
+                try {
+                    val artUri = (track as? Track)?.albumArtUri
+                    if (artUri != null) {
+                        binding.currentAlbumArt.load(artUri) {
+                            placeholder(R.drawable.default_album_art)
+                            error(R.drawable.default_album_art)
+                            crossfade(true)
+                        }
+                    } else {
+                        binding.currentAlbumArt.load(R.drawable.default_album_art)
+                    }
+                } catch (e: Exception) {
+                    Log.w("MainActivity", "failed to load currentTrack album art via Coil", e)
+                    try { binding.currentAlbumArt.load(R.drawable.default_album_art) } catch (_: Exception) {}
+                }
             } else {
                 stopSlideLoop()
-                binding.currentAlbumArt.setImageBitmap(BitmapFactory.decodeResource(resources,R.drawable.default_album_art) )
+                try { binding.currentAlbumArt.load(R.drawable.default_album_art) } catch (_: Exception) { binding.currentAlbumArt.setImageBitmap(BitmapFactory.decodeResource(resources,R.drawable.default_album_art)) }
                 binding.TitleView.text = ""
                 binding.MusicEtcView.text = ""
                 updateMarqueeFor(binding.TitleView)

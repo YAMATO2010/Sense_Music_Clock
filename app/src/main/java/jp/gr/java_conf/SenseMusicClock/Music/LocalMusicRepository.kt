@@ -12,6 +12,7 @@ import android.provider.MediaStore
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.core.net.toUri
 
 object LocalMusicRepository {
     suspend fun loadLocalMusicFromAppDir(
@@ -78,38 +79,20 @@ object LocalMusicRepository {
                     if (path.contains(".nomedia")) continue
                     val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
 
-                    val albumArtBitmap: Bitmap? = try {
-                        val albumArtUri = Uri.parse("content://media/external/audio/albumart")
+                    val albumArtUri : Uri? = try {
+                        "content://media/external/audio/albumart".toUri()
                             .buildUpon()
                             .appendPath(albumId.toString())
                             .build()
-                        val targetSize = 200
-
-                        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                        context.contentResolver.openInputStream(albumArtUri)?.use { stream ->
-                            BitmapFactory.decodeStream(stream, null, bounds)
-                        }
-
-                        val inSample = calculateInSampleSize(
-                            bounds.outWidth,
-                            bounds.outHeight,
-                            targetSize,
-                            targetSize
-                        )
-
-                        val decodeOpts = BitmapFactory.Options().apply { inSampleSize = inSample }
-                        context.contentResolver.openInputStream(albumArtUri)?.use { stream ->
-                            BitmapFactory.decodeStream(stream, null, decodeOpts)
-                        }
                     } catch (e: Exception) {
-                        null
-                    }
+                                null
+                            }
 
                     val lm = localTrack(
                         title,
                         album,
                         artist,
-                        albumArtBitmap,
+                        albumArtUri ,
                         fastRandomUUID(),
                         id,
                         albumId,
@@ -129,36 +112,5 @@ object LocalMusicRepository {
         return list
     }
 
-    private fun calculateInSampleSize(width: Int, height: Int, reqWidth: Int, reqHeight: Int): Int {
-        var inSampleSize = 1
-        if (height > reqHeight || width > reqWidth) {
-            val halfHeight = height / 2
-            val halfWidth = width / 2
-            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
-                inSampleSize *= 2
-            }
-        }
-        return inSampleSize
-    }
 
-    private fun scaleCenterCrop(src: Bitmap, targetW: Int, targetH: Int): Bitmap {
-        if (src.width == targetW && src.height == targetH) return src
-
-        val scale = maxOf(targetW.toFloat() / src.width, targetH.toFloat() / src.height)
-        val scaledW = (src.width * scale).toInt()
-        val scaledH = (src.height * scale).toInt()
-
-        val scaled = Bitmap.createScaledBitmap(src, scaledW, scaledH, true)
-        if (scaled !== src) {
-            try { src.recycle() } catch (_: Exception) {}
-        }
-
-        val x = (scaled.width - targetW) / 2
-        val y = (scaled.height - targetH) / 2
-        val result = Bitmap.createBitmap(scaled, x.coerceAtLeast(0), y.coerceAtLeast(0), targetW, targetH)
-        if (result !== scaled) {
-            try { scaled.recycle() } catch (_: Exception) {}
-        }
-        return result
-    }
 }

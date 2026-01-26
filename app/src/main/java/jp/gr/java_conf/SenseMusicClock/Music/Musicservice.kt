@@ -24,6 +24,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import android.util.Log
+import androidx.core.graphics.drawable.toBitmapOrNull
+import coil.imageLoader
+import coil.request.ImageRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +39,7 @@ import kotlinx.coroutines.launch
 import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryManager
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.withContext
 
 class Musicservice : Service() {
     inner class LocalBinder : Binder() {
@@ -102,7 +106,9 @@ class Musicservice : Service() {
                 _currentTrack.value = getCurrentTrack()
 
 
-                updateMetadataForCurrent()
+
+                        updateMetadataForCurrent()
+
             }
         })
 
@@ -212,7 +218,10 @@ class Musicservice : Service() {
             Log.i("Musicservice", "seeking to index $currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
             player.seekTo(currentIndex, 0)
         }
-        updateMetadataForCurrent()
+
+
+                updateMetadataForCurrent()
+
         nowSetQueue = false
     }
 
@@ -236,19 +245,26 @@ class Musicservice : Service() {
     }
 
     fun skipToNext() {
+
         if (player.hasNextMediaItem()) {
+
             player.seekToNextMediaItem()
             currentIndex = player.currentMediaItemIndex
+
             updateMetadataForCurrent()
+
             play()
         }
     }
 
     fun skipToPrevious() {
+
         if (player.hasPreviousMediaItem()) {
             player.seekToPreviousMediaItem()
             currentIndex = player.currentMediaItemIndex
-            updateMetadataForCurrent()
+
+                    updateMetadataForCurrent()
+
             play()
         } else {
             player.seekTo(0)
@@ -345,15 +361,29 @@ class Musicservice : Service() {
     }
 
     private fun updateMetadataForCurrent() {
-        val track = getCurrentTrack()
-        val metaBuilder = MediaMetadataCompat.Builder()
-            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track?.title ?: "")
-            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track?.artist ?: "")
-            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track?.album ?: "")
-            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,track?.albumArt ?: BitmapFactory.decodeResource(resources,R.drawable.default_album_art))
-        mediaSession.setMetadata(metaBuilder.build())
-        updatePlaybackState()
-        startForegroundIfNeeded()
+        CoroutineScope(Dispatchers.Main).launch {
+
+
+            val track = getCurrentTrack()
+            withContext(Dispatchers.IO){
+
+                val albumArt = imageLoader
+                    .execute(ImageRequest.Builder(this@Musicservice).data( track?.albumArtUri).allowHardware(false).build())
+                    .drawable?.toBitmapOrNull() ?:  BitmapFactory.decodeResource(resources,R.drawable.default_album_art)
+
+                withContext(Dispatchers.Main){
+
+                    val metaBuilder = MediaMetadataCompat.Builder()
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track?.title ?: "")
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track?.artist ?: "")
+                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track?.album ?: "")
+                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,albumArt)
+                    mediaSession.setMetadata(metaBuilder.build())
+                    updatePlaybackState()
+                    startForegroundIfNeeded()
+                }
+            }
+        }
     }
 
     private fun updatePlaybackState() {

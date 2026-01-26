@@ -10,6 +10,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.DisplayMetrics
+import androidx.recyclerview.widget.LinearSmoothScroller
+import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 
 // Small helpers used across services/activities to reduce duplicated boilerplate.
@@ -49,6 +52,38 @@ fun Context.dpToPx(dp: Int): Int {
     return (dp * resources.displayMetrics.density + 0.5f).toInt()
 }
 
+// 滑らかなスクロール（アニメーション）でアイテムを表示する
+
+fun RecyclerView.smoothScrollToCenter(position: Int, speedMsPerInch: Float = 150f) {
+    if (position < 0 || adapter == null || position >= adapter!!.itemCount) return
+
+    val lm = layoutManager ?: return
+
+    val scroller = object : LinearSmoothScroller(context) {
+        override fun calculateDtToFit(viewStart: Int, viewEnd: Int, boxStart: Int, boxEnd: Int, snapPreference: Int): Int {
+            // ビューのサイズとRecyclerView自体のサイズから、中央に配置するためのオフセットを計算
+            val viewSize = viewEnd - viewStart
+            val boxSize = if (lm.canScrollHorizontally()) width else height
+            val boxStartCenter = (boxSize - viewSize) / 2
+            return boxStartCenter - viewStart
+        }
+
+        override fun calculateSpeedPerPixel(displayMetrics: DisplayMetrics): Float {
+            // 指定したスピード（インチあたりのミリ秒）をピクセルあたりに変換
+            return speedMsPerInch / displayMetrics.densityDpi
+        }
+    }
+
+    scroller.targetPosition = position
+    post {
+        try {
+            lm.startSmoothScroll(scroller)
+        } catch (e: Exception) {
+            // 失敗時のフォールバック
+            smoothScrollToPosition(position)
+        }
+    }
+}
 fun pendingServiceIntent(context: Context, requestCode: Int, intent: Intent, minSdkForImmutable: Int = Build.VERSION_CODES.S): PendingIntent {
     return PendingIntent.getService(context, requestCode, intent, pendingIntentFlags(minSdkForImmutable))
 }

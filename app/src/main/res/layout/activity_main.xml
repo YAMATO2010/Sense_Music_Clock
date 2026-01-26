@@ -15,7 +15,7 @@
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerJackets"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@drawable/gradient1"
         android:clipToPadding="false"
@@ -23,7 +23,7 @@
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/linearLayout5"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
@@ -130,24 +130,24 @@
         android:id="@+id/linearLayout5"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="200dp"
-        android:layout_marginEnd="50dp"
         android:background="@drawable/gradient1"
-        android:clipToPadding="true"
         android:clipChildren="true"
+        android:clipToPadding="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/recyclerJackets"
+        app:layout_constraintEnd_toEndOf="parent"
+
+        android:layout_marginStart="200dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/recyclerJackets">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
 
         <FrameLayout
             android:id="@+id/titleContainer"
             android:layout_width="0dp"
             android:layout_height="30dp"
-            android:clipToPadding="true"
             android:clipChildren="true"
-            app:layout_constraintStart_toStartOf="parent"
+            android:clipToPadding="true"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
@@ -155,14 +155,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:gravity="center"
-                android:singleLine="true"
                 android:ellipsize="marquee"
-                android:marqueeRepeatLimit="marquee_forever"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:gravity="center"
                 android:includeFontPadding="false"
+                android:marqueeRepeatLimit="marquee_forever"
                 android:maxLines="1"
+                android:singleLine="true"
                 android:text="読み込み中"
                 android:textColor="@color/white" />
 
@@ -175,33 +175,33 @@
             android:layout_marginTop="6dp"
             android:alpha="0.95"
             android:background="#FFFFFF"
-            app:layout_constraintTop_toBottomOf="@id/titleContainer"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/titleContainer" />
 
         <FrameLayout
             android:id="@+id/etcContainer"
             android:layout_width="0dp"
             android:layout_height="30dp"
-            android:clipToPadding="true"
             android:clipChildren="true"
-            app:layout_constraintTop_toBottomOf="@id/titleDivider"
+            android:clipToPadding="true"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/titleDivider">
 
             <TextView
                 android:id="@+id/MusicEtcView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:singleLine="true"
-                android:gravity="center"
                 android:ellipsize="marquee"
-                android:marqueeRepeatLimit="marquee_forever"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:gravity="center"
                 android:includeFontPadding="false"
+                android:marqueeRepeatLimit="marquee_forever"
                 android:maxLines="1"
+                android:singleLine="true"
                 android:text="よみこみちゅう"
                 android:textColor="@color/white" />
 
@@ -210,45 +210,6 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Loading overlay: placed at end so it's on top of other views -->
-
-    <ImageButton
-        android:id="@+id/currentAlbumArt"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-
-        android:background="@drawable/gradient1"
-        android:padding="8dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/default_album_art"
-
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toEndOf="@+id/linearLayout5"
-        app:layout_constraintHorizontal_bias="0.0"
-
-
-
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
-
-    <ImageButton
-        android:id="@+id/GotoStandardPlayerButton"
-
-
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginEnd="16dp"
-        android:background="@drawable/gradient1"
-        android:padding="8dp"
-        android:scaleType="fitCenter"
-
-        android:src="@drawable/goto_st_pl"
-
-        app:layout_constraintBottom_toBottomOf="@+id/Settingsbutton"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/Settingsbutton"
-        app:layout_constraintVertical_bias="0.0"
-        app:layout_goneMarginEnd="10dp"
-       />
 
     <FrameLayout
         android:id="@+id/loadingOverlay"
@@ -294,5 +255,85 @@
 
         </LinearLayout>
     </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="@+id/Settingsbutton"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@drawable/gradient1"
+        app:layout_constraintStart_toEndOf="@+id/recyclerJackets"
+        app:layout_constraintTop_toTopOf="@+id/Settingsbutton"
+        android:layout_marginHorizontal="8dp">
+
+        <ImageButton
+            android:id="@+id/currentAlbumArt"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:padding="8dp"
+            app:layout_constraintDimensionRatio="1:1"
+            android:scaleType="fitCenter"
+            android:background="@null"
+            android:src="@drawable/default_album_art" />
+
+        <ImageButton
+            android:id="@+id/GotoStandardPlayerButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:background="@null"
+            app:layout_constraintDimensionRatio="1:1"
+            android:scaleType="fitCenter"
+            android:src="@drawable/goto_st_pl"
+
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@drawable/gradient1"
+        android:layout_margin="5dp"
+        app:layout_constraintStart_toEndOf="@+id/recyclerJackets"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+
+
+
+
+            <EditText
+
+                android:id="@+id/search_keyword_input"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:maxLines="1"
+
+                android:textColor="@color/white"
+                android:layout_weight="4"
+                android:autoSizeTextType="uniform"
+                android:hint="楽曲検索"
+                />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/SearchResultView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="4"
+            tools:layout_editor_absoluteX="201dp"
+            tools:layout_editor_absoluteY="257dp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

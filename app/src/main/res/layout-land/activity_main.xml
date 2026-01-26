@@ -15,16 +15,11 @@
         android:id="@+id/recyclerJackets"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="16dp"
+        android:background="@drawable/gradient1"
         android:clipToPadding="false"
         android:orientation="horizontal"
-        android:background="@drawable/gradient1"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout3"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout4"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout3" />
 
     <Button
         android:id="@+id/Settingsbutton"
@@ -59,6 +54,46 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/Settingsbutton"
         app:layout_constraintTop_toTopOf="parent">
+        <LinearLayout
+            android:layout_weight="2"
+            android:layout_width="0dp"
+            android:layout_margin="5dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@+id/linearLayout5"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:background="@drawable/gradient1"
+            app:layout_constraintStart_toEndOf="@+id/recyclerJackets"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:orientation="horizontal"
+                android:layout_weight="2">
+
+
+
+                <EditText
+                    android:id="@+id/search_keyword_input"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:textColor="@color/white"
+                    android:layout_weight="4"
+                    android:hint="楽曲検索"
+                    android:maxLines="1"
+                    android:textColorHint="@color/white_glass"
+                    android:autoSizeTextType="uniform"
+                    />
+
+            </LinearLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/SearchResultView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="4"
+
+          />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/currentAlbumArt"
@@ -74,10 +109,12 @@
 
         <TextClock
             android:id="@+id/textClock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="3"
 
+            android:autoSizeTextType="uniform"
+            android:gravity="center"
 
             android:fontFamily="sans-serif-thin"
             android:format24Hour="HH:mm"

@@ -25,5 +25,9 @@
             app:showSeekBarValue="true"
             app:updatesContinuously="true" />
     </PreferenceCategory>
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="tile_title_display"
+        android:title="タイルのタイトル表示" />
 
 </PreferenceScreen>

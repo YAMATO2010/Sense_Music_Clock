@@ -12,25 +12,45 @@
         android:layout_width="160dp"
         android:layout_height="160dp"
         android:layout_margin="4dp"
-
+        android:background="@color/white_glass_item_square"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
 
-
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
 
 
             <ImageButton
                 android:id="@+id/artwork"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="130dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginHorizontal="20dp"
+
                 android:background="@null"
+                android:paddingBottom="5dp"
                 android:scaleType="fitCenter"
-                />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
+            <TextView
+                android:id="@+id/titleTextView"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
 
+                android:gravity="center"
+                android:textColor="@color/black"
+                android:layout_marginBottom="5dp"
+                android:textSize="12sp"
+
+                app:layout_constraintTop_toBottomOf="@+id/artwork" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
 
     </FrameLayout>

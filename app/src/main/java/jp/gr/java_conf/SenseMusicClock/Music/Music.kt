@@ -11,7 +11,7 @@ interface Track {
      val title: String  //トラックタイトル
      val album: String  //アルバムタイトル
      val artist: String  //アーティスト名
-     var albumArt : Bitmap?
+     var albumArtUri : Uri?
 
      var uuid : UUID
  }
@@ -37,10 +37,9 @@ data class SpotifyTrack (
     override val title: String , //トラックタイトル
     override val album: String , //アルバムタイトル
     override val artist: String  ,//アーティスト名
-    override var albumArt : Bitmap?,
+    override var albumArtUri : Uri?,
     override var uuid: UUID = fastRandomUUID(),
     val trackId: String?,
-    val albumArtUri: String?
 
 
 
@@ -52,7 +51,7 @@ data class localTrack(
     override val title: String , //トラックタイトル
     override val album: String , //アルバムタイトル
     override val artist: String  ,//アーティスト名
-    override var albumArt : Bitmap?,
+    override var albumArtUri : Uri?,
     override var uuid: UUID = fastRandomUUID(),
     val id: Long , //コンテントプロバイダに登録されたID
     val albumId: Long, //同じくトラックのアルバムのID

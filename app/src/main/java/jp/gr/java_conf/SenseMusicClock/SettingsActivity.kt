@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
@@ -55,7 +56,7 @@ class SettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // 明示的に名前付き SharedPreferences を使う（XML の属性に依存せず確実に同じ prefs を使用する）
             preferenceManager.sharedPreferencesName = getString(SHAREDPREFERENCES_NAME)
-            preferenceManager.sharedPreferencesMode = MODE_PRIVATE
+            preferenceManager.sharedPreferencesMode = android.content.Context.MODE_PRIVATE
 
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
@@ -65,20 +66,18 @@ class SettingsActivity : AppCompatActivity() {
                 (activity as? SettingsActivity)?.launchDirectoryPicker()
                 true
             }
-            val reloadPref: Preference? = findPreference("reLoad_Tracks")
+
+            val reloadPref: Preference? = findPreference(getString(ReLoad_Tracks_KEY))
             reloadPref?.setOnPreferenceClickListener {
-                Log.d("SettingsFragment", "reLoad_Tracks clicked")
-                val prefs = preferenceManager.sharedPreferences
-                val current = prefs?.getBoolean(reloadPref.key, false)
-                val newValue = !(current ?: false)
+                val pref = preferenceManager.sharedPreferences
+                val nowTF = !(pref?.getBoolean(getString(ReLoad_Tracks_KEY),false) ?: false)
 
-                // ② 明示的に保存（これが重要）
-                prefs?.edit()
-                    ?.putBoolean(reloadPref.key, newValue)
-                    ?.apply()
-
-                true // 自動処理はここで止める
+                pref?.edit {
+                    putBoolean(getString(ReLoad_Tracks_KEY), nowTF)
+                }
                 true
+
+
             }
 
 
