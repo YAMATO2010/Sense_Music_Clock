@@ -2,19 +2,49 @@ package jp.gr.java_conf.SenseMusicClock
 
 
 
-import jp.gr.java_conf.SenseMusicClock.localTrack
 import android.content.ContentUris
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
 
 object LocalMusicRepository {
+
+    // 追加: 指定された相対パス群（または URI ベースのパス）とファイル名で絞り込む selection/args を生成する
+    // - paths: RELATIVE_PATH に含めたいフォルダパスのリスト（例: "Music/SMC"）
+    // - fileName: ファイル名での絞り込み（部分一致）。null または空文字ならファイル名条件は追加されない
+    // 戻り値: Pair(selectionString, selectionArgsArray)
+    fun buildPathAndFilenameSelection(paths: List<String>, fileName: String?): Pair<String, Array<String>> {
+        val parts = mutableListOf<String>()
+        val args = mutableListOf<String>()
+
+        for (p in paths) {
+            // RELATIVE_PATH はディレクトリ部分を持つので先頭/末尾を整形して部分一致で検索
+            parts.add("(${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?)")
+            args.add("${p.removeSuffix("/")}%")
+
+            // DATA（フルパス）側でもフォルダを含むか確認する（互換性のため）
+            parts.add("(${MediaStore.Audio.Media.DATA} LIKE ?)")
+            args.add("%/${p.removePrefix("/")}%")
+        }
+
+        // fileName が指定されていれば DISPLAY_NAME と DATA の両方で部分一致を追加
+        val name = fileName?.takeIf { it.isNotBlank() }
+        if (name != null) {
+            parts.add("(${MediaStore.Audio.Media.DISPLAY_NAME} LIKE ?)")
+            args.add("%${name}%")
+
+            parts.add("(${MediaStore.Audio.Media.DATA} LIKE ?)")
+            args.add("%${name}%")
+        }
+
+        val selection = if (parts.isEmpty()) "1=1" else parts.joinToString(" OR ")
+        return selection to args.toTypedArray()
+    }
+
+
     suspend fun loadLocalMusicFromAppDir(
         context: Context,
         UserRelativePaths: List<String> = emptyList()
@@ -84,7 +114,7 @@ object LocalMusicRepository {
                             .buildUpon()
                             .appendPath(albumId.toString())
                             .build()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                                 null
                             }
 

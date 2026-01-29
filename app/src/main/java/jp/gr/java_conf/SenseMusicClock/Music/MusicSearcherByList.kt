@@ -1,29 +1,31 @@
 package jp.gr.java_conf.SenseMusicClock.Music
 
-import android.app.Activity
+
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
-import com.google.android.material.textfield.TextInputEditText
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.SpotifyTrack
 import jp.gr.java_conf.SenseMusicClock.Track
 import jp.gr.java_conf.SenseMusicClock.localTrack
-import jp.gr.java_conf.SenseMusicClock.smoothScrollToCenter
-import java.util.UUID
+import jp.gr.java_conf.SenseMusicClock.smoothScrollToPositionWithSkipAnimationCheck
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // --------------------
 // Top-level helpers
@@ -41,14 +43,15 @@ fun keysForTrackTopLevel(t: Track): List<String> {
         }
         keys.add("U:${t.uuid}")
         keys.add("M:${t.title}|${t.artist}|${t.album}")
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+    }
     return keys
 }
 
 /**
  * Build key->original-index map from a list of IndexedValue<Track>.
  */
-fun buildPositionMapFromIndexedTopLevel(indexed: List<kotlin.collections.IndexedValue<Track>>): Map<String, Int> {
+fun buildPositionMapFromIndexedTopLevel(indexed: List<IndexedValue<Track>>): Map<String, Int> {
     val m = mutableMapOf<String, Int>()
     for (iv in indexed) {
         val idx = iv.index
@@ -61,17 +64,19 @@ fun buildPositionMapFromIndexedTopLevel(indexed: List<kotlin.collections.Indexed
 }
 
 class MusicSearcherByList(
-    private val activity: Activity,
+    private val activity: AppCompatActivity,
     private val recyclerView: RecyclerView,
     private val initialTracks: List<Track> = emptyList(),
     private val editText: EditText,
-    private val recyclerJackets : RecyclerView? = null
+    private val recyclerJackets: RecyclerView? = null
 
 
 ) {
 
     private var targetTrackPositions: Map<String, Int> = mutableMapOf()
     private var targetTracks: List<Track> = emptyList()
+
+    private var searchJob: Job? = null
 
     fun ini() {
         Log.i("MusicSearcher", "ini: initialTracks=${initialTracks.size}")
@@ -87,134 +92,192 @@ class MusicSearcherByList(
             Log.w("MusicSearcher", "failed to configure recyclerView", e)
         }
         // 共通検索処理にまとめる
-        fun applySearch(keyword: String) {
-            Log.d("MusicSearcher", "applySearch: keyword='${keyword}'")
-             if (keyword.isEmpty()) {
-                 // 空キーワードなら元のリスト（初期トラック一覧）を表示する
-                 targetTracks = initialTracks
-                 val indexedAll = initialTracks.withIndex().toList()
-                 targetTrackPositions = buildPositionMapFromIndexedTopLevel(indexedAll)
-             } else {
-                 val results = initialTracks.withIndex()
-                     .filter { (_, track) ->
-                         track.title.contains(keyword, ignoreCase = true) ||
-                                 track.artist.contains(keyword, ignoreCase = true) ||
-                                 track.album.contains(keyword, ignoreCase = true) ||
-                                 (if (track is localTrack) track.path.contains(keyword, ignoreCase = true) else false)
-                     }
-                 targetTracks = results.map { it.value }
-                 // build mapping from the filtered results (keys -> original index)
-                 targetTrackPositions = buildPositionMapFromIndexedTopLevel(results)
-             }
+        fun applySearch() {
+            searchJob?.cancel()
 
-            // ログ: mapping のサンプルを出す（最大5件）
-            try {
-                val sample = targetTrackPositions.entries.take(5).joinToString(", ") { (k, v) -> "${k}=>${v}" }
-                Log.d("MusicSearcher", "applySearch: sampleMapping=[$sample]")
-            } catch (_: Exception) {}
+            searchJob = activity.lifecycleScope.launch {
+                delay(500)
 
-             Log.d("MusicSearcher", "applySearch: results=${targetTracks.size} positions=${targetTrackPositions.size}")
+                val keyword = editText.text.toString().trim()
+                Log.d("MusicSearcher", "applySearch: keyword='${keyword}'")
+                if (keyword.isEmpty()) {
+                    // 空キーワードなら何も表示しない
+                    targetTracks = emptyList()
+                    val indexedAll = emptyList<IndexedValue<Track>>()
+                    targetTrackPositions = buildPositionMapFromIndexedTopLevel(indexedAll)
+                } else {
+                    val results = initialTracks.withIndex()
+                        .filter { (_, track) ->
+                            track.title.contains(keyword, ignoreCase = true) ||
+                                    track.artist.contains(keyword, ignoreCase = true) ||
+                                    track.album.contains(keyword, ignoreCase = true) ||
+                                    (if (track is localTrack) track.path.contains(
+                                        keyword,
+                                        ignoreCase = true
+                                    ) else false)
+                        }
+                    targetTracks = results.map { it.value }
+                    // build mapping from the filtered results (keys -> original index)
+                    targetTrackPositions = buildPositionMapFromIndexedTopLevel(results)
+                }
 
-             // adapter を更新（必ず実行）
-             val existing = recyclerView.adapter as? SearchMusicAdapter
-             if (existing != null) {
-                 Log.d("MusicSearcher", "applySearch: updating existing SearchMusicAdapter with ${targetTracks.size} items")
-                 // ensure update runs on the RecyclerView's UI thread queue to avoid timing/layout races
-                 recyclerView.post {
-                     Log.d("MusicSearcher", "applySearch: posting setItems to recyclerView")
-                     existing.setItems(targetTracks, targetTrackPositions)
-                     // fallback check: if submitList/DIFF didn't update the visible itemCount shortly after, recreate adapter
-                     recyclerView.postDelayed({
-                         try {
-                             val count = existing.itemCount
-                             val childCount = recyclerView.childCount
-                             val w = recyclerView.width
-                             val h = recyclerView.height
-                             val adapterName = recyclerView.adapter?.javaClass?.simpleName ?: "null"
-                             Log.d("MusicSearcher", "applySearch: post-check adapter.itemCount=$count expected=${targetTracks.size} childCount=$childCount width=$w height=$h adapterClass=$adapterName")
-                             if (targetTracks.isNotEmpty() && count == 0) {
-                                Log.w("MusicSearcher", "applySearch: adapter appears empty after update -> recreating adapter as fallback")
-                                recyclerView.adapter = SearchMusicAdapter(
-                                    initialItems = targetTracks,
-                                    context = activity,
-                                    ItemPositionMap = targetTrackPositions,
-                                    placeholderRes = R.drawable.default_album_art,
-                                    onItemClick = { track ->
-                                        val originalPosition2 = (recyclerView.adapter as? SearchMusicAdapter)?.getOriginalItemPosition(track)
-                                        Log.d("MusicSearcher", "fallback onItemClick: clicked=${track.title} uuid=${track.uuid} resolvedOriginalPos=$originalPosition2")
+                // ログ: mapping のサンプルを出す（最大5件）
+                try {
+                    val sample = targetTrackPositions.entries.take(5)
+                        .joinToString(", ") { (k, v) -> "${k}=>${v}" }
+                    Log.d("MusicSearcher", "applySearch: sampleMapping=[$sample]")
+                } catch (_: Exception) {
+                }
 
-                                        if (recyclerJackets != null) recyclerJackets.post { if (originalPosition2 != null) recyclerJackets.smoothScrollToCenter(originalPosition2,5f) }
-                                    }
-                                )
-                             }
-                         } catch (_: Exception) {}
-                     }, 200L)
-                 }
-              } else {
-                 Log.d("MusicSearcher", "applySearch: creating new SearchMusicAdapter with ${targetTracks.size} items")
-                // create adapter with robust onItemClick that posts scrolls to the recyclerJackets UI thread
-                recyclerView.adapter = SearchMusicAdapter(
-                    initialItems = targetTracks,
-                    context = activity,
-                    ItemPositionMap = targetTrackPositions,
-                    placeholderRes = R.drawable.default_album_art,
-                    onItemClick = { track ->
-                        val originalPosition = (recyclerView.adapter as? SearchMusicAdapter)?.getOriginalItemPosition(track)
-                        Log.d("MusicSearcher", "onItemClick: clicked=${track.title} uuid=${track.uuid} resolvedOriginalPos=$originalPosition")
-                        // visual feedback to confirm click was received
-
-                        // diagnostic: log recyclerJackets state
-                        try {
-                            val hasRJ = recyclerJackets != null
-                            val rjCount = recyclerJackets?.adapter?.itemCount ?: -1
-                            Log.d("MusicSearcher", "onItemClick: recyclerJackets_present=$hasRJ recyclerJackets_adapter_count=$rjCount")
-                        } catch (_: Exception) {}
-                         if (recyclerJackets != null) {
-                             recyclerJackets.post {
-                                 if (originalPosition != null) {
-                                     recyclerJackets.smoothScrollToCenter(originalPosition,5f)
-                                 } else {
-                                    Log.w("MusicSearcher", "originalPosition is null for clicked track; attempting fallback search by metadata")
-                                    // fallback: try metadata key
-                                    val fallbackIndex = initialTracks.indexOfFirst { it.title == track.title && it.artist == track.artist && it.album == track.album }
-                                    Log.d("MusicSearcher", "fallbackIndex=$fallbackIndex")
-
-                                    try {
-                                        val hasRJ2 = recyclerJackets != null
-                                        val rjCount2 = recyclerJackets?.adapter?.itemCount ?: -1
-                                        Log.d("MusicSearcher", "onItemClick:fallback: recyclerJackets_present=$hasRJ2 recyclerJackets_adapter_count=$rjCount2")
-                                    } catch (_: Exception) {}
-                                     if (fallbackIndex >= 0) recyclerJackets.smoothScrollToCenter(fallbackIndex,5f)
-                                 }
-                             }
-                         }
-                     }
+                Log.d(
+                    "MusicSearcher",
+                    "applySearch: results=${targetTracks.size} positions=${targetTrackPositions.size}"
                 )
-              }
 
-         }
+                // adapter を更新（必ず実行）
+                val existing = recyclerView.adapter as? SearchMusicAdapter
+                if (existing != null) {
+                    Log.d(
+                        "MusicSearcher",
+                        "applySearch: updating existing SearchMusicAdapter with ${targetTracks.size} items"
+                    )
+                    // ensure update runs on the RecyclerView's UI thread queue to avoid timing/layout races
+                    recyclerView.post {
+                        Log.d("MusicSearcher", "applySearch: posting setItems to recyclerView")
+                        existing.setItems(targetTracks, targetTrackPositions)
+                        // fallback check: if submitList/DIFF didn't update the visible itemCount shortly after, recreate adapter
+                        recyclerView.postDelayed({
+                            try {
+                                val count = existing.itemCount
+                                val childCount = recyclerView.childCount
+                                val w = recyclerView.width
+                                val h = recyclerView.height
+                                val adapterName =
+                                    recyclerView.adapter?.javaClass?.simpleName ?: "null"
+                                Log.d(
+                                    "MusicSearcher",
+                                    "applySearch: post-check adapter.itemCount=$count expected=${targetTracks.size} childCount=$childCount width=$w height=$h adapterClass=$adapterName"
+                                )
+                                if (targetTracks.isNotEmpty() && count == 0) {
+                                    Log.w(
+                                        "MusicSearcher",
+                                        "applySearch: adapter appears empty after update -> recreating adapter as fallback"
+                                    )
+                                    recyclerView.adapter = SearchMusicAdapter(
+                                        initialItems = targetTracks,
+                                        context = activity,
+                                        ItemPositionMap = targetTrackPositions,
+                                        placeholderRes = R.drawable.default_album_art,
+                                        onItemClick = { track ->
+                                            val originalPosition2 =
+                                                (recyclerView.adapter as? SearchMusicAdapter)?.getOriginalItemPosition(
+                                                    track
+                                                )
+                                            Log.d(
+                                                "MusicSearcher",
+                                                "fallback onItemClick: clicked=${track.title} uuid=${track.uuid} resolvedOriginalPos=$originalPosition2"
+                                            )
+
+                                            if (recyclerJackets != null) recyclerJackets.post {
+                                                if (originalPosition2 != null) {
+                                                    activity.lifecycleScope.launch {
+                                                        recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
+                                                            originalPosition2,
+                                                            5f
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            } catch (_: Exception) {
+                            }
+                        }, 200L)
+                    }
+                } else {
+                    Log.d(
+                        "MusicSearcher",
+                        "applySearch: creating new SearchMusicAdapter with ${targetTracks.size} items"
+                    )
+                    // create adapter with robust onItemClick that posts scrolls to the recyclerJackets UI thread
+                    recyclerView.adapter = SearchMusicAdapter(
+                        initialItems = targetTracks,
+                        context = activity,
+                        ItemPositionMap = targetTrackPositions,
+                        placeholderRes = R.drawable.default_album_art,
+                        onItemClick = { track ->
+                            val originalPosition =
+                                (recyclerView.adapter as? SearchMusicAdapter)?.getOriginalItemPosition(
+                                    track
+                                )
+                            Log.d(
+                                "MusicSearcher",
+                                "onItemClick: clicked=${track.title} uuid=${track.uuid} resolvedOriginalPos=$originalPosition"
+                            )
+                            // visual feedback to confirm click was received
+
+                            // diagnostic: log recyclerJackets state
+                            try {
+                                val hasRJ = recyclerJackets != null
+                                val rjCount = recyclerJackets?.adapter?.itemCount ?: -1
+                                Log.d(
+                                    "MusicSearcher",
+                                    "onItemClick: recyclerJackets_present=$hasRJ recyclerJackets_adapter_count=$rjCount"
+                                )
+                            } catch (_: Exception) {
+                            }
+                            if (recyclerJackets != null) {
+                                recyclerJackets.post {
+                                    if (originalPosition != null) {
+                                        activity.lifecycleScope.launch {
+                                            recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
+                                                originalPosition,
+                                                5f
+                                            )
+                                        }
+                                    } else {
+                                        Log.w(
+                                            "MusicSearcher",
+                                            "originalPosition is null for clicked track; attempting fallback search by metadata"
+                                        )
+                                        // fallback: try metadata key
+                                        val fallbackIndex =
+                                            initialTracks.indexOfFirst { it.title == track.title && it.artist == track.artist && it.album == track.album }
+                                        Log.d("MusicSearcher", "fallbackIndex=$fallbackIndex")
 
 
+                                        if (fallbackIndex >= 0) {
+                                            activity.lifecycleScope.launch {
+                                                recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
+                                                    fallbackIndex,
+                                                    5f
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
 
-         // 入力変更でも即時検索（ユーザーが即時反映を期待するため）
-         editText.addTextChangedListener {
-             applySearch(it?.toString() ?: "")
-         }
-
-         // 初期表示は元のトラック一覧をセット
-        applySearch("")
-
-     }
+        }
 
 
+        // 入力変更でも即時検索（ユーザーが即時反映を期待するため）
+        editText.addTextChangedListener {
+            applySearch()
+        }
 
- }
+        // 初期表示は元のトラック一覧をセット
+        applySearch()
+
+    }
 
 
-
-
-
-
+}
 
 
 class SearchMusicAdapter(
@@ -242,45 +305,46 @@ class SearchMusicAdapter(
 
         val artwork: ImageView = view.findViewById(R.id.resultAlbumArtImageView)
 
-        val title : TextView = view.findViewById(R.id.resultTrackTitleTextView)
+        val title: TextView = view.findViewById(R.id.resultTrackTitleTextView)
 
-        val container : LinearLayout = view.findViewById(R.id.musicResultItemContainer)
+        val container: LinearLayout = view.findViewById(R.id.musicResultItemContainer)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.search_music_result, parent, false)
+        val v =
+            LayoutInflater.from(parent.context).inflate(R.layout.search_music_result, parent, false)
         return ViewHolder(v)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-         val track = getItem(position)
+        val track = getItem(position)
 
-         // 再利用時の残存 drawable/リスナを切る
-         holder.artwork.setImageDrawable(null)
-         holder.artwork.setOnClickListener(null)
-         holder.artwork.contentDescription = ""
+        // 再利用時の残存 drawable/リスナを切る
+        holder.artwork.setImageDrawable(null)
+        holder.artwork.setOnClickListener(null)
+        holder.artwork.contentDescription = ""
 
-         holder.artwork.load(track.albumArtUri){
-             crossfade(true)
-             placeholder(R.drawable.default_album_art)
-             error(R.drawable.default_album_art)
-         }
+        holder.artwork.load(track.albumArtUri) {
+            crossfade(true)
+            placeholder(R.drawable.default_album_art)
+            error(R.drawable.default_album_art)
+        }
 
-         holder.artwork.contentDescription = track.title
-         holder.title.text = track.title
-         // ensure container and the full itemView are clickable (some layouts may intercept clicks)
-         holder.container.isClickable = true
-         holder.container.setOnClickListener {
+        holder.artwork.contentDescription = track.title
+        holder.title.text = track.title
+        // ensure container and the full itemView are clickable (some layouts may intercept clicks)
+        holder.container.isClickable = true
+        holder.container.setOnClickListener {
             Log.i("SearchMusicAdapter", "container clicked: ${track.title} uuid=${track.uuid}")
             onItemClick(track)
-         }
-         // also attach listener to itemView itself to be robust against view-hierarchy click interception
-         holder.itemView.isClickable = true
-         holder.itemView.setOnClickListener {
+        }
+        // also attach listener to itemView itself to be robust against view-hierarchy click interception
+        holder.itemView.isClickable = true
+        holder.itemView.setOnClickListener {
             Log.i("SearchMusicAdapter", "itemView clicked: ${track.title} uuid=${track.uuid}")
             onItemClick(track)
-         }
-     }
+        }
+    }
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
@@ -288,7 +352,6 @@ class SearchMusicAdapter(
         holder.artwork.setOnClickListener(null)
         holder.title.setText(null)
     }
-
 
 
     fun getOriginalItemPosition(track: Track?): Int? {

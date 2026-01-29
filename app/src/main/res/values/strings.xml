@@ -26,5 +26,6 @@
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="TILE_TITLE_DISPLAY">tile_title_display</string>
     <string name="album_art">album art</string>
+    <string name="PLAYMODE_LOOP_KEY">playMode_loop</string>
 
 </resources>

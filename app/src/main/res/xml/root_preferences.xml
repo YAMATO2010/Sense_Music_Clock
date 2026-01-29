@@ -29,5 +29,9 @@
         android:defaultValue="false"
         android:key="tile_title_display"
         android:title="タイルのタイトル表示" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="@string/PLAYMODE_LOOP_KEY"
+        android:title="一曲ループ" />
 
 </PreferenceScreen>

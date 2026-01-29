@@ -17,7 +17,6 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import jp.gr.java_conf.SenseMusicClock.MainViewModel
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
 import androidx.recyclerview.widget.GridLayoutManager
@@ -29,7 +28,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import android.graphics.Rect
 import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 
 import kotlinx.coroutines.launch
@@ -37,7 +35,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.content.pm.ApplicationInfo
 import app_dir
 import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
 import coil.load
@@ -634,23 +631,24 @@ class MainActivity : AppCompatActivity() {
          }
      }
 
-    fun scrollToTrack(adapter: JacketAdapter? =
-                          if (::jacketAdapter.isInitialized) {
-                              jacketAdapter
-                          }
-                          else if (::binding.isInitialized){
-                              binding.recyclerJackets.adapter as? JacketAdapter
-                          } else {
-                              null
-                                 },track: Track? = musicService?.getCurrentTrack())
+    private fun scrollToTrack(recyclerView: RecyclerView? = binding.recyclerJackets,track: Track? = musicService?.getCurrentTrack())
     {
+        val adapter = recyclerView?.adapter as? JacketAdapter
 
         if (!musicBound) return
         if (adapter == null)      return
         if (track == null)        return
+        val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+        val firstVisible = layoutManager.findFirstVisibleItemPosition()
 
         val scrollPos = adapter.getItemPosition(track)
-        if (scrollPos != null) binding.recyclerJackets.smoothScrollToPosition(scrollPos)
+
+        //70ぐらい違うと結構速い
+        val speed = calculateScrollSpeed(firstVisible,scrollPos ?: (firstVisible -70))
+        lifecycleScope.launch {
+
+        if (scrollPos != null) recyclerView.smoothScrollToPositionWithSkipAnimationCheck(scrollPos,speed)
+        }
 
 
 

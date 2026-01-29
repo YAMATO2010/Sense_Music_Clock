@@ -7,9 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
-
 import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.Build
@@ -35,7 +33,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
 import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryManager
 import kotlinx.coroutines.flow.onStart
@@ -44,18 +41,22 @@ import kotlinx.coroutines.withContext
 class Musicservice : Service() {
     inner class LocalBinder : Binder() {
         fun getService(): Musicservice = this@Musicservice
+
         // 追加: Activity 側で MediaSession トークンを取得できるようにする
         fun getSessionToken(): MediaSessionCompat.Token = mediaSession.sessionToken
     }
+
     private val _tracks = MutableStateFlow<List<localTrack>>(emptyList())
 
     val tracksFlow: StateFlow<List<localTrack>> = _tracks.asStateFlow()
+
     // 互換用に現在値を参照するプロパティ
     val Tracks: List<localTrack> get() = _tracks.value
 
     private val _currentTrack = MutableStateFlow<Track?>(null)
 
     val currentTracksFlow: StateFlow<Track?> = _currentTrack.asStateFlow()
+
     // 互換用に現在値を参照するプロパティ
     val current_Track: Track? get() = _currentTrack.value
 
@@ -70,6 +71,7 @@ class Musicservice : Service() {
     private var queue: List<localTrack> = emptyList()
     private var currentIndex: Int = 0
     private var nowSetQueue = false
+
     // サービス用コルーチンスコープ
     private val serviceJob = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + serviceJob)
@@ -97,17 +99,16 @@ class Musicservice : Service() {
                 updatePlaybackState()
                 startForegroundIfNeeded()
             }
+
             override fun onPlaybackStateChanged(playbackState: Int) {
                 updatePlaybackState()
             }
+
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                if (nowSetQueue ) return
+                if (nowSetQueue) return
                 currentIndex = player.currentMediaItemIndex
                 _currentTrack.value = getCurrentTrack()
-
-
-
-                        updateMetadataForCurrent()
+                updateMetadataForCurrent()
 
             }
         })
@@ -118,7 +119,10 @@ class Musicservice : Service() {
         scope.launch {
 
             // Use the app's named SharedPreferences (same as TargetDirectoryManager)
-            val prefs = this@Musicservice.getSharedPreferences(getString(SHAREDPREFERENCES_NAME), MODE_PRIVATE)
+            val prefs = this@Musicservice.getSharedPreferences(
+                getString(SHAREDPREFERENCES_NAME),
+                MODE_PRIVATE
+            )
             Log.d("Musicservice", "prefs obtained (default) hash=${prefs.hashCode()}")
             // デバッグ: 現在の SharedPreferences 全エントリを出力（キーと値の型を確認する）
             Log.d("Musicservice", "prefs.all = ${prefs.all}")
@@ -134,43 +138,87 @@ class Musicservice : Service() {
 
             // 音量設定の監視
             launch {
-                Log.d("Musicservice", "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}")
+                Log.d(
+                    "Musicservice",
+                    "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}"
+                )
                 SharedPrefsFlow.observeInt(prefs, getString(VOLUME_ADJUSTMENT)).collect { value ->
-                    val vol = (value.coerceIn(0, 100))  / 100.0f
+                    val vol = (value.coerceIn(0, 100)) / 100.0f
                     player.volume = vol
                     Log.i("Musicservice", "Volume adjusted to $value -> $vol")
                 }
+            }
+            launch {
+                SharedPrefsFlow.observeBoolean(prefs, getString(PLAYMODE_LOOP_KEY))
+                    .collect { value ->
+                        if (value == null) return@collect
+                        player.repeatMode =
+                            if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
+                        Log.i(
+                            "Musicservice",
+                            "Playmode loop set to $value -> repeatMode=${player.repeatMode}"
+                        )
+                    }
             }
 
 
             // ディレクトリリストの監視
             launch {
-                Log.d("Musicservice", "launching observeString collector for key=${getString(MUSIC_DIR_RELATIVE_PATHS_KEY)}")
-                SharedPrefsFlow.observeString(prefs, getString(MUSIC_DIR_RELATIVE_PATHS_KEY)).collect { value ->
-                    Log.d("Musicservice", "observeString.collect emitted value=$value")
-                    val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                    val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice, UserRelativePaths)
-                    _tracks.value = loaded
-                    setQueue(Tracks)
-                }
+                Log.d(
+                    "Musicservice",
+                    "launching observeString collector for key=${
+                        getString(MUSIC_DIR_RELATIVE_PATHS_KEY)
+                    }"
+                )
+                SharedPrefsFlow.observeString(prefs, getString(MUSIC_DIR_RELATIVE_PATHS_KEY))
+                    .collect { value ->
+                        Log.d("Musicservice", "observeString.collect emitted value=$value")
+                        val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                        val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(
+                            this@Musicservice,
+                            UserRelativePaths
+                        )
+                        _tracks.value = loaded
+                        setQueue(Tracks)
+                    }
             }
 
             launch {
                 SharedPrefsFlow.observeBoolean(prefs, getString(ReLoad_Tracks_KEY), false)
-                    .onStart { Log.d("Musicservice", "launching observeBoolean collector for key=${getString(ReLoad_Tracks_KEY)}") }
+                    .onStart {
+                        Log.d(
+                            "Musicservice",
+                            "launching observeBoolean collector for key=${
+                                getString(
+                                    ReLoad_Tracks_KEY
+                                )
+                            }"
+                        )
+                    }
                     .collect { value ->
-                    Log.i("Musicservice", "reload music directory requested (prefs key=${getString(ReLoad_Tracks_KEY)}) -> reloading")
-                    val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                    val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice, UserRelativePaths)
-                    _tracks.value = loaded
-                    setQueue(Tracks)
-                }
+                        Log.i(
+                            "Musicservice",
+                            "reload music directory requested (prefs key=${
+                                getString(ReLoad_Tracks_KEY)
+                            }) -> reloading"
+                        )
+                        val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                        val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(
+                            this@Musicservice,
+                            UserRelativePaths
+                        )
+                        _tracks.value = loaded
+                        setQueue(Tracks)
+                    }
             }
 
 
             try {
                 val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(this@Musicservice,UserRelativePaths)
+                val loaded = LocalMusicRepository.loadLocalMusicFromAppDir(
+                    this@Musicservice,
+                    UserRelativePaths
+                )
                 _tracks.value = loaded
                 setQueue(Tracks)
             } catch (e: Exception) {
@@ -179,9 +227,7 @@ class Musicservice : Service() {
         }
 
 
-
-     }
-
+    }
 
 
     override fun onBind(intent: Intent?): IBinder? = binder
@@ -196,31 +242,40 @@ class Musicservice : Service() {
 
     fun setQueue(tracks: List<localTrack>, startIndex: Int = 0) {
         nowSetQueue = true
-        Log.i("Musicservice", "setQueue called with ${tracks.size} tracks, startIndex=$startIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+        Log.i(
+            "Musicservice",
+            "setQueue called with ${tracks.size} tracks, startIndex=$startIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+        )
         queue = tracks
         currentIndex = startIndex.coerceIn(0, tracks.size - 1)
 
 
 
 
-        Log.i("Musicservice", "setQueue: size=${tracks.size} startIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+        Log.i(
+            "Musicservice",
+            "setQueue: size=${tracks.size} startIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+        )
         player.stop()
         player.clearMediaItems()
 
         tracks.map { it.uri }
-            .forEach {  uri ->
+            .forEach { uri ->
                 val mediaItem = MediaItem.fromUri(uri)
                 player.addMediaItem(mediaItem)
             }
 
         player.prepare()
         if (player.mediaItemCount > 0) {
-            Log.i("Musicservice", "seeking to index $currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+            Log.i(
+                "Musicservice",
+                "seeking to index $currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+            )
             player.seekTo(currentIndex, 0)
         }
 
 
-                updateMetadataForCurrent()
+        updateMetadataForCurrent()
 
         nowSetQueue = false
     }
@@ -228,17 +283,29 @@ class Musicservice : Service() {
     fun play() {
 
         if (player.mediaItemCount == 0 && queue.isNotEmpty()) {
-            Log.i("Musicservice", "play: setting queue before play./currentIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+            Log.i(
+                "Musicservice",
+                "play: setting queue before play./currentIndex=$currentIndex" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+            )
             setQueue(queue, currentIndex)
         }
 
-        Log.i("player_beforePlay" , "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+        Log.i(
+            "player_beforePlay",
+            "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+        )
 
         player.play()
-        Log.i("player" , "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+        Log.i(
+            "player",
+            "currentIndex :$currentIndex / playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+        )
     }
 
-    fun pause() { player.pause() }
+    fun pause() {
+        player.pause()
+    }
+
     fun stopPlayback() {
         player.stop()
         stopForeground(true)
@@ -259,11 +326,11 @@ class Musicservice : Service() {
 
     fun skipToPrevious() {
 
-        if (player.hasPreviousMediaItem()) {
+        if (player.hasPreviousMediaItem() && player.currentPosition < 7000) {
             player.seekToPreviousMediaItem()
             currentIndex = player.currentMediaItemIndex
 
-                    updateMetadataForCurrent()
+            updateMetadataForCurrent()
 
             play()
         } else {
@@ -274,19 +341,39 @@ class Musicservice : Service() {
     fun getCurrentTrack(): Track? = queue.getOrNull(currentIndex)
 
     private val mediaSessionCallback = object : MediaSessionCompat.Callback() {
-        override fun onPlay() { play() }
-        override fun onPause() { pause() }
-        override fun onStop() { stopPlayback() }
-        override fun onSkipToNext() { skipToNext() }
-        override fun onSkipToPrevious() { skipToPrevious() }
-        override fun onSeekTo(pos: Long) { player.seekTo(pos) }
+        override fun onPlay() {
+            play()
+        }
+
+        override fun onPause() {
+            pause()
+        }
+
+        override fun onStop() {
+            stopPlayback()
+        }
+
+        override fun onSkipToNext() {
+            skipToNext()
+        }
+
+        override fun onSkipToPrevious() {
+            skipToPrevious()
+        }
+
+        override fun onSeekTo(pos: Long) {
+            player.seekTo(pos)
+        }
 
         // 追加: カスタムアクションでインデックス指定再生を受ける
         override fun onCustomAction(action: String?, extras: Bundle?) {
             super.onCustomAction(action, extras)
             if (action == ACTION_PLAY_INDEX) {
                 val index = extras?.getInt(EXTRA_INDEX, 0) ?: 0
-                Log.i("Musicservice", "onCustomAction: play index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+                Log.i(
+                    "Musicservice",
+                    "onCustomAction: play index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+                )
                 try {
                     // queue はサービス内部の現在の曲リスト（Tracks と同期済み）
                     setQueue(queue, index)
@@ -294,13 +381,22 @@ class Musicservice : Service() {
                 } catch (e: Exception) {
                     Log.w("Musicservice", "play by index failed", e)
                 }
-            }else if (action == ACTION_PLAY_HASH){
+            } else if (action == ACTION_PLAY_HASH) {
                 // Be tolerant: accept EXTRA_HASH but also fallback to UUID/INDEX/TITLE matching
                 try {
                     val trackHash = extras?.getInt(EXTRA_HASH)
-                    Log.d("Musicservice", "onCustomAction ACTION_PLAY_HASH received extras=${extras?.keySet()?.joinToString()}")
-                    var index = if (trackHash != null) Tracks.indexOfFirst { it.hashCode() == trackHash } else -1
-                    Log.i("Musicservice", "onCustomAction: play hash ${trackHash} index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+                    Log.d(
+                        "Musicservice",
+                        "onCustomAction ACTION_PLAY_HASH received extras=${
+                            extras?.keySet()?.joinToString()
+                        }"
+                    )
+                    var index =
+                        if (trackHash != null) Tracks.indexOfFirst { it.hashCode() == trackHash } else -1
+                    Log.i(
+                        "Musicservice",
+                        "onCustomAction: play hash ${trackHash} index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+                    )
 
                     // fallback: if extras contains UUID or INDEX, try them
                     if (index == -1) {
@@ -323,19 +419,27 @@ class Musicservice : Service() {
                         val t = extras?.getString("EXTRA_TITLE")
                         val a = extras?.getString("EXTRA_ARTIST")
                         val al = extras?.getString("EXTRA_ALBUM")
-                        val idLong = try { extras?.getLong("EXTRA_ID") } catch (_: Exception) { null }
+                        val idLong = try {
+                            extras?.getLong("EXTRA_ID")
+                        } catch (_: Exception) {
+                            null
+                        }
                         if (idLong != null) {
                             index = Tracks.indexOfFirst { (it as? localTrack)?.id == idLong }
                             Log.i("Musicservice", "fallback by EXTRA_ID=$idLong -> index=$index")
                         }
                         if (index == -1 && !t.isNullOrEmpty()) {
-                            index = Tracks.indexOfFirst { it.title == t && (a == null || it.artist == a) && (al == null || it.album == al) }
+                            index =
+                                Tracks.indexOfFirst { it.title == t && (a == null || it.artist == a) && (al == null || it.album == al) }
                             Log.i("Musicservice", "fallback by title/artist/album -> index=$index")
                         }
                     }
 
                     if (index == -1) {
-                        Log.w("Musicservice", "ACTION_PLAY_HASH: no matching track found (hash/uuid/index/title) - ignoring")
+                        Log.w(
+                            "Musicservice",
+                            "ACTION_PLAY_HASH: no matching track found (hash/uuid/index/title) - ignoring"
+                        )
                         return
                     }
 
@@ -348,7 +452,10 @@ class Musicservice : Service() {
             } else if (action == ACTION_PLAY_UUID) {
                 val uuid = extras?.getString(EXTRA_UUID, "") ?: ""
                 val index = Tracks.indexOfFirst { it.uuid.toString() == uuid }
-                Log.i("Musicservice", "onCustomAction: play uuid $uuid index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM)
+                Log.i(
+                    "Musicservice",
+                    "onCustomAction: play uuid $uuid index $index" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+                )
                 if (index == -1) return
                 try {
                     setQueue(queue, index)
@@ -365,19 +472,25 @@ class Musicservice : Service() {
 
 
             val track = getCurrentTrack()
-            withContext(Dispatchers.IO){
+            withContext(Dispatchers.IO) {
 
                 val albumArt = imageLoader
-                    .execute(ImageRequest.Builder(this@Musicservice).data( track?.albumArtUri).allowHardware(false).build())
-                    .drawable?.toBitmapOrNull() ?:  BitmapFactory.decodeResource(resources,R.drawable.default_album_art)
+                    .execute(
+                        ImageRequest.Builder(this@Musicservice).data(track?.albumArtUri)
+                            .allowHardware(false).build()
+                    )
+                    .drawable?.toBitmapOrNull() ?: BitmapFactory.decodeResource(
+                    resources,
+                    R.drawable.default_album_art
+                )
 
-                withContext(Dispatchers.Main){
+                withContext(Dispatchers.Main) {
 
                     val metaBuilder = MediaMetadataCompat.Builder()
                         .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track?.title ?: "")
                         .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track?.artist ?: "")
                         .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track?.album ?: "")
-                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART,albumArt)
+                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
                     mediaSession.setMetadata(metaBuilder.build())
                     updatePlaybackState()
                     startForegroundIfNeeded()
@@ -396,7 +509,8 @@ class Musicservice : Service() {
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
                         PlaybackStateCompat.ACTION_SEEK_TO
             )
-        val state = if (player.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        val state =
+            if (player.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
         stateBuilder.setState(state, player.currentPosition, 1.0f)
         mediaSession.setPlaybackState(stateBuilder.build())
         notificationManager.notify(NOTIFICATION_ID, buildNotification(player.isPlaying))
@@ -458,7 +572,10 @@ class Musicservice : Service() {
             .addAction(prevAction)
             .addAction(playPauseAction)
             .addAction(nextAction)
-            .setStyle(MediaStyle().setMediaSession(mediaSession.sessionToken).setShowActionsInCompactView(1))
+            .setStyle(
+                MediaStyle().setMediaSession(mediaSession.sessionToken)
+                    .setShowActionsInCompactView(1)
+            )
 
         return builder.build()
     }
@@ -487,7 +604,8 @@ class Musicservice : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val chan = NotificationChannel(CHANNEL_ID, "Playback", NotificationManager.IMPORTANCE_LOW)
+            val chan =
+                NotificationChannel(CHANNEL_ID, "Playback", NotificationManager.IMPORTANCE_LOW)
             // use notificationManager instance (initialized in onCreate)
             notificationManager.createNotificationChannel(chan)
         }
@@ -511,14 +629,20 @@ class Musicservice : Service() {
     }
 
     fun getCurrentPositionMs(): Long {
-        return try { player.currentPosition } catch (e: Exception) { 0L }
+        return try {
+            player.currentPosition
+        } catch (e: Exception) {
+            0L
+        }
     }
 
     fun getDurationMs(): Long {
         return try {
             val d = player.duration
             if (d <= 0) 0L else d
-        } catch (e: Exception) { 0L }
+        } catch (e: Exception) {
+            0L
+        }
     }
 
     /**
