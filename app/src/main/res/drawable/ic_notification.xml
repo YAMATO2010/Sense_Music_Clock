@@ -4,6 +4,13 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- 音符の旗（フラッグ） - 変更なし -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:strokeColor="#22000000"
+        android:strokeWidth="0.9"
+        android:pathData="M54,22 L54,30 C66,26 78,20 90,25 C78,30 66,28 54,34 Z" />
+
 
 
     <path
@@ -86,11 +93,5 @@
 
 
 
-    <!-- 音符の旗（フラッグ） - 変更なし -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:strokeColor="#22000000"
-        android:strokeWidth="0.9"
-        android:pathData="M54,22 L54,30 C66,26 78,20 90,25 C78,30 66,28 54,34 Z" />
 
 </vector>

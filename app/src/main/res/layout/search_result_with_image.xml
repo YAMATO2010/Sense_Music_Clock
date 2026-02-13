@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/musicResultItemContainer"
+    android:id="@+id/ResultItemWithImageContainer"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -8,7 +8,7 @@
     android:background="?attr/selectableItemBackground">
 
     <ImageView
-        android:id="@+id/resultAlbumArtImageView"
+        android:id="@+id/resultImageView"
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:scaleType="fitCenter"
@@ -16,7 +16,7 @@
         android:layout_marginEnd="8dp" />
 
     <TextView
-        android:id="@+id/resultTrackTitleTextView"
+        android:id="@+id/resultTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"

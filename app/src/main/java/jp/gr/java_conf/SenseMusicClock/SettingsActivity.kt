@@ -1,8 +1,10 @@
 package jp.gr.java_conf.SenseMusicClock
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import androidx.preference.Preference
@@ -41,6 +43,7 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
+
     // SettingsFragment から呼ばれるランチャー
     fun launchDirectoryPicker(initialUri: Uri? = null) {
         // 必要なら権限チェックを挟む
@@ -52,11 +55,25 @@ class SettingsActivity : AppCompatActivity() {
         storageAccessHelper.launchPickDirectory(initialUri)
     }
 
+
     class SettingsFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // 明示的に名前付き SharedPreferences を使う（XML の属性に依存せず確実に同じ prefs を使用する）
+
+            val openImageLauncher =
+                registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                    if (uri != null) {
+                        // 永続権限を取得
+
+                        // 内部ストレージに保存
+                        val savedFile =
+                            context?.saveToInternalStorage(uri, BackgroundResolver.BACKGROUNDS_PATH)
+                        Log.d("SettingsFragment", "Picked image saved to $savedFile")
+                    }
+                }
+
             preferenceManager.sharedPreferencesName = getString(SHAREDPREFERENCES_NAME)
-            preferenceManager.sharedPreferencesMode = android.content.Context.MODE_PRIVATE
+            preferenceManager.sharedPreferencesMode = MODE_PRIVATE
 
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
@@ -70,7 +87,7 @@ class SettingsActivity : AppCompatActivity() {
             val reloadPref: Preference? = findPreference(getString(ReLoad_Tracks_KEY))
             reloadPref?.setOnPreferenceClickListener {
                 val pref = preferenceManager.sharedPreferences
-                val nowTF = !(pref?.getBoolean(getString(ReLoad_Tracks_KEY),false) ?: false)
+                val nowTF = !(pref?.getBoolean(getString(ReLoad_Tracks_KEY), false) ?: false)
 
                 pref?.edit {
                     putBoolean(getString(ReLoad_Tracks_KEY), nowTF)
@@ -80,7 +97,30 @@ class SettingsActivity : AppCompatActivity() {
 
             }
 
+            val pickImageAddPref: Preference? = findPreference("background_add")
+            pickImageAddPref?.setOnPreferenceClickListener {
+                Log.d("SettingsFragment", "background_add clicked")
+                // 画像ファイル選択ランチャーを起動
+                openImageLauncher.launch(arrayOf("image/*"))
+                true
 
+            }
+
+            val selectImageFilePref: Preference? = findPreference("background_select")
+            selectImageFilePref?.setOnPreferenceClickListener {
+
+                requireActivity().launchSelectBackgroundImageDialog()
+                true
+            }
+
+            val clearImageFilePref: Preference? = findPreference("background_clear")
+            clearImageFilePref?.setOnPreferenceClickListener {
+
+                val appCompatActivity = requireActivity() as? AppCompatActivity
+                appCompatActivity?.launchClearBackgroundImageFileDialog()
+                true
+
+            }
         }
     }
 }

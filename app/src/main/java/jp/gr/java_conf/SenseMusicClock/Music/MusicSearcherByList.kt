@@ -13,15 +13,14 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import jp.gr.java_conf.SenseMusicClock.R
-import jp.gr.java_conf.SenseMusicClock.SpotifyTrack
-import jp.gr.java_conf.SenseMusicClock.Track
-import jp.gr.java_conf.SenseMusicClock.localTrack
+
 import jp.gr.java_conf.SenseMusicClock.smoothScrollToPositionWithSkipAnimationCheck
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,16 +33,17 @@ import kotlinx.coroutines.launch
  * Generate matching keys for a Track so different representations can be matched across lists.
  * Keys order: local id (L:), spotify id (S:), uuid (U:), metadata (M: title|artist|album)
  */
-fun keysForTrackTopLevel(t: Track): List<String> {
+fun keysForTrackTopLevel(t: MediaItem): List<String> {
     val keys = mutableListOf<String>()
     try {
-        if (t is localTrack) keys.add("L:${t.id}")
-        if (t is SpotifyTrack) {
-            if (t.trackId != null) keys.add("S:${t.trackId}")
-        }
-        keys.add("U:${t.uuid}")
-        keys.add("M:${t.title}|${t.artist}|${t.album}")
-    } catch (_: Exception) {
+
+
+        keys.add("L:${t.mediaId}")
+        val tMetadata = t.mediaMetadata
+
+        keys.add("M:${tMetadata.title}|${tMetadata.artist}|${tMetadata.albumTitle}")
+    } catch (e: Exception) {
+        Log.w("MusicSearcher", "keysForTrackTopLevel failed", e)
     }
     return keys
 }
@@ -51,7 +51,7 @@ fun keysForTrackTopLevel(t: Track): List<String> {
 /**
  * Build key->original-index map from a list of IndexedValue<Track>.
  */
-fun buildPositionMapFromIndexedTopLevel(indexed: List<IndexedValue<Track>>): Map<String, Int> {
+fun buildPositionMapFromIndexedTopLevel(indexed: List<IndexedValue<MediaItem>>): Map<String, Int> {
     val m = mutableMapOf<String, Int>()
     for (iv in indexed) {
         val idx = iv.index
@@ -66,7 +66,7 @@ fun buildPositionMapFromIndexedTopLevel(indexed: List<IndexedValue<Track>>): Map
 class MusicSearcherByList(
     private val activity: AppCompatActivity,
     private val recyclerView: RecyclerView,
-    private val initialTracks: List<Track> = emptyList(),
+    private val initialTracks: List<MediaItem> = emptyList(),
     private val editText: EditText,
     private val recyclerJackets: RecyclerView? = null
 
@@ -74,7 +74,7 @@ class MusicSearcherByList(
 ) {
 
     private var targetTrackPositions: Map<String, Int> = mutableMapOf()
-    private var targetTracks: List<Track> = emptyList()
+    private var targetTracks: List<MediaItem> = emptyList()
 
     private var searchJob: Job? = null
 
@@ -103,18 +103,16 @@ class MusicSearcherByList(
                 if (keyword.isEmpty()) {
                     // 空キーワードなら何も表示しない
                     targetTracks = emptyList()
-                    val indexedAll = emptyList<IndexedValue<Track>>()
+                    val indexedAll = emptyList<IndexedValue<MediaItem>>()
                     targetTrackPositions = buildPositionMapFromIndexedTopLevel(indexedAll)
                 } else {
                     val results = initialTracks.withIndex()
                         .filter { (_, track) ->
-                            track.title.contains(keyword, ignoreCase = true) ||
-                                    track.artist.contains(keyword, ignoreCase = true) ||
-                                    track.album.contains(keyword, ignoreCase = true) ||
-                                    (if (track is localTrack) track.path.contains(
-                                        keyword,
-                                        ignoreCase = true
-                                    ) else false)
+                            val metadata = track.mediaMetadata
+                            metadata.title?.contains(keyword, ignoreCase = true) ?: false              ||
+                                    metadata.artist?.contains(keyword, ignoreCase = true) ?: false     ||
+                                    metadata.albumTitle?.contains(keyword, ignoreCase = true) ?: false ||
+                                    metadata.extras?.getString("RELATIVE_PATH")?.contains(keyword, ignoreCase = true) ?: false
                         }
                     targetTracks = results.map { it.value }
                     // build mapping from the filtered results (keys -> original index)
@@ -126,7 +124,8 @@ class MusicSearcherByList(
                     val sample = targetTrackPositions.entries.take(5)
                         .joinToString(", ") { (k, v) -> "${k}=>${v}" }
                     Log.d("MusicSearcher", "applySearch: sampleMapping=[$sample]")
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    android.util.Log.w("MusicSearcher", "sample mapping log failed", e)
                 }
 
                 Log.d(
@@ -175,7 +174,7 @@ class MusicSearcherByList(
                                                 )
                                             Log.d(
                                                 "MusicSearcher",
-                                                "fallback onItemClick: clicked=${track.title} uuid=${track.uuid} resolvedOriginalPos=$originalPosition2"
+                                                "fallback onItemClick: clicked=${track.mediaMetadata.title}  resolvedOriginalPos=$originalPosition2"
                                             )
 
                                             if (recyclerJackets != null) recyclerJackets.post {
@@ -191,7 +190,8 @@ class MusicSearcherByList(
                                         }
                                     )
                                 }
-                            } catch (_: Exception) {
+                            } catch (e: Exception) {
+                                android.util.Log.w("MusicSearcher", "post-check failed", e)
                             }
                         }, 200L)
                     }
@@ -213,7 +213,7 @@ class MusicSearcherByList(
                                 )
                             Log.d(
                                 "MusicSearcher",
-                                "onItemClick: clicked=${track.title} uuid=${track.uuid} resolvedOriginalPos=$originalPosition"
+                                "onItemClick: clicked=${track.mediaMetadata.title} resolvedOriginalPos=$originalPosition"
                             )
                             // visual feedback to confirm click was received
 
@@ -225,7 +225,8 @@ class MusicSearcherByList(
                                     "MusicSearcher",
                                     "onItemClick: recyclerJackets_present=$hasRJ recyclerJackets_adapter_count=$rjCount"
                                 )
-                            } catch (_: Exception) {
+                            } catch (e: Exception) {
+                                android.util.Log.w("MusicSearcher", "onItemClick diagnostic failed", e)
                             }
                             if (recyclerJackets != null) {
                                 recyclerJackets.post {
@@ -243,7 +244,11 @@ class MusicSearcherByList(
                                         )
                                         // fallback: try metadata key
                                         val fallbackIndex =
-                                            initialTracks.indexOfFirst { it.title == track.title && it.artist == track.artist && it.album == track.album }
+                                            initialTracks.indexOfFirst {
+
+                                                val metadata_iniList = it.mediaMetadata
+                                                val metadata_clicked = track.mediaMetadata
+                                                metadata_iniList.title == metadata_clicked.title && metadata_iniList.artist == metadata_clicked.artist && metadata_iniList.albumTitle == metadata_clicked.albumTitle }
                                         Log.d("MusicSearcher", "fallbackIndex=$fallbackIndex")
 
 
@@ -280,13 +285,14 @@ class MusicSearcherByList(
 }
 
 
+
 class SearchMusicAdapter(
-    initialItems: List<Track> = emptyList(),
+    initialItems: List<MediaItem> = emptyList(),
     private val context: Context,
     private var ItemPositionMap: Map<String, Int>,
     private val placeholderRes: Int,
-    private val onItemClick: (Track) -> Unit = {}
-) : ListAdapter<Track, SearchMusicAdapter.ViewHolder>(DIFF) {
+    private val onItemClick: (MediaItem) -> Unit = {}
+) : ListAdapter<MediaItem, SearchMusicAdapter.ViewHolder>(DIFF) {
 
     init {
         submitList(initialItems.toList())
@@ -295,7 +301,7 @@ class SearchMusicAdapter(
     /**
      * Update items and the position map in-place when adapter already exists.
      */
-    fun setItems(newItems: List<Track>, newPositionMap: Map<String, Int>) {
+    fun setItems(newItems: List<MediaItem>, newPositionMap: Map<String, Int>) {
         Log.d("SearchMusicAdapter", "setItems: updating adapter with ${newItems.size} items")
         ItemPositionMap = newPositionMap
         submitList(newItems.toList())
@@ -303,45 +309,46 @@ class SearchMusicAdapter(
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
-        val artwork: ImageView = view.findViewById(R.id.resultAlbumArtImageView)
+        val artwork: ImageView = view.findViewById(R.id.resultImageView)
 
-        val title: TextView = view.findViewById(R.id.resultTrackTitleTextView)
+        val title: TextView = view.findViewById(R.id.resultTextView)
 
-        val container: LinearLayout = view.findViewById(R.id.musicResultItemContainer)
+        val container: LinearLayout = view.findViewById(R.id.ResultItemWithImageContainer)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val v =
-            LayoutInflater.from(parent.context).inflate(R.layout.search_music_result, parent, false)
+            LayoutInflater.from(parent.context).inflate(R.layout.search_result_with_image, parent, false)
         return ViewHolder(v)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val track = getItem(position)
 
+        val metadata = track.mediaMetadata
         // 再利用時の残存 drawable/リスナを切る
         holder.artwork.setImageDrawable(null)
         holder.artwork.setOnClickListener(null)
         holder.artwork.contentDescription = ""
 
-        holder.artwork.load(track.albumArtUri) {
+        holder.artwork.load(metadata.artworkUri) {
             crossfade(true)
             placeholder(R.drawable.default_album_art)
             error(R.drawable.default_album_art)
         }
 
-        holder.artwork.contentDescription = track.title
-        holder.title.text = track.title
+        holder.artwork.contentDescription = metadata.title
+        holder.title.text = metadata.title
         // ensure container and the full itemView are clickable (some layouts may intercept clicks)
         holder.container.isClickable = true
         holder.container.setOnClickListener {
-            Log.i("SearchMusicAdapter", "container clicked: ${track.title} uuid=${track.uuid}")
+            Log.i("SearchMusicAdapter", "container clicked: ${track.mediaMetadata.title}")
             onItemClick(track)
         }
         // also attach listener to itemView itself to be robust against view-hierarchy click interception
         holder.itemView.isClickable = true
         holder.itemView.setOnClickListener {
-            Log.i("SearchMusicAdapter", "itemView clicked: ${track.title} uuid=${track.uuid}")
+            Log.i("SearchMusicAdapter", "itemView clicked: ${track.mediaMetadata.title} ")
             onItemClick(track)
         }
     }
@@ -354,7 +361,7 @@ class SearchMusicAdapter(
     }
 
 
-    fun getOriginalItemPosition(track: Track?): Int? {
+    fun getOriginalItemPosition(track: MediaItem?): Int? {
         if (track == null) return null
         // try keys in order: local id, spotify id, uuid, metadata
         try {
@@ -372,32 +379,27 @@ class SearchMusicAdapter(
 
 
     companion object {
-        private val DIFF = object : DiffUtil.ItemCallback<Track>() {
-            override fun areItemsTheSame(oldItem: Track, newItem: Track): Boolean {
-                val oldId = when (oldItem) {
-                    is localTrack -> oldItem.id
-                    is SpotifyTrack -> oldItem.trackId
-                    else -> null
-                }
-                val newId = when (newItem) {
-                    is localTrack -> newItem.id
-                    is SpotifyTrack -> newItem.trackId
-                    else -> null
-                }
+        private val DIFF = object : DiffUtil.ItemCallback<MediaItem>() {
+            override fun areItemsTheSame(oldItem: MediaItem, newItem: MediaItem): Boolean {
+                val oldId = oldItem.mediaId
+                val newId = newItem.mediaId
                 return oldId == newId
             }
 
-            override fun areContentsTheSame(oldItem: Track, newItem: Track): Boolean {
+            override fun areContentsTheSame(oldItem: MediaItem, newItem: MediaItem): Boolean {
                 if (oldItem::class != newItem::class) return false
 
-                val commonCriteria = oldItem.title == newItem.title &&
-                        oldItem.album == newItem.album &&
-                        oldItem.artist == newItem.artist
-                val localCriteria = if (oldItem is localTrack && newItem is localTrack) {
-                    oldItem.path == newItem.path &&
-                            oldItem.trackNo == newItem.trackNo
+                val oldMetadata = oldItem.mediaMetadata
+                val newMetadata = newItem.mediaMetadata
 
-                } else true
+                val commonCriteria = oldMetadata.title.toString() == newMetadata.title.toString() &&
+                        oldMetadata.albumTitle.toString() == newMetadata.albumTitle.toString() &&
+                        oldMetadata.artist.toString() == newMetadata.artist.toString()
+                val localCriteria =
+                    oldMetadata.extras?.getString("RELATIVE_PATH") == newMetadata.extras?.getString("RELATIVE_PATH") &&
+                            oldMetadata.trackNumber == newMetadata.trackNumber
+
+
 
                 return commonCriteria && localCriteria
             }

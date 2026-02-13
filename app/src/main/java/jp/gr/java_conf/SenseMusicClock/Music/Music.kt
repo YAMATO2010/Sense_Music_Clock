@@ -2,6 +2,7 @@ package jp.gr.java_conf.SenseMusicClock
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.media3.common.MediaItem
 import java.util.concurrent.ThreadLocalRandom
 import java.util.UUID
 
@@ -47,7 +48,9 @@ data class SpotifyTrack (
 
 
 
-data class localTrack(
+
+/*
+data class LocalTrack(
     override val title: String , //トラックタイトル
     override val album: String , //アルバムタイトル
     override val artist: String  ,//アーティスト名
@@ -63,6 +66,9 @@ data class localTrack(
 
 ) : Track
 
+
+
+ */
 
 // kotlin
 

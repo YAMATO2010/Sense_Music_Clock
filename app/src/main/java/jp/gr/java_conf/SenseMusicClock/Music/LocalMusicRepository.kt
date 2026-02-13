@@ -5,12 +5,32 @@ package jp.gr.java_conf.SenseMusicClock
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.os.Bundle
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
 
 object LocalMusicRepository {
+
+
+    private var _tracksFlow = MutableStateFlow( listOf<MediaItem>())
+
+    val tracksFlow : StateFlow<List<MediaItem>> = _tracksFlow.asStateFlow()
+    private val idToIndexMap = mutableMapOf<String, Int>()
+
+    val EXTRA_ALBUM_ID = "ALBUM_ID"
+    val EXTRA_ARTIST_ID = "ARTIST_ID"
+    val EXTRA_RELATIVE_PATH = "RELATIVE_PATH"
+
+
 
     // 追加: 指定された相対パス群（または URI ベースのパス）とファイル名で絞り込む selection/args を生成する
     // - paths: RELATIVE_PATH に含めたいフォルダパスのリスト（例: "Music/SMC"）
@@ -48,11 +68,11 @@ object LocalMusicRepository {
     suspend fun loadLocalMusicFromAppDir(
         context: Context,
         UserRelativePaths: List<String> = emptyList()
-    ): List<localTrack> {
+    ): List<MediaItem> {
         val relativePaths = listOf("Music/SMC") + UserRelativePaths
 
         if (relativePaths.isEmpty()) return emptyList()
-        val list = mutableListOf<localTrack>()
+        val list = mutableListOf<MediaItem>()
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
@@ -62,7 +82,7 @@ object LocalMusicRepository {
             MediaStore.Audio.Media.ARTIST_ID,
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.RELATIVE_PATH
+            MediaStore.Audio.Media.RELATIVE_PATH,
         )
 
         val parts = mutableListOf<String>()
@@ -114,24 +134,36 @@ object LocalMusicRepository {
                             .buildUpon()
                             .appendPath(albumId.toString())
                             .build()
-                    } catch (_: Exception) {
-                                null
-                            }
+                    } catch (e: Exception) {
+                        android.util.Log.w("LocalMusicRepository", "build albumArtUri failed", e)
+                        null
+                    }
 
-                    val lm = localTrack(
-                        title,
-                        album,
-                        artist,
-                        albumArtUri ,
-                        fastRandomUUID(),
-                        id,
-                        albumId,
-                        artistId,
-                        path,
-                        uri,
-                        trackNo
-                    )
-                    list.add(lm)
+                    val extras = Bundle().apply {
+                        putLong(EXTRA_ALBUM_ID, albumId)
+                        putLong(EXTRA_ARTIST_ID, artistId)
+                        putString(EXTRA_RELATIVE_PATH, path)
+                    }
+                    val metadata = MediaMetadata.Builder()
+                        .setTitle(title)
+                        .setAlbumTitle(album)
+                        .setArtist(artist)
+                        .setArtworkUri(albumArtUri)
+                        .setTrackNumber(trackNo)
+                        .setExtras(extras)
+                        .setIsPlayable(true)
+                        .setIsBrowsable(false)
+                        .build()
+
+                    val mediaItem = MediaItem.Builder()
+                        .setMediaId(id.toString())
+                        .setUri(uri)
+                        .setMediaMetadata(metadata)
+                        .build()
+
+
+
+                    list.add(mediaItem)
                 }
             }
         }
@@ -141,6 +173,52 @@ object LocalMusicRepository {
 
         return list
     }
+
+
+
+
+
+
+    fun setTracks(newTracks: List<MediaItem>) {
+        _tracksFlow.value = newTracks
+    }
+
+
+    fun createMap_idToIndex(Tracks: List<MediaItem> = tracksFlow.value) {
+        idToIndexMap.clear()
+        Tracks.forEachIndexed { index, mediaItem ->
+            idToIndexMap[mediaItem.mediaId] = index
+        }
+    }
+
+    fun clearMap_idToIndex() {
+        idToIndexMap.clear()
+    }
+
+
+    suspend fun loadLocalMusicAndSetTracksAndCreateMap(
+        context: Context,
+        UserRelativePaths: List<String> = emptyList()
+    ) {
+        val localTracks =  loadLocalMusicFromAppDir(context, UserRelativePaths)
+        setTracksAndCreateMap( localTracks )
+    }
+
+
+    fun setTracksAndCreateMap(newTracks: List<MediaItem>) {
+        setTracks(newTracks)
+        createMap_idToIndex(newTracks)
+    }
+
+    fun getIndexById(mediaId: String): Int? {
+        if (idToIndexMap.isEmpty()) {
+            createMap_idToIndex()
+        }
+        return idToIndexMap[mediaId]
+    }
+
+    fun getTracks(): List<MediaItem> = tracksFlow.value
+
 
 
 }

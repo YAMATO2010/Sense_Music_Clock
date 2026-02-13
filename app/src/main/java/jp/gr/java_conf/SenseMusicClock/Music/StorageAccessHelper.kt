@@ -106,6 +106,7 @@ class StorageAccessHelper(
                 null
             }
         } catch (e: Exception) {
+            android.util.Log.w("StorageAccessHelper", "parseTreeUriToRelativePath failed", e)
             null
         }
     }

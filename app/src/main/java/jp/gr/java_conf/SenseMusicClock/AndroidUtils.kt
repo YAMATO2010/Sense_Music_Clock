@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.provider.OpenableColumns
 import android.util.DisplayMetrics
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.delay
 import org.checkerframework.checker.units.qual.Speed
+import java.io.File
 import java.util.Locale
 
 // Small helpers used across services/activities to reduce duplicated boilerplate.
@@ -40,16 +42,77 @@ fun Context.playDefaultAlarmRingtoneSafe(): Ringtone? {
         r.play()
         r
     } catch (e: Exception) {
+        Log.w("AndroidUtils", "playDefaultAlarmRingtoneSafe failed", e)
         null
     }
 }
+fun Context.saveToInternalStorage(uri: Uri,childPath : String = ""): File {
+    val dir = File(filesDir, childPath)
+    if (!dir.exists()) dir.mkdirs()
 
+
+
+    var fileName = getFileNameFromUri(uri) ?: "image_${System.currentTimeMillis()}"
+
+
+    if (File(dir, fileName).exists()){
+
+        // 拡張子とベース名に分割
+        val dotIndex = fileName.lastIndexOf('.')
+        val baseName = if (dotIndex != -1) fileName.substring(0, dotIndex) else fileName
+        val ext = if (dotIndex != -1) fileName.substring(dotIndex) else ""
+
+        // 連番処理
+        var uniqueName = fileName
+        var i = 1
+
+        while (File(dir, uniqueName).exists()) {
+            uniqueName = "${baseName}_($i)$ext"
+            i++
+        }
+        // 最終的 なファイル名
+        fileName = uniqueName
+
+    }
+    val outFile = File(dir, fileName)
+
+    contentResolver.openInputStream(uri).use { input ->
+        outFile.outputStream().use { output ->
+            input?.copyTo(output)
+        }
+    }
+
+    return outFile
+}
+
+fun Context.getFileNameFromUri(uri: Uri): String? {
+    val cursor = contentResolver.query(uri, null, null, null, null)
+    cursor?.use {
+        if (it.moveToFirst()) {
+            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (nameIndex >= 0) {
+                return it.getString(nameIndex)
+            }
+        }
+    }
+    return null
+}
+
+fun Context.getAllFile_inInternalStorage(childPath: String):List<File>{
+
+    val dir = File(filesDir, childPath)
+    return dir.walk()
+        .filter { it.isFile } // ファイルだけを抽出
+        .onEach { Log.d("InternalStorageFile", "File: ${it.absolutePath}") } // ログ出し
+        .toList()
+}
 fun Context.vibrateOnceSafe(durationMs: Long = 1000L) {
     try {
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+
+        val vibrator = getSystemService(Vibrator::class.java)
         vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
-    } catch (_: Exception) {
-        // ignore
+    } catch (e: Exception) {
+        Log.w("AndroidUtils", "vibrateOnceSafe failed", e)
     }
 }
 
@@ -93,6 +156,7 @@ fun RecyclerView.smoothScrollToPositionCentered(position: Int, speedMsPerInch: F
         try {
             lm.startSmoothScroll(scroller)
         } catch (e: Exception) {
+            Log.w("RecyclerView", "startSmoothScroll failed", e)
             // 失敗時のフォールバック
             smoothScrollToPosition(position)
         }
@@ -101,7 +165,7 @@ fun RecyclerView.smoothScrollToPositionCentered(position: Int, speedMsPerInch: F
 fun RecyclerView.shouldSkipAnimation(position: Int,maxScrollDistanceForAnimation : Int = 30): Boolean{
     try {
 
-        val currentPos = (layoutManager as? androidx.recyclerview.widget.LinearLayoutManager)?.findFirstVisibleItemPosition() ?: -1
+        val currentPos = (layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: -1
         if (currentPos == -1){
             Log.e("RecyclerView","shouldSkipAnimation: findFirstVisibleItemPosition() is null")
             return true
@@ -111,8 +175,8 @@ fun RecyclerView.shouldSkipAnimation(position: Int,maxScrollDistanceForAnimation
 
         return distance > maxScrollDistanceForAnimation
 
-    }catch (e: java.lang.Exception){
-        Log.e("RecyclerView","shouldSkipAnimation error: ${e.localizedMessage}")
+    } catch (e: java.lang.Exception) {
+        Log.w("RecyclerView", "shouldSkipAnimation error", e)
         return true
     }
 

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 1) スマートフォン本体（外枠）: 半透明白 -->
+    <item>
+        <shape android:shape="rectangle">
+            <!-- more transparent white -->
+            <solid android:color="#88FFFFFF" />
+            <corners android:radius="18dp" />
+            <size android:width="200dp" android:height="320dp" />
+        </shape>
+    </item>
+
+    <!-- 2) 画面領域（内側のスクリーン）：もっと透明に -->
+    <item android:left="12dp" android:top="12dp" android:right="12dp" android:bottom="12dp">
+        <shape android:shape="rectangle">
+            <!-- increased transparency to make triangle visible -->
+            <solid android:color="#66F5F5F5" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+
+    <!-- 3) アルバムアート画像を上半分に配置 -->
+    <item
+        android:drawable="@drawable/goto_st_pl"
+        android:width="140dp"
+        android:height="140dp"
+        android:gravity="top|center"
+        android:top="12dp" />
+
+    <!-- 4) アルバムアートの外枠（グレーの stroke） -->
+    <item
+        android:width="140dp"
+        android:height="140dp"
+        android:gravity="top|center"
+        android:top="12dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <stroke android:width="2dp" android:color="#DDDDDD" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+
+    <!-- 5) 下半分の中央に配置する大型の右尖り三角（拡大：約3倍） -->
+    <item
+        android:drawable="@drawable/triangle_right_semi"
+        android:width="120dp"
+        android:height="78dp"
+        android:gravity="bottom|center"
+        android:bottom="40dp" />
+
+</layer-list>

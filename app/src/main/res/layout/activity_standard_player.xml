@@ -4,21 +4,24 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
 
-    android:layout_height="match_parent"
-    >
+    android:layout_height="match_parent">
+    <ImageView
+        android:id="@+id/bgImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
     <!-- scrim: semi-transparent black overlay above background but under content -->
     <View
         android:id="@+id/scrimOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/gradient1"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- background blurred album art (fills parent) -->
-
 
 
     <!-- top half guideline -->
@@ -36,23 +39,23 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="back"
         android:src="@android:drawable/ic_menu_revert"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
         android:id="@+id/ivAlbumArt"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintDimensionRatio="1:1"
-        android:scaleType="fitCenter"
-        android:src="@drawable/default_album_art"
-
-        app:layout_constraintTop_toBottomOf="@+id/btnBackEdge"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/guidelineHalf"
+        android:layout_margin="15dp"
         android:layout_marginTop="12dp"
-        android:layout_margin="15dp"/>
+        android:scaleType="fitCenter"
+
+        android:src="@drawable/default_album_art"
+        app:layout_constraintBottom_toTopOf="@+id/guidelineHalf"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnBackEdge" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -67,8 +70,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_weight="1"
+            android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="@+id/scrimOverlay"
             app:layout_constraintEnd_toEndOf="@+id/ivAlbumArt"
             app:layout_constraintStart_toStartOf="@+id/ivAlbumArt"
@@ -81,9 +84,9 @@
                 android:layout_marginTop="24dp"
                 android:layout_weight="2"
                 android:ellipsize="end"
+                android:gravity="center"
                 android:maxLines="1"
                 android:text="Title"
-                android:gravity="center"
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 android:textStyle="bold"
@@ -116,8 +119,8 @@
                 android:layout_marginTop="10dp"
                 android:layout_marginBottom="12dp"
                 android:layout_weight="1"
-                android:gravity="center"
                 android:ellipsize="end"
+                android:gravity="center"
                 android:maxLines="1"
                 android:text="Album"
                 android:textColor="@android:color/white"
@@ -127,76 +130,65 @@
                 app:layout_constraintTop_toBottomOf="@id/tvArtist" />
         </LinearLayout>
 
-        <LinearLayout
+
+
+        <SeekBar
+            android:id="@+id/seekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_weight="1"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="18dp"
+            android:max="240"
+            android:progress="0"
+            android:progressTint="@color/white_glass"
+            android:thumbTint="@color/white"
+
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvAlbumName" />
+
+        <LinearLayout
+            android:id="@+id/controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="50dp"
+            android:orientation="horizontal"
             android:gravity="center_horizontal"
-            app:layout_constraintBottom_toBottomOf="@+id/scrimOverlay"
-            app:layout_constraintEnd_toEndOf="@+id/ivAlbumArt"
-            app:layout_constraintStart_toStartOf="@+id/ivAlbumArt"
-            app:layout_constraintTop_toTopOf="@+id/guidelineHalf">
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/seekBar">
 
+            <ImageButton
+                android:id="@+id/btnPrev"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="previous"
+                android:src="@android:drawable/ic_media_previous" />
 
-            <SeekBar
-                android:id="@+id/seekBar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="18dp"
-                android:max="240"
-                android:progress="0"
-                android:progressTint="@color/white_glass"
-                android:thumbTint="@color/white"
+            <ImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="play_pause"
+                android:src="@android:drawable/ic_media_play" />
 
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvAlbumName" />
-
-            <LinearLayout
-                android:id="@+id/controls"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="24dp"
-                android:orientation="horizontal"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/seekBar">
-
-                <ImageButton
-                    android:id="@+id/btnPrev"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="previous"
-                    android:src="@android:drawable/ic_media_previous" />
-
-                <ImageButton
-                    android:id="@+id/btnPlayPause"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="play_pause"
-                    android:src="@android:drawable/ic_media_play" />
-
-                <ImageButton
-                    android:id="@+id/btnNext"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="next"
-                    android:src="@android:drawable/ic_media_next" />
-
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/btnNext"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="next"
+                android:src="@android:drawable/ic_media_next" />
 
         </LinearLayout>
+
+
     </LinearLayout>
-
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

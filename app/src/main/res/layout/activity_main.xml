@@ -7,10 +7,15 @@
     android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/oblong_noon"
     android:clipToPadding="true"
     android:clipChildren="true"
     tools:context=".MainActivity">
+    <ImageView
+        android:id="@+id/bgImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
 
 
     <androidx.recyclerview.widget.RecyclerView
@@ -40,7 +45,7 @@
         tools:layout_editor_absoluteX="1dp">
 
         <TextClock
-            android:id="@+id/textClock2"
+            android:id="@+id/textClock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="2"
@@ -73,6 +78,16 @@
 
                 android:text="Button"
                 app:backgroundTint="@null" />
+            <Button
+                android:id="@+id/alarmButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/rectanglebutton"
+
+                android:text="Button"
+                app:backgroundTint="@null" />
+
 
             <Button
                 android:id="@+id/stopWatchBtn"
@@ -89,25 +104,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="horizontal">
-
-            <ProgressBar
-                android:id="@+id/TimerBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@color/white_glass"
-                android:layout_weight="1" />
-
-            <ProgressBar
-                android:id="@+id/stopWatchBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@color/white_glass"
-
-                android:layout_weight="1" />
-        </LinearLayout>
+            android:orientation="horizontal"/>
 
     </LinearLayout>
 
@@ -229,6 +226,7 @@
             android:orientation="vertical"
             android:gravity="center_horizontal"
             android:padding="8dp"
+
             android:background="@android:color/transparent">
 
             <ProgressBar
@@ -284,11 +282,11 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:padding="8dp"
             android:background="@null"
-            app:layout_constraintDimensionRatio="1:1"
+            android:padding="4dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/goto_st_pl"
+            android:src="@drawable/oblong_standard_player_icon"
+            app:layout_constraintDimensionRatio="1:1"
 
             />
     </LinearLayout>

@@ -10,19 +10,19 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import android.content.Context
+import androidx.media3.common.MediaItem
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.SHAREDPREFERENCES_NAME
 import jp.gr.java_conf.SenseMusicClock.SpotifyTrack
 import jp.gr.java_conf.SenseMusicClock.TILE_TITLE_DISPLAY
-import jp.gr.java_conf.SenseMusicClock.Track
-import jp.gr.java_conf.SenseMusicClock.localTrack
+
 
 class JacketAdapter(
-    initialItems: List<Track> = emptyList(),
+    initialItems: List<MediaItem> = emptyList(),
     private val placeholderRes: Int,
     private val context: Context,
-    private val onItemClick: (Track) -> Unit = {}
-) : ListAdapter<Track, JacketAdapter.ViewHolder>(DIFF) {
+    private val onItemClick: (MediaItem) -> Unit = {}
+) : ListAdapter<MediaItem, JacketAdapter.ViewHolder>(DIFF) {
 
     init {
         submitList(initialItems.toList())
@@ -54,7 +54,7 @@ class JacketAdapter(
         holder.artwork.setOnClickListener(null)
         holder.artwork.contentDescription = ""
 
-        holder.artwork.load(track.albumArtUri){
+        holder.artwork.load(track.mediaMetadata.artworkUri){
             crossfade(true)
             placeholder(R.drawable.default_album_art)
             error(R.drawable.default_album_art)
@@ -62,10 +62,12 @@ class JacketAdapter(
 
         }
 
-        holder.artwork.contentDescription = track.title
+        val title = track.mediaMetadata.title?.toString() ?: "Unknown Title"
+
+        holder.artwork.contentDescription = title
         try {
 
-        holder.TitleTextView.text = track.title
+        holder.TitleTextView.text = title
         }catch (e:Exception){
             Log.i("JacketAdapter","曲名入りではないレイアウトなのでスキップ")
         }
@@ -102,7 +104,7 @@ class JacketAdapter(
     // 既存のシグネチャを残しつつ、コミット完了コールバック対応のオーバーロードを追加
 
 
-    fun setItems(newItems: List<Track>, commitCallback: (() -> Unit)?) {
+    fun setItems(newItems: List<MediaItem>, commitCallback: (() -> Unit)?) {
         // ListAdapter#submitList の commitCallback は Runnable なので合わせる
         submitList(newItems.toList(), Runnable {
             try {
@@ -112,16 +114,14 @@ class JacketAdapter(
         })
     }
 
-    fun getItems(): List<Track> = currentList.toList()
+    fun getItems(): List<MediaItem> = currentList.toList()
 
-    fun getItemPosition(track: Track?): Int? {
+    fun getItemPosition(track: MediaItem?): Int? {
         if (track == null) return null
         val idx = currentList.indexOfFirst { item ->
-            when {
-                item is localTrack && track is localTrack -> item.id == track.id
-                item is SpotifyTrack && track is SpotifyTrack -> item.trackId == track.trackId
-                else -> false
-            }
+                item.mediaId == track.mediaId
+
+
         }
         return if (idx >= 0) idx else null
     }
@@ -130,32 +130,30 @@ class JacketAdapter(
     companion object {
         private const val TYPE_NORMAL = 0
         private const val TYPE_PLUSTEXT = 1
-        private val DIFF = object : DiffUtil.ItemCallback<Track>() {
-            override fun areItemsTheSame(oldItem: Track, newItem: Track): Boolean {
-                val oldId = when (oldItem) {
-                    is localTrack -> oldItem.id
-                    is SpotifyTrack -> oldItem.trackId
-                    else -> null
-                }
-                val newId = when (newItem) {
-                    is localTrack -> newItem.id
-                    is SpotifyTrack -> newItem.trackId
-                    else -> null
-                }
+        private val DIFF = object : DiffUtil.ItemCallback<MediaItem>() {
+            override fun areItemsTheSame(oldItem: MediaItem, newItem: MediaItem): Boolean {
+                val oldId = oldItem.mediaId
+
+                val newId = newItem.mediaId
                 return  oldId == newId
             }
 
-            override fun areContentsTheSame(oldItem: Track, newItem: Track): Boolean {
+            override fun areContentsTheSame(oldItem: MediaItem, newItem: MediaItem): Boolean {
                 if (oldItem::class != newItem::class) return false
+                val oldItemMediaMetadata = oldItem.mediaMetadata
+                val newItemMediaMetadata = newItem.mediaMetadata
+                val oldMetadataExtras = oldItemMediaMetadata.extras
+                val newMetadataExtras = newItemMediaMetadata.extras
 
-                val commonCriteria =  oldItem.title == newItem.title &&
-                        oldItem.album == newItem.album &&
-                        oldItem.artist == newItem.artist
-                val localCriteria = if (oldItem is localTrack && newItem is localTrack) {
-                        oldItem.path == newItem.path &&
-                        oldItem.trackNo == newItem.trackNo
+                val commonCriteria =  oldItemMediaMetadata.title.toString() == newItemMediaMetadata.title.toString() &&
+                         oldItemMediaMetadata.albumTitle.toString() ==  newItemMediaMetadata.albumTitle.toString() &&
+                         oldItemMediaMetadata.artist.toString() ==  newItemMediaMetadata.artist.toString()
 
-                }else true
+                val localCriteria =
+                        oldMetadataExtras?.getString("RELATIVE_PATH") == newMetadataExtras?.getString("RELATIVE_PATH") &&
+                        oldItemMediaMetadata.trackNumber == newItemMediaMetadata.trackNumber
+
+
 
                 return commonCriteria && localCriteria
             }

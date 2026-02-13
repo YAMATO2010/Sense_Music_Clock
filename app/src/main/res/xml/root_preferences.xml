@@ -34,4 +34,37 @@
         android:key="@string/PLAYMODE_LOOP_KEY"
         android:title="一曲ループ" />
 
+    <PreferenceCategory app:title="背景設定">
+
+        <Preference
+            android:key="background_add"
+            android:title="背景画像の追加"
+            android:selectable="true" />
+
+        <Preference
+            android:key="background_select"
+            android:title="背景画像の選択"
+            android:selectable="true" />
+
+        <Preference
+            android:key="background_clear"
+            android:title="背景画像の選択（削除）"
+            android:selectable="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="プレイリスト・ブロックリスト">
+
+        <Preference
+            android:key="playList"
+            android:title="プレイリスト"
+            android:selectable="true" />
+
+        <Preference
+            android:key="blockList"
+            android:title="ブロックリスト"
+            android:selectable="true" />
+
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

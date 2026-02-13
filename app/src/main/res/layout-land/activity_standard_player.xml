@@ -9,6 +9,11 @@
 
     <!-- scrim overlay above background but under content -->
 
+    <ImageView
+        android:id="@+id/bgImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
     <View
         android:id="@+id/scrimOverlay"
         android:layout_width="match_parent"
