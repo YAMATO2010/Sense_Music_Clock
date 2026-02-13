@@ -304,18 +304,7 @@ class Musicservice : MediaLibraryService() {
     // 必要ならフォアグラウンド化（起動直後に呼ばれる）
 
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
-        intent?.action?.let { act ->
-            when (act) {
-                ACTION_PLAY -> play()
-                ACTION_PAUSE -> pause()
-                ACTION_NEXT -> skipToNext()
-                ACTION_PREV -> skipToPrevious()
-            }
-        }
-        return START_STICKY
-    }
 
     private fun createNotificationChannel() {
 

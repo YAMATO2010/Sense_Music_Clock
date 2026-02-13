@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.os.Build
 import android.widget.EditText
 import androidx.core.content.ContextCompat
 import androidx.work.Data
@@ -198,7 +199,11 @@ class ClockUiController(private val activity: MainActivity, private val binding:
                 }
             }
         }
-        activity.registerReceiver(receiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity.registerReceiver(receiver, filter,Context.RECEIVER_NOT_EXPORTED)
+        }else{
+            activity.registerReceiver(receiver, filter)
+        }
     }
 
     fun destroy() {
