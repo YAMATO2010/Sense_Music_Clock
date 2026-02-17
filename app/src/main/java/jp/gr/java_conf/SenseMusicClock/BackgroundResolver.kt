@@ -10,6 +10,7 @@ import android.widget.ImageView
 import androidx.core.graphics.drawable.toDrawable
 import coil.ImageLoader
 import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.load
 import java.io.File
 import java.time.LocalDateTime
@@ -160,7 +161,10 @@ fun ImageView.load_forRoot(context: Context,orientation: Int){
     when (source) {
         is BackgroundResolver.ImageSource.FilePath -> {
             val imageLoader = ImageLoader.Builder(context)
-                .components { add(GifDecoder.Factory()) }
+                .components {
+                    add(ImageDecoderDecoder.Factory()) // Android 9以降のWebP/GIF用
+                    add(GifDecoder.Factory())          // Android 8以前のGIF用
+                }
                 .build()
             this.load(source.file,imageLoader)
         }

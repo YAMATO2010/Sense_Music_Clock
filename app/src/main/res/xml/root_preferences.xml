@@ -55,12 +55,12 @@
     <PreferenceCategory app:title="プレイリスト・ブロックリスト">
 
         <Preference
-            android:key="playList"
+            android:key="action_playList"
             android:title="プレイリスト"
             android:selectable="true" />
 
         <Preference
-            android:key="blockList"
+            android:key="action_blockList"
             android:title="ブロックリスト"
             android:selectable="true" />
 

@@ -6,12 +6,8 @@ import IDENTIFIER_INITIAL_INDEX_PROBLEM
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -21,17 +17,11 @@ import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import android.support.v4.media.session.MediaControllerCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import android.graphics.Rect
 import android.view.View
 import android.widget.TextView
-
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import android.graphics.Color
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.lifecycle.LiveData
@@ -40,7 +30,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaBrowser
-import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import app_dir
 import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
@@ -48,9 +37,7 @@ import coil.load
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
 import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import jp.gr.java_conf.SenseMusicClock.Music.StandardPlayerActivity
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -86,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         orientation = resources.configuration.orientation
         tracks = mainViewModel.tracks
+
 
 
 
@@ -312,6 +300,12 @@ class MainActivity : AppCompatActivity() {
         // On resume: if orientation changed since last time, set pending instant scroll and reconfigure layout
 
         binding.bgImageView.load_forRoot(this, orientation)
+        mediaBrowser?.let {
+            runOnUiThread {
+                mainViewModel.clearTracks()
+            }
+            loadAllMedias(it)
+        }
     }
 
     private fun getIndexById(mediaItem: MediaItem?): Int? {
@@ -358,10 +352,6 @@ class MainActivity : AppCompatActivity() {
             mediaBrowser?.let {
 
 
-                runOnUiThread {
-                        mainViewModel.clearTracks()
-                    }
-                    loadAllMedias(it)
 
 
                 if (mainViewModel.lastOrientation != resources.configuration.orientation) {
@@ -405,6 +395,10 @@ class MainActivity : AppCompatActivity() {
 
 
                 })
+                runOnUiThread {
+                    mainViewModel.clearTracks()
+                }
+                loadAllMedias(it)
 
 
             }

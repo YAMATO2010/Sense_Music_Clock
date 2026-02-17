@@ -12,7 +12,8 @@ import java.util.Date
 data class listeningHistory(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Date = Date(),
-    @Embedded val fileItem: FileItem
+    @Embedded val fileItem: FileItem,
+    val fromUser : Boolean = false
 )
 
 

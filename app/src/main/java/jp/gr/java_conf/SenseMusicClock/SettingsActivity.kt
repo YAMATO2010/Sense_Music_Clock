@@ -15,6 +15,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var storageAccessHelper: StorageAccessHelper
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_activity)
@@ -121,6 +122,23 @@ class SettingsActivity : AppCompatActivity() {
                 true
 
             }
+
+
+
+            val playlistPref: Preference? = findPreference("action_playlist")
+            playlistPref?.setOnPreferenceClickListener {
+
+
+                true
+            }
+
+            val blocklistPlef: Preference? = findPreference("action_blocklist")
+            blocklistPlef?.setOnPreferenceClickListener {
+
+                true
+            }
+
+
         }
     }
 }

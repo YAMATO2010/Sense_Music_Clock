@@ -23,10 +23,16 @@ import java.time.LocalDateTime
  * - Activity と viewBinding を受け取り、ボタンのイベント・SharedPreferences・WorkManager・BroadcastReceiver を管理する。
  * - 音楽再生や RecyclerView などのロジックには触れない（独立）。
  */
-class ClockUiController(private val activity: MainActivity, private val binding: ActivityMainBinding) {
+class ClockUiController(
+    private val activity: MainActivity,
+    private val binding: ActivityMainBinding
+) {
 
     private val prefs: SharedPreferences by lazy {
-        activity.getSharedPreferences(activity.getString(R.string.SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE)
+        activity.getSharedPreferences(
+            activity.getString(R.string.SHAREDPREFERENCES_NAME),
+            Context.MODE_PRIVATE
+        )
     }
 
     private var receiver: android.content.BroadcastReceiver? = null
@@ -39,9 +45,11 @@ class ClockUiController(private val activity: MainActivity, private val binding:
         // restore scheduled epoch if present (used to show next-day marker)
         val alarmScheduledAt = prefs.getLong("pref_alarm_scheduled_at", -1L)
         // If pref doesn't contain elapsed value, display zero to avoid spurious numbers on first run
-        val swElapsed = if (prefs.contains("pref_sw_elapsed")) prefs.getLong("pref_sw_elapsed", 0L) else 0L
+        val swElapsed =
+            if (prefs.contains("pref_sw_elapsed")) prefs.getLong("pref_sw_elapsed", 0L) else 0L
 
-        binding.TimerButton.text = if (timerMillis > 0L) formatMillisToTime(timerMillis) else activity.getString(R.string.timer_button_label)
+        binding.TimerButton.text =
+            if (timerMillis > 0L) formatMillisToTime(timerMillis) else activity.getString(R.string.timer_button_label)
         // show alarm button using scheduled epoch if available, otherwise fallback to stored hour/minute
         binding.alarmButton.text = when {
             alarmScheduledAt > 0L -> formatAlarmLabelFromEpoch(alarmScheduledAt)
@@ -58,7 +66,11 @@ class ClockUiController(private val activity: MainActivity, private val binding:
                 orientation = android.widget.LinearLayout.HORIZONTAL
                 setPadding(32, 16, 32, 16)
             }
-            val lp = android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            val lp = android.widget.LinearLayout.LayoutParams(
+                0,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                1f
+            )
             val etH = android.widget.EditText(activity).apply {
                 hint = "時"
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
@@ -106,7 +118,9 @@ class ClockUiController(private val activity: MainActivity, private val binding:
         binding.TimerButton.setOnLongClickListener {
             prefs.edit().remove("pref_timer_millis").apply()
             binding.TimerButton.text = activity.getString(R.string.timer_button_label)
-            val intent = Intent(activity, ClockService::class.java).apply { action = ClockService.ACTION_STOP_TIMER }
+            val intent = Intent(activity, ClockService::class.java).apply {
+                action = ClockService.ACTION_STOP_TIMER
+            }
             activity.startService(intent)
             true
         }
@@ -127,17 +141,22 @@ class ClockUiController(private val activity: MainActivity, private val binding:
                 prefs.edit()
                     .putInt("pref_alarm_hour", hourOfDay)
                     .putInt("pref_alarm_minute", minute)
-                    .putLong("pref_alarm_scheduled_at", target.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .putLong(
+                        "pref_alarm_scheduled_at",
+                        target.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    )
                     .apply()
                 // update button label with possible next-day marker
-                binding.alarmButton.text = formatAlarmLabelFromEpoch(prefs.getLong("pref_alarm_scheduled_at", -1L))
+                binding.alarmButton.text =
+                    formatAlarmLabelFromEpoch(prefs.getLong("pref_alarm_scheduled_at", -1L))
                 // schedule with WorkManager
                 scheduleAlarmWithWorkManager(hourOfDay, minute)
             }, now.hour, now.minute, true)
             tpd.show()
         }
         binding.alarmButton.setOnLongClickListener {
-            prefs.edit().remove("pref_alarm_hour").remove("pref_alarm_minute").remove("pref_alarm_scheduled_at").apply()
+            prefs.edit().remove("pref_alarm_hour").remove("pref_alarm_minute")
+                .remove("pref_alarm_scheduled_at").apply()
             binding.alarmButton.text = activity.getString(R.string.alarm_button_label)
             WorkManager.getInstance(activity).cancelAllWorkByTag("smc_alarm")
 
@@ -165,7 +184,9 @@ class ClockUiController(private val activity: MainActivity, private val binding:
             }
         }
         binding.stopWatchBtn.setOnLongClickListener {
-            val intent = Intent(activity, ClockService::class.java).apply { action = ClockService.ACTION_RESET_STOPWATCH }
+            val intent = Intent(activity, ClockService::class.java).apply {
+                action = ClockService.ACTION_RESET_STOPWATCH
+            }
             activity.startService(intent)
             binding.stopWatchBtn.text = formatStopwatchDisplay(0L)
             prefs.edit().putLong("pref_sw_elapsed", 0L).putBoolean("pref_sw_running", false).apply()
@@ -186,10 +207,12 @@ class ClockUiController(private val activity: MainActivity, private val binding:
                         binding.TimerButton.text = formatMillisToTime(remaining)
                         prefs.edit().putLong("pref_timer_millis", remaining).apply()
                     }
+
                     ClockService.BROADCAST_FINISHED -> {
                         binding.TimerButton.text = activity.getString(R.string.timer_done_label)
                         prefs.edit().remove("pref_timer_millis").apply()
                     }
+
                     ClockService.BROADCAST_STOPWATCH_TICK -> {
                         val elapsed = intent.getLongExtra(ClockService.EXTRA_ELAPSED, 0L)
                         // Activity shows centiseconds, service sends millis; format accordingly
@@ -199,15 +222,15 @@ class ClockUiController(private val activity: MainActivity, private val binding:
                 }
             }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            activity.registerReceiver(receiver, filter,Context.RECEIVER_NOT_EXPORTED)
-        }else{
-            activity.registerReceiver(receiver, filter)
-        }
+
+        activity.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+
     }
 
     fun destroy() {
-        try { receiver?.let { activity.unregisterReceiver(it) } } catch (e: Exception) {
+        try {
+            receiver?.let { activity.unregisterReceiver(it) }
+        } catch (e: Exception) {
             android.util.Log.w("ClockUiController", "unregisterReceiver failed", e)
         }
     }
@@ -232,7 +255,13 @@ class ClockUiController(private val activity: MainActivity, private val binding:
         val seconds = (totalSeconds % 60).toInt()
         val minutes = ((totalSeconds / 60) % 60).toInt()
         val hours = (totalSeconds / 3600).toInt()
-        return if (hours > 0) String.format(java.util.Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+        return if (hours > 0) String.format(
+            java.util.Locale.getDefault(),
+            "%02d:%02d:%02d",
+            hours,
+            minutes,
+            seconds
+        )
         else String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 
@@ -241,7 +270,14 @@ class ClockUiController(private val activity: MainActivity, private val binding:
         val seconds = (millis / 1000L) % 60L
         val minutes = (millis / 60000L) % 60L
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
-        return if (hours > 0) String.format(java.util.Locale.getDefault(), "%02d:%02d:%02d.%02d", hours, minutes, seconds, cs)
+        return if (hours > 0) String.format(
+            java.util.Locale.getDefault(),
+            "%02d:%02d:%02d.%02d",
+            hours,
+            minutes,
+            seconds,
+            cs
+        )
         else String.format(java.util.Locale.getDefault(), "%02d:%02d.%02d", minutes, seconds, cs)
     }
 
@@ -249,7 +285,13 @@ class ClockUiController(private val activity: MainActivity, private val binding:
         val seconds = (millis / 1000L) % 60L
         val minutes = (millis / 60000L) % 60L
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
-        return if (hours > 0) String.format(java.util.Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+        return if (hours > 0) String.format(
+            java.util.Locale.getDefault(),
+            "%02d:%02d:%02d",
+            hours,
+            minutes,
+            seconds
+        )
         else String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 

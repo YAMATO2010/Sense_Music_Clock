@@ -21,11 +21,11 @@ data class BlockList(
 )
 
 @Entity(tableName = "blocklistItems",
-    primaryKeys = ["blocklistId", "relativePath", "FileName"],
+    primaryKeys = ["blocklistId", "relativePath", "fileName"],
     foreignKeys = [
         ForeignKey(
             entity = BlockList::class,
-            parentColumns = ["blocklistId"],
+            parentColumns = ["blockListID"],
             childColumns = ["blocklistId"],
             onDelete = ForeignKey.CASCADE
         )

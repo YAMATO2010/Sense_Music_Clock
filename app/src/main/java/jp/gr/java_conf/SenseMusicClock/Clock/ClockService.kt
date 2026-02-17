@@ -35,7 +35,7 @@ class ClockService : Service() {
 
         private const val CHANNEL_ID = "smc_timer_channel"
         private const val ALARM_CHANNEL_ID = "smc_alarm_channel"
-        private const val NOTIF_ID = 1001
+        private const val NOTIF_ID = 2347
 
         // stopwatch actions/broadcasts
         const val ACTION_START_STOPWATCH = "jp.gr.java_conf.SenseMusicClock.ACTION_START_STOPWATCH"
@@ -60,7 +60,8 @@ class ClockService : Service() {
     private var stopwatchElapsedWhenPaused = 0L
     private val stopwatchHandler = Handler(Looper.getMainLooper())
     private var lastNotificationUpdate = 0L
-    private val notificationUpdateIntervalMs = 1000L // only update notification once per second to reduce churn
+    private val notificationUpdateIntervalMs =
+        1000L // only update notification once per second to reduce churn
     private val STOPWATCH_CHANNEL_ID = "smc_stopwatch_channel"
 
     // modify stopwatch runnable to update frequently for centiseconds in UI, but throttle notification updates
@@ -93,7 +94,11 @@ class ClockService : Service() {
                     startForeground(NOTIF_ID, buildNotification("SMC"))
                     foregroundStarted = true
                 } catch (e: Exception) {
-                    android.util.Log.w("ClockService", "startForeground initial promotion failed", e)
+                    android.util.Log.w(
+                        "ClockService",
+                        "startForeground initial promotion failed",
+                        e
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -119,25 +124,38 @@ class ClockService : Service() {
                 }
                 // play ringtone & vibrate
                 currentRingtone = playDefaultAlarmRingtoneSafe()
-                try { vibrateOnceSafe() } catch (e: Exception) { android.util.Log.w("ClockService", "vibrate failed", e) }
+                try {
+                    vibrateOnceSafe()
+                } catch (e: Exception) {
+                    android.util.Log.w("ClockService", "vibrate failed", e)
+                }
             }
+
             ACTION_START_STOPWATCH -> {
                 startStopwatch()
             }
+
             ACTION_PAUSE_STOPWATCH -> {
                 pauseStopwatch()
             }
+
             ACTION_RESET_STOPWATCH -> {
                 resetStopwatch()
             }
+
             ACTION_STOP_ALARM -> {
                 // stop ringtone and clear alarm state
                 stopRingtone()
                 alarmActive = false
                 alarmEpoch = -1L
                 // update notification to reflect cleared alarm
-                try { updateNotification("") } catch (e: Exception) { android.util.Log.w("ClockService", "updateNotification failed on stop alarm", e) }
+                try {
+                    updateNotification("")
+                } catch (e: Exception) {
+                    android.util.Log.w("ClockService", "updateNotification failed on stop alarm", e)
+                }
             }
+
             ACTION_START_TIMER -> {
                 val duration = intent.getLongExtra(EXTRA_DURATION, 0L)
                 if (duration > 0L) {
@@ -145,6 +163,7 @@ class ClockService : Service() {
                     startCountDown(duration)
                 }
             }
+
             ACTION_STOP_TIMER -> {
                 stopTimer()
                 stopSelf()
@@ -207,7 +226,12 @@ class ClockService : Service() {
     // 引数で停止対象を切り替え可能にする（デフォルトはタイマー停止）
     private fun buildStopPendingIntent(action: String = ACTION_STOP_TIMER): PendingIntent {
         val stopIntent = Intent(this, ClockService::class.java).apply { this.action = action }
-        return PendingIntent.getService(this, 0, stopIntent, jp.gr.java_conf.SenseMusicClock.pendingIntentFlags())
+        return PendingIntent.getService(
+            this,
+            0,
+            stopIntent,
+            jp.gr.java_conf.SenseMusicClock.pendingIntentFlags()
+        )
     }
 
     private fun buildNotification(contentText: String): Notification {
@@ -227,11 +251,22 @@ class ClockService : Service() {
                 val label = formatAlarmLabelFromEpoch(alarmEpoch)
                 parts.add("アラーム ${label}")
             }
-        } catch (e: Exception) { android.util.Log.w("ClockService", "formatAlarmLabelFromEpoch failed", e) }
-        try { if (timer != null) parts.add("タイマー") } catch (e: Exception) { android.util.Log.w("ClockService", "checking timer failed", e) }
-        try { if (stopwatchRunning) parts.add("ストップウォッチ") } catch (e: Exception) { android.util.Log.w("ClockService", "checking stopwatch state failed", e) }
+        } catch (e: Exception) {
+            android.util.Log.w("ClockService", "formatAlarmLabelFromEpoch failed", e)
+        }
+        try {
+            if (timer != null) parts.add("タイマー")
+        } catch (e: Exception) {
+            android.util.Log.w("ClockService", "checking timer failed", e)
+        }
+        try {
+            if (stopwatchRunning) parts.add("ストップウォッチ")
+        } catch (e: Exception) {
+            android.util.Log.w("ClockService", "checking stopwatch state failed", e)
+        }
 
-        val finalText = if (parts.isNotEmpty()) "実行中: ${parts.joinToString(", ")}" else contentText
+        val finalText =
+            if (parts.isNotEmpty()) "実行中: ${parts.joinToString(", ")}" else contentText
 
         // choose channel: alarm uses alarm channel (so system may play sound even on low importance channels separately)
         val channelToUse = if (alarmActive) ALARM_CHANNEL_ID else CHANNEL_ID
@@ -253,27 +288,35 @@ class ClockService : Service() {
 
     private fun createChannel() {
 
-            val nm = getSystemService(NotificationManager::class.java)
-            nm?.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "SMC Timer", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Timer notifications"
-                }
-            )
-            // stopwatch channel (silent)
-            nm?.createNotificationChannel(
-                NotificationChannel(STOPWATCH_CHANNEL_ID, "SMC Stopwatch", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Stopwatch notifications"
-                    setSound(null, null)
-                    enableVibration(false)
-                }
-            )
-            // alarm channel: 高優先でサウンド・バイブ有効（システム設定に従う）
-            nm?.createNotificationChannel(
-                NotificationChannel(ALARM_CHANNEL_ID, "SMC Alarm", NotificationManager.IMPORTANCE_HIGH).apply {
-                    description = "Alarm notifications"
-                    // leave default sound/vibration so alarm notification can be prominent
-                }
-            )
+        val nm = getSystemService(NotificationManager::class.java)
+        nm?.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, "SMC Timer", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Timer notifications"
+            }
+        )
+        // stopwatch channel (silent)
+        nm?.createNotificationChannel(
+            NotificationChannel(
+                STOPWATCH_CHANNEL_ID,
+                "SMC Stopwatch",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Stopwatch notifications"
+                setSound(null, null)
+                enableVibration(false)
+            }
+        )
+        // alarm channel: 高優先でサウンド・バイブ有効（システム設定に従う）
+        nm?.createNotificationChannel(
+            NotificationChannel(
+                ALARM_CHANNEL_ID,
+                "SMC Alarm",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alarm notifications"
+                // leave default sound/vibration so alarm notification can be prominent
+            }
+        )
 
     }
 
@@ -284,7 +327,8 @@ class ClockService : Service() {
     }
 
     // reuse shared time formatter
-    private fun formatRemaining(millis: Long): String = jp.gr.java_conf.SenseMusicClock.formatMillisToTime(millis)
+    private fun formatRemaining(millis: Long): String =
+        jp.gr.java_conf.SenseMusicClock.formatMillisToTime(millis)
 
     private fun sendStopwatchTick(elapsed: Long) {
         val b = Intent(BROADCAST_STOPWATCH_TICK)
@@ -301,7 +345,13 @@ class ClockService : Service() {
         val seconds = (millis / 1000L) % 60L
         val minutes = (millis / 60000L) % 60L
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
-        return if (hours > 0) String.format(java.util.Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+        return if (hours > 0) String.format(
+            java.util.Locale.getDefault(),
+            "%02d:%02d:%02d",
+            hours,
+            minutes,
+            seconds
+        )
         else String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 
@@ -314,11 +364,15 @@ class ClockService : Service() {
                 startForeground(NOTIF_ID, buildNotification(formatStopwatch(getStopwatchElapsed())))
                 foregroundStarted = true
             }
-        } catch (e: Exception) { android.util.Log.w("ClockService", "promote foreground for stopwatch failed", e) }
+        } catch (e: Exception) {
+            android.util.Log.w("ClockService", "promote foreground for stopwatch failed", e)
+        }
         try {
             updateNotification(formatStopwatch(getStopwatchElapsed()))
             lastNotificationUpdate = System.currentTimeMillis()
-        } catch (e: Exception) { android.util.Log.w("ClockService", "updateNotification for stopwatch failed", e) }
+        } catch (e: Exception) {
+            android.util.Log.w("ClockService", "updateNotification for stopwatch failed", e)
+        }
         stopwatchHandler.post(stopwatchRunnable)
     }
 
@@ -335,7 +389,11 @@ class ClockService : Service() {
         stopwatchRunning = false
         stopwatchStartTime = 0L
         stopwatchElapsedWhenPaused = 0L
-        try { updateNotification("00:00") } catch (e: Exception) { android.util.Log.w("ClockService", "updateNotification failed on reset", e) }
+        try {
+            updateNotification("00:00")
+        } catch (e: Exception) {
+            android.util.Log.w("ClockService", "updateNotification failed on reset", e)
+        }
     }
 
     override fun onDestroy() {

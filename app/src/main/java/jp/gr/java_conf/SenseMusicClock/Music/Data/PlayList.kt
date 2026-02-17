@@ -10,6 +10,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.TypeConverter
 import androidx.room.Update
 import java.util.Date
 
@@ -35,7 +36,8 @@ data class PlayList(
     indices = [Index(value = ["playlistId"])])
 data class PlaylistItem (
     val playlistId        : Long  ,
-    @Embedded val fileItem: FileItem
+    @Embedded val fileItem: FileItem,
+    val index: Int
 
 )
 

@@ -2,22 +2,18 @@ package jp.gr.java_conf.SenseMusicClock
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.drawable.Drawable
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.recyclerview.widget.RecyclerView
-import com.google.devtools.ksp.symbol.Origin
-import jp.gr.java_conf.SenseMusicClock.BackgroundsImageFileAdapter
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import jp.gr.java_conf.SenseMusicClock.Music.Data.AppDataBase
+import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
 import java.io.File
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 fun Activity.launchSelectBackgroundImageDialog(
     originFileList: List<File> = getAllFile_inInternalStorage(
@@ -122,7 +118,7 @@ fun AppCompatActivity.launchClearBackgroundImageFileDialog(
 
 
     val inflater = layoutInflater
-    val customView = inflater.inflate(R.layout.background_files_dialog, null,false)
+    val customView = inflater.inflate(R.layout.recycle_view_dialog, null,false)
 
 
     val backgroundsImageFileView = customView.findViewById<RecyclerView>(R.id.backgroundFiles_forClear)
@@ -157,12 +153,92 @@ fun AppCompatActivity.launchClearBackgroundImageFileDialog(
             backgroundsImageFileView.adapter = null
         }
         .create()
-    dialog.show()
+    val show = dialog.show()
 
 
     this.lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
         override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) {
-            dialog.show().dismiss()
+            show.dismiss()
         }
     })
 }
+
+
+suspend fun Context.loadPlaylist(): List<PlayList> {
+
+    val db = AppDataBase.getInstance(this)
+    val playlistDao = db.playListDao()
+
+    return playlistDao.loadAllPlaylists()
+
+
+}
+
+suspend fun Context.loadPlaylistItem(playlistId : Long): List<PlaylistItem> {
+
+    val db = AppDataBase.getInstance(this)
+    val playlistItemDao = db.playListItemDao()
+
+    return playlistItemDao.loadItemsForPlaylist(playlistId)
+
+}
+suspend fun Context.loadBlocklist(): List<BlockList> {
+
+    val db = AppDataBase.getInstance(this)
+    val blocklistDao = db.blockListDao()
+
+    return blocklistDao.loadAllBlocklists()
+
+
+}
+
+suspend fun Context.loadBlocklistItem(blocklistId : Long): List<BlocklistItem> {
+
+    val db = AppDataBase.getInstance(this)
+    val blocklistItemDao = db.blockListItemDao()
+
+    return blocklistItemDao.loadItemsForBlocklist(blocklistId)
+
+}
+
+fun Context.showPlaylistSelectDialog(
+    playlists: List<PlayList>,
+    onPlaylistSelected: (Long) -> Unit
+) {
+    val dialog = AlertDialog.Builder(this)
+        .setTitle("プレイリストを選択")
+        .setItems(playlists.map { it.playlistName }.toTypedArray(), { dialog, which ->
+            // TODO:アイテム選択時の挙動
+            onPlaylistSelected(playlists[which].playlistId)
+        })
+        .setNegativeButton("キャンセル", {
+                dialog, _ ->
+                dialog.dismiss()
+        })
+        .create()
+    dialog.show()
+
+}
+
+fun Context.showBlockSelectDialog(
+    blockList: List<BlockList>,
+    onBlockSelected: (Long) -> Unit
+) {
+    val dialog = AlertDialog.Builder(this)
+        .setTitle("プレイリストを選択")
+        .setItems(blockList.map { it.blockListName }.toTypedArray(), { dialog, which ->
+            // TODO:アイテム選択時の挙動
+            onBlockSelected(blockList[which].blockListID)
+        })
+        .setNegativeButton("キャンセル", {
+                dialog, _ ->
+            dialog.dismiss()
+        })
+        .create()
+    dialog.show()
+
+
+}
+
+
+

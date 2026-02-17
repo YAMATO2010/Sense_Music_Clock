@@ -148,7 +148,11 @@ object LocalMusicRepository {
                         .setTitle(title)
                         .setAlbumTitle(album)
                         .setArtist(artist)
-                        .setArtworkUri(albumArtUri)
+                        .setArtworkUri(
+                            albumArtUri?.buildUpon()
+                                ?.appendQueryParameter("t", System.currentTimeMillis().toString())
+                                ?.build() ?: "app:///default_album_art.webp".toUri()
+                        )
                         .setTrackNumber(trackNo)
                         .setExtras(extras)
                         .setIsPlayable(true)
@@ -156,7 +160,7 @@ object LocalMusicRepository {
                         .build()
 
                     val mediaItem = MediaItem.Builder()
-                        .setMediaId(id.toString())
+                        .setMediaId(id.toString() + "_" + fastRandomUUID().toString()) // ID とタイトルを組み合わせてユニークな mediaId を生成
                         .setUri(uri)
                         .setMediaMetadata(metadata)
                         .build()

@@ -23,7 +23,7 @@
             android:name=".ListsActivity"
             android:exported="false" />
         <activity
-            android:name=".StandardPlayerActivity"
+            android:name=".Music.StandardPlayerActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="false"
             android:label="@string/title_activity_standard_player"

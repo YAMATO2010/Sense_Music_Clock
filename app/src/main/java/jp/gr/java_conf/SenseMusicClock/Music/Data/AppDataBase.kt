@@ -6,15 +6,22 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 
-/*
-@Database(entities = [PlayList::class, PlaylistItem::class, BlockList::class, BlocklistItem::class], version = 1 , exportSchema = false)
-abstract class AppDataBase : RoomDatabase(){
+
+@Database(
+    entities = [PlayList::class, PlaylistItem::class, BlockList::class, BlocklistItem::class, SearchHistory::class, listeningHistory::class],
+    version = 2,
+    exportSchema = false
+)
+@TypeConverters(DateConverters::class)
+abstract class AppDataBase : RoomDatabase() {
     abstract fun playListDao(): PlaylistDao
     abstract fun playListItemDao(): PlaylistItemDao
     abstract fun blockListDao(): BlocklistDao
     abstract fun blockListItemDao(): BlocklistItemDao
-
+    abstract fun searchHistoryDao(): SearchHistoryDao
+    abstract fun listeningHistoryDao(): listeningHistoryDao
 
     companion object {
         @Volatile
@@ -39,4 +46,3 @@ abstract class AppDataBase : RoomDatabase(){
 
 }
 
- */

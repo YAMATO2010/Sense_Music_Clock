@@ -3,31 +3,26 @@ package jp.gr.java_conf.SenseMusicClock
 
 import IDENTIFIER_INITIAL_INDEX_PROBLEM
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.os.Build
-import android.os.Bundle
-import android.support.v4.media.session.MediaSessionCompat
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import android.util.Log
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.SessionCommand
-import androidx.media3.session.SessionResult
-import androidx.media3.ui.PlayerNotificationManager
-import coil.imageLoader
-import coil.request.ImageRequest
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import jp.gr.java_conf.SenseMusicClock.Music.BitmapLoaderForSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,7 +38,6 @@ class Musicservice : MediaLibraryService() {
 
 
     private lateinit var player: ExoPlayer
-
 
     private var session: MediaLibrarySession? = null
 
@@ -101,43 +95,35 @@ class Musicservice : MediaLibraryService() {
     }
 
 
-
-
     override fun onCreate() {
         super.onCreate()
 
 
         player = ExoPlayer.Builder(this).build()
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(C.USAGE_MEDIA)
+            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+            .build()
 
+        player.setAudioAttributes(audioAttributes, true)
 
-
-        createNotificationChannel()
-
-
-        session = MediaLibrarySession.Builder(this, player, callback).build()
-
-
-        // プレイヤー状態変化で通知更新
-        player.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-
-
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-
-            }
-
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-
-
-            }
-        })
-
-
-
-
+        @UnstableApi
+        session =
+            MediaLibrarySession.Builder(this, player, callback)
+                .setSessionActivity(pendingIntent)
+                .setBitmapLoader(
+                    @UnstableApi
+                    BitmapLoaderForSession(this)
+                )
+                .build()
         scope.launch {
 
             // Use the app's named SharedPreferences (same as TargetDirectoryManager)
@@ -188,7 +174,10 @@ class Musicservice : MediaLibraryService() {
                     .collect { value ->
                         Log.d("Musicservice", "observeString.collect emitted value=$value")
                         val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(this@Musicservice, UserRelativePaths)
+                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
+                            this@Musicservice,
+                            UserRelativePaths
+                        )
 
                     }
             }
@@ -213,21 +202,27 @@ class Musicservice : MediaLibraryService() {
                             }) -> reloading"
                         )
                         val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(this@Musicservice, UserRelativePaths)
+                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
+                            this@Musicservice,
+                            UserRelativePaths
+                        )
 
                     }
             }
 
             launch {
                 LocalMusicRepository.tracksFlow.collect { value ->
-                    withContext(Dispatchers.Main){
+                    withContext(Dispatchers.Main) {
                         player.setMediaItems(value)
                     }
                 }
             }
             try {
                 val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(this@Musicservice, UserRelativePaths)
+                LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
+                    this@Musicservice,
+                    UserRelativePaths
+                )
             } catch (e: Exception) {
                 Log.w("Musicservice", "failed to load local tracks", e)
             }
@@ -304,15 +299,10 @@ class Musicservice : MediaLibraryService() {
     // 必要ならフォアグラウンド化（起動直後に呼ばれる）
 
 
-
-
     private fun createNotificationChannel() {
 
 
-
-
     }
-
 
 
     companion object {

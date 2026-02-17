@@ -1,34 +1,24 @@
-package jp.gr.java_conf.SenseMusicClock
+package jp.gr.java_conf.SenseMusicClock.Music
 
 import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.graphics.BitmapFactory
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v4.media.MediaMetadataCompat
-import androidx.appcompat.app.AppCompatActivity
-import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
+import android.util.Log
 import android.widget.SeekBar
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmapOrNull
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.session.MediaBrowser
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import coil.imageLoader
 import coil.load
-import coil.request.ImageRequest
+import jp.gr.java_conf.SenseMusicClock.Musicservice
 import jp.gr.java_conf.SenseMusicClock.R
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
+import jp.gr.java_conf.SenseMusicClock.load_forRoot
 
 class StandardPlayerActivity : AppCompatActivity() {
 
@@ -44,12 +34,16 @@ class StandardPlayerActivity : AppCompatActivity() {
 
 
     private val uiHandler = Handler(Looper.getMainLooper())
+
+
     private var progressUpdaterScheduled = false
 
 
     private val progressUpdateRunnable = object : Runnable {
         override fun run() {
+
             try {
+
                 val durationMs = mediaController?.duration ?: 0L
                 val posMs = mediaController?.currentPosition ?: 0L
 
@@ -62,7 +56,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                 sb.progress = posSec.coerceIn(0, (sb.max))
 
             } catch (e: Exception) {
-                android.util.Log.w("StandardPlayerActivity", "progress update failed", e)
+                Log.w("StandardPlayerActivity", "progress update failed", e)
             }
             if (progressUpdaterScheduled) uiHandler.postDelayed(this, 500)
         }
@@ -139,9 +133,13 @@ class StandardPlayerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityStandardPlayerBinding.inflate(layoutInflater)
+        enableEdgeToEdge()
         setContentView(binding.root)
         token = SessionToken(this, ComponentName(this, Musicservice::class.java))
-        binding.bgImageView.load_forRoot(this@StandardPlayerActivity,resources.configuration.orientation)
+        binding.bgImageView.load_forRoot(
+            this@StandardPlayerActivity,
+            resources.configuration.orientation
+        )
 
 
         val controllerFuture = MediaController.Builder(this, token).buildAsync()
@@ -173,7 +171,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
 
                     } catch (e: Exception) {
-                        android.util.Log.w("StandardPlayerActivity", "metadata update failed", e)
+                        Log.w("StandardPlayerActivity", "metadata update failed", e)
                     }
                 }
 
@@ -208,13 +206,17 @@ class StandardPlayerActivity : AppCompatActivity() {
                                     crossfade(true)
                                 }
 
-                                binding.bgImageView.load_forRoot(this@StandardPlayerActivity,resources.configuration.orientation)
+                                binding.bgImageView.load_forRoot(
+                                    this@StandardPlayerActivity,
+                                    resources.configuration.orientation
+                                )
 
                                 val durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L
                                 if (durationMs > 0) binding.seekBar.max =
                                     (durationMs / 1000L).toInt()
+                                startProgressUpdates()
                             } catch (e: Exception) {
-                                android.util.Log.w(
+                                Log.w(
                                     "StandardPlayerActivity",
                                     "metadata update failed",
                                     e
@@ -239,7 +241,7 @@ class StandardPlayerActivity : AppCompatActivity() {
             try {
                 mediaController?.seekToPrevious()
             } catch (e: Exception) {
-                android.util.Log.w("StandardPlayerActivity", "skipToPrevious failed", e)
+                Log.w("StandardPlayerActivity", "skipToPrevious failed", e)
             }
         }
 
@@ -247,7 +249,7 @@ class StandardPlayerActivity : AppCompatActivity() {
             try {
                 mediaController?.seekToNext()
             } catch (e: Exception) {
-                android.util.Log.w("StandardPlayerActivity", "skipToNext failed", e)
+                Log.w("StandardPlayerActivity", "skipToNext failed", e)
             }
         }
 
@@ -258,13 +260,13 @@ class StandardPlayerActivity : AppCompatActivity() {
                 try {
                     mediaController?.pause()
                 } catch (e: Exception) {
-                    android.util.Log.w("StandardPlayerActivity", "pause failed", e)
+                    Log.w("StandardPlayerActivity", "pause failed", e)
                 }
             } else {
                 try {
                     mediaController?.play()
                 } catch (e: Exception) {
-                    android.util.Log.w("StandardPlayerActivity", "play failed", e)
+                    Log.w("StandardPlayerActivity", "play failed", e)
                 }
             }
         }
@@ -273,7 +275,7 @@ class StandardPlayerActivity : AppCompatActivity() {
         val orientation = resources.configuration.orientation
 
         binding.scrimOverlay.background = ColorDrawable(getColor(R.color.black_overlay))
-        binding.bgImageView.load_forRoot(this@StandardPlayerActivity,orientation)
+        binding.bgImageView.load_forRoot(this@StandardPlayerActivity, orientation)
 
 
 
@@ -292,7 +294,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                             mediaController?.seekTo(positionMs)
                         }
                     } catch (e: Exception) {
-                        android.util.Log.w("StandardPlayerActivity", "seek handling failed", e)
+                        Log.w("StandardPlayerActivity", "seek handling failed", e)
                     }
                 }
             }
@@ -303,7 +305,7 @@ class StandardPlayerActivity : AppCompatActivity() {
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                if (mediaController?.isPlaying ?: false) startProgressUpdates()
+                startProgressUpdates()
             }
         })
 
