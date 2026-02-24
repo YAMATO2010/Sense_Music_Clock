@@ -1,6 +1,10 @@
 package jp.gr.java_conf.SenseMusicClock.Music
 
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
@@ -15,7 +19,9 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import coil.load
-import jp.gr.java_conf.SenseMusicClock.Musicservice
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
+import jp.gr.java_conf.SenseMusicClock.MusicService
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
 import jp.gr.java_conf.SenseMusicClock.load_forRoot
@@ -38,6 +44,25 @@ class StandardPlayerActivity : AppCompatActivity() {
 
     private var progressUpdaterScheduled = false
 
+    val timeTickReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_TIME_TICK) {
+                // 1分経つごとに呼ばれる
+                if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
+                        context,
+                        resources.configuration.orientation
+                    ).key != lastSourceBackGround
+                ) {
+                    lastSourceBackGround = binding.bgImageView.load_forRoot(
+                        context,
+                        resources.configuration.orientation
+                    )
+                }
+            }
+        }
+    }
+
+    private var lastSourceBackGround = ""
 
     private val progressUpdateRunnable = object : Runnable {
         override fun run() {
@@ -54,6 +79,9 @@ class StandardPlayerActivity : AppCompatActivity() {
                 // binding.seekBar is non-null via viewBinding
                 if (durationSec > 0 && sb.max != durationSec) sb.max = durationSec
                 sb.progress = posSec.coerceIn(0, (sb.max))
+                mediaController?.playWhenReady.let {
+                    animatePlayButton(it == true)
+                }
 
             } catch (e: Exception) {
                 Log.w("StandardPlayerActivity", "progress update failed", e)
@@ -135,8 +163,8 @@ class StandardPlayerActivity : AppCompatActivity() {
         binding = ActivityStandardPlayerBinding.inflate(layoutInflater)
         enableEdgeToEdge()
         setContentView(binding.root)
-        token = SessionToken(this, ComponentName(this, Musicservice::class.java))
-        binding.bgImageView.load_forRoot(
+        token = SessionToken(this, ComponentName(this, MusicService::class.java))
+        lastSourceBackGround = binding.bgImageView.load_forRoot(
             this@StandardPlayerActivity,
             resources.configuration.orientation
         )
@@ -206,10 +234,6 @@ class StandardPlayerActivity : AppCompatActivity() {
                                     crossfade(true)
                                 }
 
-                                binding.bgImageView.load_forRoot(
-                                    this@StandardPlayerActivity,
-                                    resources.configuration.orientation
-                                )
 
                                 val durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L
                                 if (durationMs > 0) binding.seekBar.max =
@@ -270,19 +294,48 @@ class StandardPlayerActivity : AppCompatActivity() {
                 }
             }
         }
+        val pref = PrefsManager.getSharedPreferences(this)
+        val nowRepeatMode = pref.getBoolean(getString(R.string.PLAYMODE_LOOP_KEY), false)
+
+        if (nowRepeatMode) {
+
+            binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
+        } else {
+            binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+        }
+        binding.btnRepeat.setOnClickListener {
+            val pref = PrefsManager.getSharedPreferences(this)
+            val nowRepeatMode = pref.getBoolean(getString(R.string.PLAYMODE_LOOP_KEY), false)
+            val isNewRepeatMode_oneLoop = !nowRepeatMode
+            pref.edit().putBoolean(getString(R.string.PLAYMODE_LOOP_KEY), isNewRepeatMode_oneLoop)
+                .apply()
+
+            if (isNewRepeatMode_oneLoop) {
+                val view = it as android.widget.ImageButton
+                view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
+            } else {
+                val view = it as android.widget.ImageButton
+                view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+            }
+        }
 
 
         val orientation = resources.configuration.orientation
 
         binding.scrimOverlay.background = ColorDrawable(getColor(R.color.black_overlay))
-        binding.bgImageView.load_forRoot(this@StandardPlayerActivity, orientation)
+        lastSourceBackGround =
+            binding.bgImageView.load_forRoot(this@StandardPlayerActivity, orientation)
 
 
 
 
 
         binding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+            override fun onProgressChanged(
+                seekBar: SeekBar?,
+                progress: Int,
+                fromUser: Boolean
+            ) {
                 if (fromUser) {
                     try {
                         // convert progress to percent of duration and ask service to seek
@@ -332,9 +385,16 @@ class StandardPlayerActivity : AppCompatActivity() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(timeTickReceiver)
+    }
+
     override fun onResume() {
         super.onResume()
-        binding.bgImageView.load_forRoot(this, resources.configuration.orientation)
+        lastSourceBackGround =
+            binding.bgImageView.load_forRoot(this, resources.configuration.orientation)
+        registerReceiver(timeTickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
     }
 
 

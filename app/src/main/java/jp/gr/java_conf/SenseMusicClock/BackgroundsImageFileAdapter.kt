@@ -90,13 +90,13 @@ class BackgroundsImageFileAdapter(
         // ensure container and the full itemView are clickable (some layouts may intercept clicks)
         holder.container.isClickable = true
         holder.container.setOnClickListener {
-            Log.i("SearchMusicAdapter", "container clicked: ${file.name}")
+            Log.d("SearchMusicAdapter", "container clicked: ${file.name}")
             onItemClick(file)
         }
         // also attach listener to itemView itself to be robust against view-hierarchy click interception
         holder.itemView.isClickable = true
         holder.itemView.setOnClickListener {
-            Log.i("SearchMusicAdapter", "itemView clicked: ${file.name} ")
+            Log.d("SearchMusicAdapter", "itemView clicked: ${file.name} ")
             onItemClick(file)
         }
     }

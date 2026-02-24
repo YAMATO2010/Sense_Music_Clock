@@ -3,9 +3,11 @@ package jp.gr.java_conf.SenseMusicClock
 
 
 import IDENTIFIER_INITIAL_INDEX_PROBLEM
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
@@ -23,6 +25,7 @@ import android.view.View
 import android.widget.TextView
 import kotlinx.coroutines.launch
 import android.graphics.Color
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat.getMainExecutor
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.getInstance
@@ -35,9 +38,13 @@ import app_dir
 import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
 import coil.load
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
+import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
 import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 import jp.gr.java_conf.SenseMusicClock.Music.StandardPlayerActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -65,6 +72,25 @@ class MainActivity : AppCompatActivity() {
     // ClockUiController to manage Timer/Alarm/Stopwatch UI
     private var clockUiController: ClockUiController? = null
 
+    private var lastSourceBackGround = ""
+
+
+    val timeTickReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_TIME_TICK) {
+                // 1分経つごとに呼ばれる
+                // ロゴ背景の更新を試みる。頻度が高いので、前回と同じ背景なら更新しないようにして無駄な処理を避ける
+                if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
+                        context,
+                        orientation
+                    ).key != lastSourceBackGround
+                ) {
+                    lastSourceBackGround = binding.bgImageView.load_forRoot(context, orientation)
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -78,6 +104,7 @@ class MainActivity : AppCompatActivity() {
 
 
         createAppFolderIfNeeded()
+
         storageAccessHelper = StorageAccessHelper(
             this,
             onDirectoryPicked = { _, _ -> },
@@ -182,6 +209,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+
         binding.GotoStandardPlayerButton.setOnClickListener {
             val intent = Intent(this, StandardPlayerActivity::class.java)
             startActivity(intent)
@@ -212,99 +240,176 @@ class MainActivity : AppCompatActivity() {
 
     fun jacketAdapterInitialized(): Boolean {
         jacketAdapter =
-            JacketAdapter(emptyList(), R.drawable.default_album_art, this) { clickedTrack ->
-                val clickedTrackMetadata = clickedTrack.mediaMetadata
-                Log.i(
-                    "MainActivity",
-                    "track clicked: ${clickedTrackMetadata.title}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
-                )
-                try {
-                    // If it's a local track, prefer asking the service to play by index (service has authoritative queue)
-                    var sent = false
+            JacketAdapter(
+                emptyList(),
+                R.drawable.default_album_art,
+                this,
+                onItemClick = { clickedTrack -> jacketAdapter_onItemClick(clickedTrack) },
+                onItemLongClick = { clickedTrack, view ->
+                    jacketAdapter_onItemLongClick(
+                        clickedTrack,
+                        view
+                    )
+                })
 
+        return ::jacketAdapter.isInitialized
+    }
 
-                    val index = getIndexById(clickedTrack)
-                    if (index != null && index >= 0) {
+    private fun jacketAdapter_onItemLongClick(clickedTrack: MediaItem, view: View) {
 
-                        sent = try {
+        val popup = PopupMenu(this, view)
 
-                            mediaBrowser?.seekTo(index, 0L)
-                            mediaBrowser?.play()
+        popup.menuInflater.inflate(R.menu.block_or_play_list, popup.menu)
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.playlist -> {
+                    // プレイリストに追加する処理
+                    val newPlaylistItem = PlaylistItem(
+                        playlistId = 0, //showPlaylistSelectDialog()で選んだプレイリストIDに置き換えてくれるのでここは適当でおけ
+                        fileItem = clickedTrack.CreateFileItem() ?: FileItem("", ""),
+                        index =
+                            0 //showPlaylistSelectDialog()で呼んでるaddPlaylistItemが適切なインデックスに置き換えてくれるのでここも適当でおけ
+                    )
+                    if (newPlaylistItem.fileItem.relativePath == "") {
+                        Log.e(
+                            "jacketAdapter_onItemLongClick",
+                            "getExtra_MediaItem for relative path returned null for track ${clickedTrack.mediaMetadata.title}"
+                        )
 
-
-                            true
-                        } catch (e: Exception) {
-
-                            Log.w("MainActivity", "seekTo via MediaBrowser failed", e)
-                            false
-                        }
+                        return@setOnMenuItemClickListener false
                     }
 
+                    if (newPlaylistItem.fileItem.fileName == "") {
+                        Log.e(
+                            "jacketAdapter_onItemLongClick",
+                            "getExtra_MediaItem for display name returned null for track ${clickedTrack.mediaMetadata.title}"
+                        )
+                        return@setOnMenuItemClickListener false
 
-                    // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
-                    if (!sent) {
-                        val index = jacketAdapter.getItemPosition(clickedTrack) ?: -1
-                        if (index >= 0) {
-
-                            mediaBrowser?.seekTo(index, 0L)
-                            mediaBrowser?.play()
+                    }
+                    lifecycleScope.launch {
+                        val playlists = loadPlaylist()
+                        showPlaylistSelectDialog(playlists, newPlaylistItem) { playlistId ->
+                            Log.d("MainActivity", "Selected playlist ID: $playlistId")
 
                         }
                     }
-                } catch (e: Exception) {
-                    Log.w("MainActivity", "play request failed", e)
+                    Log.d("MainActivity", "Add to playlist: ${clickedTrack.mediaMetadata.title}")
+                    true
                 }
 
-                // update texts and restart slide loop (Title -> Etc)
-                stopSlideLoop()
-                binding.TitleView.text = clickedTrackMetadata.title
-                binding.MusicEtcView.text =
-                    "${clickedTrackMetadata.artist} / ${clickedTrackMetadata.albumTitle}"
-                // update marquee state for both views
-                updateMarqueeFor(binding.TitleView)
-                updateMarqueeFor(binding.MusicEtcView)
+                R.id.blocklist -> {
+                    // ブロックリストに追加する処理
+                    Log.d("MainActivity", "Add to blocklist: ${clickedTrack.mediaMetadata.title}")
+                    true
+                }
+
+                else -> false
+            }
+
+        }
 
 
-                currentSlideTarget = SlideTarget.TITLE
-                startSlideLoop()
+    }
 
-                // load album art with Coil; use clickedTrack.albumArtUri when present, otherwise fallback to default drawable
-                try {
-                    val uri = clickedTrackMetadata.artworkUri
-                    if (uri != null) {
-                        binding.currentAlbumArt.load(uri) {
-                            placeholder(R.drawable.default_album_art)
-                            error(R.drawable.default_album_art)
-                            crossfade(true)
-                        }
-                    } else {
-                        binding.currentAlbumArt.load(R.drawable.default_album_art)
-                    }
+
+    private fun jacketAdapter_onItemClick(clickedTrack: MediaItem) {
+        val clickedTrackMetadata = clickedTrack.mediaMetadata
+        Log.d(
+            "MainActivity",
+            "track clicked: ${clickedTrackMetadata.title}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
+        )
+        try {
+            // If it's a local track, prefer asking the service to play by index (service has authoritative queue)
+            var sent = false
+
+
+            val index = getIndexById(clickedTrack)
+            if (index != null && index >= 0) {
+
+                sent = try {
+
+                    mediaBrowser?.seekTo(index, 0L)
+                    mediaBrowser?.play()
+
+                    true
                 } catch (e: Exception) {
-                    Log.w("MainActivity", "failed to load clickedTrack album art via Coil", e)
-                    try {
-                        binding.currentAlbumArt.load(R.drawable.default_album_art)
-                    } catch (ex: Exception) {
-                        Log.w("MainActivity", "fallback load clickedTrack album art failed", ex)
-                    }
+
+                    Log.w("MainActivity", "seekTo via MediaBrowser failed", e)
+                    false
                 }
             }
 
 
-        return ::jacketAdapter.isInitialized
+            // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
+            if (!sent) {
+                val index = jacketAdapter.getItemPosition(clickedTrack) ?: -1
+                if (index >= 0) {
+
+                    mediaBrowser?.seekTo(index, 0L)
+                    mediaBrowser?.play()
+
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "play request failed", e)
+        }
+
+        // update texts and restart slide loop (Title -> Etc)
+        stopSlideLoop()
+        binding.TitleView.text = clickedTrackMetadata.title
+        binding.MusicEtcView.text =
+            "${clickedTrackMetadata.artist} / ${clickedTrackMetadata.albumTitle}"
+        // update marquee state for both views
+        updateMarqueeFor(binding.TitleView)
+        updateMarqueeFor(binding.MusicEtcView)
+
+
+        currentSlideTarget = SlideTarget.TITLE
+        startSlideLoop()
+
+        // load album art with Coil; use clickedTrack.albumArtUri when present, otherwise fallback to default drawable
+        try {
+            val uri = clickedTrackMetadata.artworkUri
+            if (uri != null) {
+                binding.currentAlbumArt.load(uri) {
+                    placeholder(R.drawable.default_album_art)
+                    error(R.drawable.default_album_art)
+                    crossfade(true)
+                }
+            } else {
+                binding.currentAlbumArt.load(R.drawable.default_album_art)
+            }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "failed to load clickedTrack album art via Coil", e)
+            try {
+                binding.currentAlbumArt.load(R.drawable.default_album_art)
+            } catch (ex: Exception) {
+                Log.w("MainActivity", "fallback load clickedTrack album art failed", ex)
+            }
+        }
+
+
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(timeTickReceiver)
     }
 
     override fun onResume() {
         super.onResume()
 
+        registerReceiver(timeTickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
         // On resume: if orientation changed since last time, set pending instant scroll and reconfigure layout
 
-        binding.bgImageView.load_forRoot(this, orientation)
+        lastSourceBackGround = binding.bgImageView.load_forRoot(this, orientation)
         mediaBrowser?.let {
             runOnUiThread {
                 mainViewModel.clearTracks()
             }
-            loadAllMedias(it)
+            val newList = mutableListOf<MediaItem>()
+            loadAllMedias(newList,it)
         }
     }
 
@@ -341,7 +446,7 @@ class MainActivity : AppCompatActivity() {
 
         setLoadingVisible(true)
 
-        token = SessionToken(this, ComponentName(this, Musicservice::class.java))
+        token = SessionToken(this, ComponentName(this, MusicService::class.java))
         val browserFuture = MediaBrowser.Builder(this, token).buildAsync()
 
 
@@ -350,8 +455,6 @@ class MainActivity : AppCompatActivity() {
             // これでサービスと接続完了！再生操作などができるようになる
 
             mediaBrowser?.let {
-
-
 
 
                 if (mainViewModel.lastOrientation != resources.configuration.orientation) {
@@ -369,7 +472,8 @@ class MainActivity : AppCompatActivity() {
                             runOnUiThread {
                                 mainViewModel.clearTracks()
                             }
-                            loadAllMedias(it)
+                            val newList = mutableListOf<MediaItem>()
+                            loadAllMedias(newList,it)
                         }
 
 
@@ -377,7 +481,7 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                         super.onMediaItemTransition(mediaItem, reason)
-                        Log.i("MainActivity", "onMediaItemTransition: $mediaItem")
+                        Log.d("MainActivity", "onMediaItemTransition: $mediaItem")
 
                         runOnUiThread {
                             if (mediaItem != null) {
@@ -398,7 +502,8 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     mainViewModel.clearTracks()
                 }
-                loadAllMedias(it)
+                val newList  = mutableListOf<MediaItem>()
+                loadAllMedias(newList,it)
 
 
             }
@@ -416,7 +521,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun loadAllMedias(browser: MediaBrowser, page: Int = 0) {
+    private fun loadAllMedias(list: MutableList<MediaItem>, browser: MediaBrowser, page: Int = 0) {
         val pageSize = 300 // 一度に取得するアイテム数を指定
         val future = browser.getChildren("ROOT_ID", page, pageSize, null)
         future.addListener({
@@ -425,29 +530,30 @@ class MainActivity : AppCompatActivity() {
 
             if (items.isNotEmpty()) {
                 // Activity側のリストに追加
-                tracks.value?.addAll(items)
+                list.addAll(items)
 
 
                 // 次のページをリクエスト（再帰的に呼ぶ）
-                loadAllMedias(browser, page + 1)
+                loadAllMedias(list,browser, page + 1)
             } else {
                 // すべてのアイテムを取得し終わった後の処理
-                Log.i("MainActivity", "All media items loaded: total=${tracks.value?.size ?: 0}")
-                loadAllMediasComplete(browser)
+                Log.d("MainActivity", "All media items loaded: total=${tracks.value?.size ?: 0}")
+                loadAllMediasComplete(list,browser)
 
             }
         }, getMainExecutor(this))
     }
 
 
-    private fun loadAllMediasComplete(browser: MediaBrowser) {
+    private fun loadAllMediasComplete(newList : MutableList<MediaItem>, browser: MediaBrowser) {
 
-        Log.i("loadAllMediasComplete", " loadAllMediasComplete called")
+        Log.d("loadAllMediasComplete", " loadAllMediasComplete called")
+        mainViewModel.setTracks( newList)
         setLoadingVisible(false)
 
 
         val tracks = tracks.value ?: emptyList()
-        Log.i("track viewmodel", "tracks Size:${tracks.size}, tracksHash:${tracks.hashCode()}")
+        Log.d("track viewmodel", "tracks Size:${tracks.size}, tracksHash:${tracks.hashCode()}")
 
 
         runOnUiThread {
@@ -464,7 +570,10 @@ class MainActivity : AppCompatActivity() {
                     "commitCallback after setItems: hasItems=$hasItems, tracksSize=${tracks.size}"
                 )
                 val jacketAdaptertracks = jacketAdapter.getItems()
-                Log.i("track viewmodel/adapter", "viewmodel : [${tracks[1].mediaMetadata.title} ,${tracks[2].mediaMetadata.title}, ${tracks[3].mediaMetadata.title}], adapter : [${jacketAdaptertracks[1].mediaMetadata.title} ,${jacketAdaptertracks[2].mediaMetadata.title} ,${jacketAdaptertracks[3].mediaMetadata.title} ]")
+                Log.d(
+                    "track viewmodel/adapter",
+                    "viewmodel : [${tracks[1].mediaMetadata.title} ,${tracks[2].mediaMetadata.title}, ${tracks[3].mediaMetadata.title}], adapter : [${jacketAdaptertracks[1].mediaMetadata.title} ,${jacketAdaptertracks[2].mediaMetadata.title} ,${jacketAdaptertracks[3].mediaMetadata.title} ]"
+                )
 
                 // commit 完了後に現在再生トラックがあればリスト上で追従してスクロールする
                 if (hasItems) {
@@ -507,11 +616,11 @@ class MainActivity : AppCompatActivity() {
 
 
                 launch {
-                    val pref = getSharedPreferences(
-                        getString(SHAREDPREFERENCES_NAME),
-                        Context.MODE_PRIVATE
+                    val pref = PrefsManager.getSharedPreferences(this@MainActivity)
+                    SharedPrefsFlow.observeBoolean(
+                        pref,
+                        PrefsManager.getTileTitleDisplayKey(this@MainActivity)
                     )
-                    SharedPrefsFlow.observeBoolean(pref, getString(TILE_TITLE_DISPLAY))
                         .collect {
                             jacketAdapter.notifyItemChanged(0, jacketAdapter.itemCount)
                         }
@@ -560,7 +669,7 @@ class MainActivity : AppCompatActivity() {
             null
         )?.use { cursor ->
             if (cursor.count > 0) {
-                Log.i("MainActivity", "app folder already exists")
+                Log.d("MainActivity", "app folder already exists")
                 return
             }
         }
@@ -568,7 +677,7 @@ class MainActivity : AppCompatActivity() {
         val values = app_dir
         try {
             val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
-            Log.i("MainActivity", "フォルダ作成結果: $uri")
+            Log.d("MainActivity", "フォルダ作成結果: $uri")
         } catch (e: Exception) {
             Log.w("MainActivity", "フォルダ作成に失敗しました", e)
         }
@@ -579,7 +688,7 @@ class MainActivity : AppCompatActivity() {
     private enum class SlideTarget { TITLE }
 
     private var currentSlideTarget = SlideTarget.TITLE
-    // marqueeManager removed to disable custom animation implementation
+// marqueeManager removed to disable custom animation implementation
 
     // start/stop are now no-ops: animations removed. They reset view visual state and ensure marquee flags are applied.
     private fun startSlideLoop() {
@@ -728,7 +837,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        Log.i("positionForTrack", "getPositionForTrack: fallback by metadata idx=$idx")
+        Log.d("positionForTrack", "getPositionForTrack: fallback by metadata idx=$idx")
         return if (idx >= 0) idx else null
     }
 

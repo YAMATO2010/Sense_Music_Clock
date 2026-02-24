@@ -4,9 +4,11 @@ package jp.gr.java_conf.SenseMusicClock
 
 import android.content.ContentUris
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.Display
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.flow
 object LocalMusicRepository {
 
 
+
     private var _tracksFlow = MutableStateFlow( listOf<MediaItem>())
 
     val tracksFlow : StateFlow<List<MediaItem>> = _tracksFlow.asStateFlow()
@@ -30,6 +33,9 @@ object LocalMusicRepository {
     val EXTRA_ARTIST_ID = "ARTIST_ID"
     val EXTRA_RELATIVE_PATH = "RELATIVE_PATH"
 
+    val EXTRA_DISPLAY_NAME = "DISPLAY_NAME"
+
+    val EXTRA_DATA_PATH = "DATA_PATH"
 
 
     // 追加: 指定された相対パス群（または URI ベースのパス）とファイル名で絞り込む selection/args を生成する
@@ -83,6 +89,7 @@ object LocalMusicRepository {
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.RELATIVE_PATH,
+            MediaStore.Audio.Media.DISPLAY_NAME
         )
 
         val parts = mutableListOf<String>()
@@ -115,6 +122,9 @@ object LocalMusicRepository {
                 val artistIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID)
                 val trackIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val dataIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                val relativePathIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH)
+                val displayNameIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
+
 
                 while (c.moveToNext()) {
                     val id = c.getLong(idIdx)
@@ -127,6 +137,10 @@ object LocalMusicRepository {
                     val trackNo = c.getInt(trackIdx)
                     val path = c.getString(dataIdx) ?: ""
                     if (path.contains(".nomedia")) continue
+                    val relativePath = c.getString(relativePathIdx) ?: ""
+                    if (relativePath.contains(".nomedia")) continue
+                    val displayName = c.getString(displayNameIdx) ?: ""
+                    if (displayName.contains(".nomedia")) continue
                     val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
 
                     val albumArtUri : Uri? = try {
@@ -142,16 +156,16 @@ object LocalMusicRepository {
                     val extras = Bundle().apply {
                         putLong(EXTRA_ALBUM_ID, albumId)
                         putLong(EXTRA_ARTIST_ID, artistId)
-                        putString(EXTRA_RELATIVE_PATH, path)
+                        putString(EXTRA_RELATIVE_PATH,relativePath )
+                        putString(EXTRA_DISPLAY_NAME, displayName)
+                        putString(EXTRA_DATA_PATH, path)
                     }
                     val metadata = MediaMetadata.Builder()
                         .setTitle(title)
                         .setAlbumTitle(album)
                         .setArtist(artist)
                         .setArtworkUri(
-                            albumArtUri?.buildUpon()
-                                ?.appendQueryParameter("t", System.currentTimeMillis().toString())
-                                ?.build() ?: "app:///default_album_art.webp".toUri()
+                            albumArtUri ?: "app:///default_album_art.webp".toUri()
                         )
                         .setTrackNumber(trackNo)
                         .setExtras(extras)

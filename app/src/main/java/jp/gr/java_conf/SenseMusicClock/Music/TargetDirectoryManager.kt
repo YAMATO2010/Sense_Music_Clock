@@ -5,15 +5,15 @@ package jp.gr.java_conf.SenseMusicClock.Music
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import jp.gr.java_conf.SenseMusicClock.MUSIC_DIR_RELATIVE_PATHS_KEY
-import jp.gr.java_conf.SenseMusicClock.SHAREDPREFERENCES_NAME
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
+
 
 class TargetDirectoryManager(
     context: Context,
 
 ) {
-    private val key: String = context.getString(MUSIC_DIR_RELATIVE_PATHS_KEY)
-    private val prefs = context.getSharedPreferences(context.getString(SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE)
+    private val key: String = PrefsManager.getMusicDirRelativePathKey(context)
+    private val prefs = PrefsManager.getSharedPreferences(context)
     private val gson = Gson()
     private val listType = object : TypeToken<List<String>>() {}.type
 

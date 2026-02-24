@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Upsert
 import java.util.Date
 
 
@@ -30,7 +31,7 @@ interface SearchHistoryDao {
     @Query("DELETE FROM SearchHistory WHERE timestamp < :beforeDate")
     suspend fun deleteOldSearchHistory(beforeDate: Date)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertSearchHistory(searchHistory: SearchHistory)
 
     @Delete

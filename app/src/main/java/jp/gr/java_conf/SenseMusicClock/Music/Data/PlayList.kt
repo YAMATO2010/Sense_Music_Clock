@@ -12,19 +12,20 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.TypeConverter
 import androidx.room.Update
+import androidx.room.Upsert
 import java.util.Date
 
 
 @Entity(tableName = "playlists")
 data class PlayList(
-    @PrimaryKey(autoGenerate = true) val playlistId : Long,
+    @PrimaryKey(autoGenerate = true) val playlistId : Long = 0,
     val playlistName      : String,
     val deleted : Date? = null
 )
 
 
 @Entity(tableName = "playlistItems",
-    primaryKeys = ["playlistId", "relativePath", "fileName"],
+    primaryKeys = ["playlistId", "index"],
     foreignKeys = [
         ForeignKey(
             entity =   PlayList::class,
@@ -56,8 +57,8 @@ interface PlaylistDao {
     @Update
     suspend fun updatePlaylist(playlist: PlayList)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPlaylist(playlist: PlayList)
+    @Upsert
+    suspend fun insertPlaylist(playlist: PlayList): Long
 
 }
 
@@ -71,10 +72,16 @@ interface PlaylistItemDao {
     @Delete
     suspend fun deletePlaylistItem(playlistItem: PlaylistItem)
 
+    @Query("SELECT MAX('index') FROM playlistItems WHERE playlistId = :playlistId")
+    suspend fun getMaxIndexForPlaylist(playlistId: Long): Int?
+
     @Update
     suspend fun updatePlaylistItem(playlistItem: PlaylistItem)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertPlaylistItem(playlistItem: PlaylistItem)
+
+    @Upsert
+    suspend fun insertPlaylistItems(playlistItems: List<PlaylistItem>)
 }
 

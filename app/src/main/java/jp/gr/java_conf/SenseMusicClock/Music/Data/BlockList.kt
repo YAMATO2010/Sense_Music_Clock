@@ -11,11 +11,12 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import java.util.Date
 
 @Entity(tableName = "blockLists")
 data class BlockList(
-    @PrimaryKey(autoGenerate = true) val blockListID  : Long,
+    @PrimaryKey(autoGenerate = true) val blockListID  : Long = 0,
     val blockListName : String,
     val deleted : Date? = null
 )
@@ -53,7 +54,7 @@ interface BlocklistDao {
     @Update
     suspend fun updateBlockList(blockList: BlockList)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertBlockList(blockList: BlockList)
 }
 @Dao
@@ -69,6 +70,6 @@ interface BlocklistItemDao {
     @Update
     suspend fun updateBlocklistItem(blocklistItem: BlocklistItem)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertBlocklistItem(blocklistItem: BlocklistItem)
 }

@@ -11,7 +11,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import jp.gr.java_conf.SenseMusicClock.SHAREDPREFERENCES_NAME
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
 
 class StorageAccessHelper(
     private val activity: AppCompatActivity,
@@ -20,7 +20,7 @@ class StorageAccessHelper(
     private val onPermissionDenied: () -> Unit = {}
 
 ) {
-    private val prefs by lazy { activity.getSharedPreferences(activity.getString(SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE) }
+    private val prefs by lazy { PrefsManager.getSharedPreferences(activity) }
 
     private val perm: String =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

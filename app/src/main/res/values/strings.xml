@@ -27,7 +27,11 @@
     <string name="TILE_TITLE_DISPLAY">tile_title_display</string>
     <string name="album_art">album art</string>
     <string name="PLAYMODE_LOOP_KEY">playMode_loop</string>
+    <string name="SET_ALARM_TIME_KEY">set_alarm_time</string>
     <string name="timer_button_label">タイマー</string>
     <string name="alarm_button_label">アラーム</string>
     <string name="timer_done_label">完了</string>
+    <string name="morning">朝</string>
+    <string name="addPlaylist">プレイリストに追加</string>
+    <string name="blocklist_itemadd">ブロックリストに追加</string>
 </resources>

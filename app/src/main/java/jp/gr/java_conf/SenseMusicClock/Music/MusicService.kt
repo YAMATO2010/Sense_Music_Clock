@@ -4,9 +4,10 @@ package jp.gr.java_conf.SenseMusicClock
 import IDENTIFIER_INITIAL_INDEX_PROBLEM
 
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.media.AudioFocusRequest
+import android.content.IntentFilter
 import android.media.AudioManager
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.Player
@@ -30,11 +31,15 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryManager
+import jp.gr.java_conf.SenseMusicClock.PrefsManager.MUSIC_DIR_RELATIVE_PATHS_KEY
+import jp.gr.java_conf.SenseMusicClock.PrefsManager.PLAYMODE_LOOP_KEY
+import jp.gr.java_conf.SenseMusicClock.PrefsManager.ReLoad_Tracks_KEY
+import jp.gr.java_conf.SenseMusicClock.PrefsManager.VOLUME_ADJUSTMENT
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 
 
-class Musicservice : MediaLibraryService() {
+class MusicService : MediaLibraryService() {
 
 
     private lateinit var player: ExoPlayer
@@ -49,6 +54,15 @@ class Musicservice : MediaLibraryService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
         session
+
+
+    private val becomingNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent?.action) {
+                player.pause()
+            }
+        }
+    }
 
 
     val callback = object : MediaLibrarySession.Callback {
@@ -92,7 +106,15 @@ class Musicservice : MediaLibraryService() {
             }
         }
 
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            return super.onConnect(session, controller)
+        }
+
     }
+
 
 
     override fun onCreate() {
@@ -107,6 +129,7 @@ class Musicservice : MediaLibraryService() {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+
 
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
@@ -124,28 +147,27 @@ class Musicservice : MediaLibraryService() {
                     BitmapLoaderForSession(this)
                 )
                 .build()
+        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        registerReceiver(becomingNoisyReceiver, filter)
         scope.launch {
 
             // Use the app's named SharedPreferences (same as TargetDirectoryManager)
-            val prefs = this@Musicservice.getSharedPreferences(
-                getString(SHAREDPREFERENCES_NAME),
-                MODE_PRIVATE
-            )
-            Log.d("Musicservice", "prefs obtained (default) hash=${prefs.hashCode()}")
+            val prefs = PrefsManager.getSharedPreferences(this@MusicService)
+            Log.d("MusicService", "prefs obtained (default) hash=${prefs.hashCode()}")
             // デバッグ: 現在の SharedPreferences 全エントリを出力（キーと値の型を確認する）
-            Log.d("Musicservice", "prefs.all = ${prefs.all}")
+            Log.d("MusicService", "prefs.all = ${prefs.all}")
 
 
             // 音量設定の監視
             launch {
                 Log.d(
-                    "Musicservice",
+                    "MusicService",
                     "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}"
                 )
                 SharedPrefsFlow.observeInt(prefs, getString(VOLUME_ADJUSTMENT)).collect { value ->
                     val vol = (value.coerceIn(0, 100)) / 100.0f
                     player.volume = vol
-                    Log.i("Musicservice", "Volume adjusted to $value -> $vol")
+                    Log.d("MusicService", "Volume adjusted to $value -> $vol")
                 }
             }
             launch {
@@ -154,28 +176,29 @@ class Musicservice : MediaLibraryService() {
                         if (value == null) return@collect
                         player.repeatMode =
                             if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
-                        Log.i(
-                            "Musicservice",
+                        Log.d(
+                            "MusicService",
                             "Playmode loop set to $value -> repeatMode=${player.repeatMode}"
                         )
                     }
             }
 
 
+
             // ディレクトリリストの監視
             launch {
                 Log.d(
-                    "Musicservice",
+                    "MusicService",
                     "launching observeString collector for key=${
                         getString(MUSIC_DIR_RELATIVE_PATHS_KEY)
                     }"
                 )
                 SharedPrefsFlow.observeString(prefs, getString(MUSIC_DIR_RELATIVE_PATHS_KEY))
                     .collect { value ->
-                        Log.d("Musicservice", "observeString.collect emitted value=$value")
-                        val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                        Log.d("MusicService", "observeString.collect emitted value=$value")
+                        val UserRelativePaths = TargetDirectoryManager(this@MusicService).getAll()
                         LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                            this@Musicservice,
+                            this@MusicService,
                             UserRelativePaths
                         )
 
@@ -186,7 +209,7 @@ class Musicservice : MediaLibraryService() {
                 SharedPrefsFlow.observeBoolean(prefs, getString(ReLoad_Tracks_KEY), false)
                     .onStart {
                         Log.d(
-                            "Musicservice",
+                            "MusicService",
                             "launching observeBoolean collector for key=${
                                 getString(
                                     ReLoad_Tracks_KEY
@@ -195,15 +218,15 @@ class Musicservice : MediaLibraryService() {
                         )
                     }
                     .collect { _ ->
-                        Log.i(
-                            "Musicservice",
+                        Log.d(
+                            "MusicService",
                             "reload music directory requested (prefs key=${
                                 getString(ReLoad_Tracks_KEY)
                             }) -> reloading"
                         )
-                        val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
+                        val UserRelativePaths = TargetDirectoryManager(this@MusicService).getAll()
                         LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                            this@Musicservice,
+                            this@MusicService,
                             UserRelativePaths
                         )
 
@@ -218,18 +241,25 @@ class Musicservice : MediaLibraryService() {
                 }
             }
             try {
-                val UserRelativePaths = TargetDirectoryManager(this@Musicservice).getAll()
-                LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                    this@Musicservice,
-                    UserRelativePaths
-                )
+                if (LocalMusicRepository.tracksFlow.value.isEmpty()) {
+                    val UserRelativePaths = TargetDirectoryManager(this@MusicService).getAll()
+                    LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
+                        this@MusicService,
+                        UserRelativePaths
+                    )
+                }
             } catch (e: Exception) {
-                Log.w("Musicservice", "failed to load local tracks", e)
+                Log.w("MusicService", "failed to load local tracks", e)
             }
 
 
         }
 
+
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        return START_STICKY
 
     }
 
@@ -240,6 +270,7 @@ class Musicservice : MediaLibraryService() {
             release()
             session = null
         }
+        unregisterReceiver(becomingNoisyReceiver)
         scope.cancel()
 
 
@@ -250,20 +281,20 @@ class Musicservice : MediaLibraryService() {
     fun play() {
 
         if (player.mediaItemCount == 0) {
-            Log.i(
-                "Musicservice",
+            Log.d(
+                "MusicService",
                 "play: setting queue before play./currentIndex=${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
             )
 
         }
 
-        Log.i(
+        Log.d(
             "player_beforePlay",
             " playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
         )
 
         player.play()
-        Log.i(
+        Log.d(
             "player",
             " playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
         )

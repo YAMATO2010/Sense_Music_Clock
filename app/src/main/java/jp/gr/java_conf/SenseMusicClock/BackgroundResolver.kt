@@ -3,11 +3,8 @@ package jp.gr.java_conf.SenseMusicClock
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.BitmapFactory
 import android.util.Log
-import android.view.View
 import android.widget.ImageView
-import androidx.core.graphics.drawable.toDrawable
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
@@ -42,10 +39,20 @@ object BackgroundResolver {
 
 
     sealed class ImageSource {
+        abstract val key: String
 
-        data class FilePath(val file: File) : ImageSource()
-        data class Res(val id: Int) : ImageSource()
+        data class FilePath(val file: File) : ImageSource(){
+            override val key: String
+                get() = file.absolutePath
+        }
+        data class Res(val id: Int) : ImageSource(){
+            override val key: String
+                get() = id.toString()
+        }
     }
+
+
+
 
     fun loadFileIfExists(context: Context, path: String?): ImageSource? {
         if (path == null) return null
@@ -72,7 +79,7 @@ object BackgroundResolver {
 
     }
 
-    fun getPrefsKey(orientation: Int, partOfDay: Int): String {
+    fun getPrefsKey(orientation: Int, partOfDay: Int, ): String {
         val key = when (orientation) {
             ORIENTATION_OBLONG -> { // oblong
                 when (partOfDay) {
@@ -94,6 +101,7 @@ object BackgroundResolver {
                 }
             }
         }
+
         return key
     }
 
@@ -102,8 +110,8 @@ object BackgroundResolver {
         return preferences.getString(key, null)
     }
 
-    fun getDrawableId_byPrefsKey( key: String): ImageSource {
-        val DrawableId = when(key){
+    fun getDrawableId_byPrefsKey(key: String): ImageSource {
+        val DrawableId = when (key) {
 
             IMAGEFILE_KEY_LAND_MORNING -> R.drawable.land_morning;
             IMAGEFILE_KEY_LAND_NOON -> R.drawable.land_noon;
@@ -124,23 +132,23 @@ object BackgroundResolver {
 
     fun loadBackgroundSource(context: Context, orientation: Int): ImageSource {
 
-        val prefs = context.getSharedPreferences(context.getString(R.string.SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE)
+        val prefs = PrefsManager.getSharedPreferences(context)
 
 
         val partOfDay = getPartOfDay(getNowHour_Int())
 
-        Log.i("BackgroundResolver","現在の時間帯：${partOfDay}、画像の向き：${orientation}")
+        Log.d("BackgroundResolver", "現在の時間帯：${partOfDay}、画像の向き：${orientation}")
         val prefKey = getPrefsKey(orientation, partOfDay)
-        Log.i("BackgroundResolver","取得するPrefKey：${prefKey}")
+        Log.d("BackgroundResolver", "取得するPrefKey：${prefKey}")
         val filePath = getImageFilePath_forBackground(prefs, prefKey)
-        Log.i("BackgroundResolver","取得した画像ファイルパス：${filePath}")
+        Log.d("BackgroundResolver", "取得した画像ファイルパス：${filePath}")
 
         loadFileIfExists(context, "$BACKGROUNDS_PATH/$filePath")?.let {
-            Log.i("BackgroundResolver","画像ファイルが存在したのでそれを使用：${it}")
+            Log.d("BackgroundResolver", "画像ファイルが存在したのでそれを使用：${it}")
             return it
         }
 
-        Log.i("BackgroundResolver","画像ファイルが存在しなかったのでデフォルト画像を使用")
+        Log.d("BackgroundResolver", "画像ファイルが存在しなかったのでデフォルト画像を使用")
         return getDrawableId_byPrefsKey(prefKey)
 
 
@@ -148,15 +156,16 @@ object BackgroundResolver {
 
 
 
-
-
 }
 
-fun ImageView.load_forRoot(context: Context,orientation: Int){
 
 
-    val source = BackgroundResolver.loadBackgroundSource(context,orientation)
+fun ImageView.load_forRoot(context: Context, orientation: Int): String {
 
+
+
+
+    val source = BackgroundResolver.loadBackgroundSource(context, orientation)
 
     when (source) {
         is BackgroundResolver.ImageSource.FilePath -> {
@@ -166,10 +175,20 @@ fun ImageView.load_forRoot(context: Context,orientation: Int){
                     add(GifDecoder.Factory())          // Android 8以前のGIF用
                 }
                 .build()
-            this.load(source.file,imageLoader)
+
+            this.load(source.file, imageLoader)
+
         }
-        is BackgroundResolver.ImageSource.Res -> this.load(source.id)
+
+        is BackgroundResolver.ImageSource.Res -> {
+            this.load(source.id)
+
+        }
     }
+    return  source.key
+
 
 }
+
+
 

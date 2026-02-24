@@ -11,17 +11,17 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import android.content.Context
 import androidx.media3.common.MediaItem
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
-import jp.gr.java_conf.SenseMusicClock.SHAREDPREFERENCES_NAME
-import jp.gr.java_conf.SenseMusicClock.SpotifyTrack
-import jp.gr.java_conf.SenseMusicClock.TILE_TITLE_DISPLAY
+
 
 
 class JacketAdapter(
     initialItems: List<MediaItem> = emptyList(),
     private val placeholderRes: Int,
     private val context: Context,
-    private val onItemClick: (MediaItem) -> Unit = {}
+    private val onItemClick: (MediaItem) -> Unit = {},
+    private val onItemLongClick: (MediaItem, View) -> Unit = {_, _ -> }
 ) : ListAdapter<MediaItem, JacketAdapter.ViewHolder>(DIFF) {
 
     init {
@@ -69,13 +69,17 @@ class JacketAdapter(
 
         holder.TitleTextView.text = title
         }catch (e:Exception){
-            Log.i("JacketAdapter","曲名入りではないレイアウトなのでスキップ")
+            Log.d("JacketAdapter","曲名入りではないレイアウトなのでスキップ")
         }
 
 
 
 
         holder.artwork.setOnClickListener { onItemClick(track) }
+        holder.artwork.setOnLongClickListener {
+            onItemLongClick(track, it)
+            true
+        }
     }
 
 
@@ -87,9 +91,8 @@ class JacketAdapter(
 
     override fun getItemViewType(position: Int): Int {
 
-        val pref = context.getSharedPreferences(context.getString(SHAREDPREFERENCES_NAME), Context.MODE_PRIVATE)
-        //TODO レイアウト切り替え対応
-        val isTextPlus = pref.getBoolean(context.getString(TILE_TITLE_DISPLAY),false)
+    //TODO レイアウト切り替え対応
+        val isTextPlus = PrefsManager.getTileTitleDisplay(context)
 
         val layout_type = if (isTextPlus){
             TYPE_PLUSTEXT

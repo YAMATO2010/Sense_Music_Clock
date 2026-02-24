@@ -7,9 +7,15 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import dummyListId
+import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -73,7 +79,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-            preferenceManager.sharedPreferencesName = getString(SHAREDPREFERENCES_NAME)
+            preferenceManager.sharedPreferencesName = getString(PrefsManager.SHAREDPREFERENCES_NAME)
             preferenceManager.sharedPreferencesMode = MODE_PRIVATE
 
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
@@ -85,13 +91,13 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
-            val reloadPref: Preference? = findPreference(getString(ReLoad_Tracks_KEY))
+            val reloadPref: Preference? = findPreference(getString(PrefsManager.ReLoad_Tracks_KEY))
             reloadPref?.setOnPreferenceClickListener {
                 val pref = preferenceManager.sharedPreferences
-                val nowTF = !(pref?.getBoolean(getString(ReLoad_Tracks_KEY), false) ?: false)
+                val nowTF = !(pref?.getBoolean(getString(PrefsManager.ReLoad_Tracks_KEY), false) ?: false)
 
                 pref?.edit {
-                    putBoolean(getString(ReLoad_Tracks_KEY), nowTF)
+                    putBoolean(getString(PrefsManager.ReLoad_Tracks_KEY), nowTF)
                 }
                 true
 
@@ -124,17 +130,56 @@ class SettingsActivity : AppCompatActivity() {
             }
 
 
-
             val playlistPref: Preference? = findPreference("action_playlist")
             playlistPref?.setOnPreferenceClickListener {
 
 
+                val appCompatActivity = requireActivity() as? AppCompatActivity
+
+                appCompatActivity?.let {
+
+                    viewLifecycleOwner.lifecycleScope.launch {
+
+                        val playlists =
+                            listOf(PlayList(dummyListId, "")) + withContext(Dispatchers.IO) {
+                                it.loadPlaylist()
+                            }
+                        if (activity?.isFinishing ?: false || activity?.isDestroyed ?: false) return@launch
+                        it.showPlaylistSelectDialog(playlists) { playlistId ->
+                            // プレイリストが選択されたときの処理
+                            Log.d("SettingsFragment", "Selected playlist ID: $playlistId")
+
+                            val intent = Intent(activity, ListsActivity::class.java).apply {
+                                putExtra(
+                                    ListsActivity.EXTRA_LIST_TYPE,
+                                    ListsActivity.ListType.PLAYLIST.name
+                                )
+                                putExtra(ListsActivity.EXTRA_LIST_ID, playlistId)
+                            }
+                            it.startActivity(intent)
+
+                        }
+                    }
+
+
+                }
+
                 true
             }
 
-            val blocklistPlef: Preference? = findPreference("action_blocklist")
-            blocklistPlef?.setOnPreferenceClickListener {
+            val blocklistPref: Preference? = findPreference("action_blocklist")
+            blocklistPref?.setOnPreferenceClickListener {
 
+
+                val appCompatActivity = requireActivity() as? AppCompatActivity
+                val blockList = appCompatActivity?.let {
+                    lifecycleScope.launch {
+
+                        withContext(Dispatchers.IO) {
+                            it
+                        }
+                    }
+                }
                 true
             }
 

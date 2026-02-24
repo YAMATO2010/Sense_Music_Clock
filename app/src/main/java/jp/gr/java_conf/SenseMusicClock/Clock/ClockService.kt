@@ -1,8 +1,11 @@
 package jp.gr.java_conf.SenseMusicClock.Clock
 
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.media.Ringtone
+import android.media.RingtoneManager
+import android.os.Build
 
 import android.os.CountDownTimer
 import android.os.Handler
@@ -11,7 +14,6 @@ import android.os.Looper
 import androidx.core.app.NotificationCompat
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.getNotificationManagerCompat
-import jp.gr.java_conf.SenseMusicClock.playDefaultAlarmRingtoneSafe
 import jp.gr.java_conf.SenseMusicClock.vibrateOnceSafe
 
 
@@ -22,19 +24,17 @@ class ClockService : Service() {
         const val ACTION_STOP_TIMER = "jp.gr.java_conf.SenseMusicClock.ACTION_STOP_TIMER"
         const val EXTRA_DURATION = "duration_millis"
 
-        // Alarm trigger action sent from AlarmWorker
-        const val ACTION_ALARM_TRIGGERED = "jp.gr.java_conf.SenseMusicClock.ACTION_ALARM_TRIGGERED"
-        const val EXTRA_ALARM_EPOCH = "alarm_epoch_millis"
+
 
         const val BROADCAST_TICK = "jp.gr.java_conf.SenseMusicClock.TIMER_TICK"
 
 
-        const val ACTION_STOP_ALARM = "jp.gr.java_conf.SenseMusicClock.ACTION_STOP_ALARM"
+
         const val BROADCAST_FINISHED = "jp.gr.java_conf.SenseMusicClock.TIMER_FINISHED"
         const val EXTRA_REMAINING = "remaining_millis"
 
         private const val CHANNEL_ID = "smc_timer_channel"
-        private const val ALARM_CHANNEL_ID = "smc_alarm_channel"
+
         private const val NOTIF_ID = 2347
 
         // stopwatch actions/broadcasts
@@ -47,9 +47,6 @@ class ClockService : Service() {
     }
 
     private var timer: CountDownTimer? = null
-    private var currentRingtone: Ringtone? = null
-    private var alarmActive: Boolean = false
-    private var alarmEpoch: Long = -1L
 
     // whether service has been promoted to foreground for API timing requirement
     private var foregroundStarted = false
@@ -85,6 +82,9 @@ class ClockService : Service() {
         createChannel()
     }
 
+
+
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // If service was started (intent != null) and not yet promoted to foreground, promote quickly
         try {
@@ -106,31 +106,6 @@ class ClockService : Service() {
         }
 
         when (intent?.action) {
-            ACTION_ALARM_TRIGGERED -> {
-                // Mark alarm active and remember epoch if provided
-                val epoch = intent.getLongExtra(EXTRA_ALARM_EPOCH, -1L)
-                alarmActive = true
-                if (epoch > 0) alarmEpoch = epoch
-                // ensure foreground and update notification immediately
-                try {
-                    if (!foregroundStarted) {
-                        startForeground(NOTIF_ID, buildNotification(""))
-                        foregroundStarted = true
-                    } else {
-                        updateNotification("")
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("ClockService", "failed to ensure foreground for alarm", e)
-                }
-                // play ringtone & vibrate
-                currentRingtone = playDefaultAlarmRingtoneSafe()
-                try {
-                    vibrateOnceSafe()
-                } catch (e: Exception) {
-                    android.util.Log.w("ClockService", "vibrate failed", e)
-                }
-            }
-
             ACTION_START_STOPWATCH -> {
                 startStopwatch()
             }
@@ -141,19 +116,6 @@ class ClockService : Service() {
 
             ACTION_RESET_STOPWATCH -> {
                 resetStopwatch()
-            }
-
-            ACTION_STOP_ALARM -> {
-                // stop ringtone and clear alarm state
-                stopRingtone()
-                alarmActive = false
-                alarmEpoch = -1L
-                // update notification to reflect cleared alarm
-                try {
-                    updateNotification("")
-                } catch (e: Exception) {
-                    android.util.Log.w("ClockService", "updateNotification failed on stop alarm", e)
-                }
             }
 
             ACTION_START_TIMER -> {
@@ -183,8 +145,8 @@ class ClockService : Service() {
             override fun onFinish() {
                 updateNotification("完了")
                 sendFinishedBroadcast()
-                notifyFinished()
                 stopSelf()
+                vibrateOnceSafe()
             }
         }.start()
     }
@@ -192,7 +154,6 @@ class ClockService : Service() {
     private fun stopTimer() {
         timer?.cancel()
         timer = null
-        stopRingtone()
     }
 
     private fun sendTickBroadcast(millis: Long) {
@@ -205,25 +166,7 @@ class ClockService : Service() {
         sendBroadcast(Intent(BROADCAST_FINISHED))
     }
 
-    private fun notifyFinished() {
-        // play ringtone and vibrate using shared helpers
-        currentRingtone = playDefaultAlarmRingtoneSafe()
-        vibrateOnceSafe()
-    }
-
-    private fun stopRingtone() {
-        try {
-            currentRingtone?.stop()
-        } catch (e: Exception) {
-            android.util.Log.w("ClockService", "stopRingtone failed", e)
-        } finally {
-            currentRingtone = null
-        }
-    }
-
-    // reuse shared helpers in AndroidUtils.kt
-    // build the PendingIntent used for the "停止" action in the notification
-    // 引数で停止対象を切り替え可能にする（デフォルトはタイマー停止）
+    // build the PendingIntent used for the "停止" action in the notification (timer/stopwatch stop)
     private fun buildStopPendingIntent(action: String = ACTION_STOP_TIMER): PendingIntent {
         val stopIntent = Intent(this, ClockService::class.java).apply { this.action = action }
         return PendingIntent.getService(
@@ -235,25 +178,16 @@ class ClockService : Service() {
     }
 
     private fun buildNotification(contentText: String): Notification {
-        // choose appropriate stop action: prefer alarm stop when alarmActive
+        // choose appropriate stop action: timers use ACTION_STOP_TIMER, stopwatch has its own controls
         val stopAction = when {
-            alarmActive -> ACTION_STOP_ALARM
             timer != null -> ACTION_STOP_TIMER
             else -> ACTION_STOP_TIMER
         }
         val stopPending = buildStopPendingIntent(stopAction)
-        val stopLabel = if (stopAction == ACTION_STOP_ALARM) "アラーム停止" else "停止"
+        val stopLabel = "停止"
 
         // Build combined content listing active features
         val parts = mutableListOf<String>()
-        try {
-            if (alarmActive) {
-                val label = formatAlarmLabelFromEpoch(alarmEpoch)
-                parts.add("アラーム ${label}")
-            }
-        } catch (e: Exception) {
-            android.util.Log.w("ClockService", "formatAlarmLabelFromEpoch failed", e)
-        }
         try {
             if (timer != null) parts.add("タイマー")
         } catch (e: Exception) {
@@ -265,13 +199,9 @@ class ClockService : Service() {
             android.util.Log.w("ClockService", "checking stopwatch state failed", e)
         }
 
-        val finalText =
-            if (parts.isNotEmpty()) "実行中: ${parts.joinToString(", ")}" else contentText
+        val finalText = if (parts.isNotEmpty()) "実行中: ${parts.joinToString(", ")}" else contentText
 
-        // choose channel: alarm uses alarm channel (so system may play sound even on low importance channels separately)
-        val channelToUse = if (alarmActive) ALARM_CHANNEL_ID else CHANNEL_ID
-
-        return NotificationCompat.Builder(this, channelToUse)
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(finalText)
             .setSmallIcon(R.drawable.ic_notification)
@@ -307,23 +237,8 @@ class ClockService : Service() {
             }
         )
         // alarm channel: 高優先でサウンド・バイブ有効（システム設定に従う）
-        nm?.createNotificationChannel(
-            NotificationChannel(
-                ALARM_CHANNEL_ID,
-                "SMC Alarm",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Alarm notifications"
-                // leave default sound/vibration so alarm notification can be prominent
-            }
-        )
 
-    }
 
-    private fun formatAlarmLabelFromEpoch(epochMillis: Long): String {
-        if (epochMillis <= 0L) return ""
-        val z = java.time.Instant.ofEpochMilli(epochMillis).atZone(java.time.ZoneId.systemDefault())
-        return String.format(java.util.Locale.getDefault(), "%02d:%02d", z.hour, z.minute)
     }
 
     // reuse shared time formatter

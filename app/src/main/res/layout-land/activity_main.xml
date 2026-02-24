@@ -87,6 +87,7 @@
                     android:layout_weight="4"
                     android:hint="楽曲検索"
                     android:maxLines="1"
+
                     android:textColorHint="@color/white_glass"
                     android:autoSizeTextType="uniform"
                     />

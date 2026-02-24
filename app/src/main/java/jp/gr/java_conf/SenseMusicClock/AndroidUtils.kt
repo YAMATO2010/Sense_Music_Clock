@@ -5,9 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.Ringtone
-import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -18,7 +15,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.delay
-import org.checkerframework.checker.units.qual.Speed
 import java.io.File
 import java.util.Locale
 
@@ -34,25 +30,14 @@ fun pendingIntentFlags(minSdkForImmutable: Int = Build.VERSION_CODES.S): Int {
         PendingIntent.FLAG_UPDATE_CURRENT
 }
 
-fun Context.playDefaultAlarmRingtoneSafe(): Ringtone? {
-    return try {
-        val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        val r = RingtoneManager.getRingtone(this, alarmUri)
-        r.play()
-        r
-    } catch (e: Exception) {
-        Log.w("AndroidUtils", "playDefaultAlarmRingtoneSafe failed", e)
-        null
-    }
-}
-fun Context.saveToInternalStorage(uri: Uri,childPath : String = ""): File {
+fun Context.saveToInternalStorage(uri: android.net.Uri,childPath : String = ""): File {
     val dir = File(filesDir, childPath)
     if (!dir.exists()) dir.mkdirs()
 
 
 
     var fileName = getFileNameFromUri(uri) ?: "image_${System.currentTimeMillis()}"
+
 
 
     if (File(dir, fileName).exists()){
@@ -85,7 +70,7 @@ fun Context.saveToInternalStorage(uri: Uri,childPath : String = ""): File {
     return outFile
 }
 
-fun Context.getFileNameFromUri(uri: Uri): String? {
+fun Context.getFileNameFromUri(uri: android.net.Uri): String? {
     val cursor = contentResolver.query(uri, null, null, null, null)
     cursor?.use {
         if (it.moveToFirst()) {

@@ -4,107 +4,114 @@
     android:id="@+id/background_select_dialog_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
 
-    >
+    android:gravity="top"
 
-    <TextView
-        android:layout_marginTop="10dp"
+    android:orientation="vertical">
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:text="背景画像の選択"
-        android:layout_weight="1"
-        android:autoSizeTextType="uniform"
-        />
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="20dp"
-        android:layout_weight="1"
-        android:autoSizeTextType="uniform"
-        android:text="時間帯" />
-
-    <RadioGroup
-        android:id="@+id/PartOfDay_radioButtongroup"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-     >
-
-
-
-        <RadioButton
-            android:id="@+id/radioButtonMorning"
-            android:layout_width="0dp"
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:layout_weight="1"
-            android:text="朝" />
-        <RadioButton
-            android:id="@+id/radioButtonNoon"
-            android:layout_width="0dp"
+            android:layout_marginTop="7dp"
+
+            android:text="背景画像の選択"
+            android:textSize="15sp" />
+
+
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="昼" />
-        <RadioButton
-            android:id="@+id/radioButtonEvening"
-            android:layout_width="0dp"
+            android:layout_marginTop="5dp"
+
+            android:text="時間帯" />
+
+        <RadioGroup
+            android:id="@+id/PartOfDay_radioButtongroup"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="夕方" />
-        <RadioButton
-            android:id="@+id/radioButtonNight"
-            android:layout_width="0dp"
+
+            android:orientation="horizontal">
+
+
+            <RadioButton
+                android:id="@+id/radioButtonMorning"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="@string/morning" />
+
+            <RadioButton
+                android:id="@+id/radioButtonNoon"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="昼" />
+
+            <RadioButton
+                android:id="@+id/radioButtonEvening"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="夕方" />
+
+            <RadioButton
+                android:id="@+id/radioButtonNight"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="夜" />
+
+
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="夜" />
+            android:layout_marginTop="5dp"
 
+            android:text="画面の向き" />
 
-    </RadioGroup>
+        <RadioGroup
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="20dp"
-        android:autoSizeTextType="uniform"
-        android:layout_weight="1"
-        android:text="画面の向き" />
-
-    <RadioGroup
-
-        android:id="@+id/orientation_radioButtongroup"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        >
-
-
-
-        <RadioButton
-            android:id="@+id/radioButtonOblong"
-            android:layout_width="0dp"
+            android:id="@+id/orientation_radioButtongroup"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:layout_weight="1"
-            android:text="縦" />
-        <RadioButton
-            android:id="@+id/radioButtonLand"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="横" />
 
-    </RadioGroup>
+            android:orientation="horizontal">
+
+
+            <RadioButton
+                android:id="@+id/radioButtonOblong"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="縦" />
+
+            <RadioButton
+                android:id="@+id/radioButtonLand"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="横" />
+
+        </RadioGroup>
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/backgroundFiles"
         android:layout_width="match_parent"
-        android:layout_weight="5"
-        android:layout_height="0dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:maxHeight="50dp"
+        >
 
     </androidx.recyclerview.widget.RecyclerView>
 

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.Build
+import android.util.Log
 import android.widget.EditText
 import androidx.core.content.ContextCompat
 import androidx.work.Data
@@ -13,6 +14,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 
 import jp.gr.java_conf.SenseMusicClock.MainActivity
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
 import java.time.Duration
@@ -22,6 +24,9 @@ import java.time.LocalDateTime
  * ClockUiController: タイマー／アラーム／ストップウォッチに関する UI ロジックを MainActivity から分離するコントローラ。
  * - Activity と viewBinding を受け取り、ボタンのイベント・SharedPreferences・WorkManager・BroadcastReceiver を管理する。
  * - 音楽再生や RecyclerView などのロジックには触れない（独立）。
+ * ClockUiController: タイマー／ストップウォッチに関する UI ロジックを MainActivity から分離するコントローラ。
+ * - Activity と viewBinding を受け取り、ボタンのイベント・SharedPreferences・BroadcastReceiver を管理する。
+ * - アラームは外部で扱うため、ここからは削除。
  */
 class ClockUiController(
     private val activity: MainActivity,
@@ -29,10 +34,38 @@ class ClockUiController(
 ) {
 
     private val prefs: SharedPreferences by lazy {
-        activity.getSharedPreferences(
-            activity.getString(R.string.SHAREDPREFERENCES_NAME),
-            Context.MODE_PRIVATE
-        )
+        PrefsManager.getSharedPreferences(activity)
+    }
+
+    fun requestSetAlarm(hour: Int, minute: Int) {
+        Log.d("ClockUiController", "Requesting set alarm for $hour:$minute")
+        val intent : Intent = Intent(activity, AlarmService::class.java).apply {
+            action = AlarmService.ACTION_SET_ALARM
+            putExtra(AlarmService.ALARM_HOUR_KEY, hour)
+            putExtra(AlarmService.ALARM_MINUTE_KEY, minute)
+        }
+
+        activity.startForegroundService(intent)
+
+
+    }
+
+    fun requestStopAlarm() {
+        val intent = Intent(activity, AlarmService::class.java).apply {
+            action = AlarmService.ACTION_STOP_ALARM
+        }
+        activity.startService(intent)
+        PrefsManager.clearSetAlarmTime(activity)
+        Log.d("ClockUiController", "Requested stop alarm")
+    }
+    private fun requestCancelAlarm(){
+
+        val intent = Intent(activity, AlarmService::class.java).apply {
+            action = AlarmService.ACTION_CANCEL_ALARM
+        }
+        activity.startService(intent)
+        PrefsManager.clearSetAlarmTime(activity)
+        Log.d("ClockUiController", "Requested cancel alarm")
     }
 
     private var receiver: android.content.BroadcastReceiver? = null
@@ -40,25 +73,23 @@ class ClockUiController(
     fun init() {
         // restore labels
         val timerMillis = prefs.getLong("pref_timer_millis", 0L)
-        val alarmHour = prefs.getInt("pref_alarm_hour", -1)
-        val alarmMinute = prefs.getInt("pref_alarm_minute", -1)
-        // restore scheduled epoch if present (used to show next-day marker)
-        val alarmScheduledAt = prefs.getLong("pref_alarm_scheduled_at", -1L)
+
+        val alarmTime = PrefsManager.getSetAlarmTime(activity)
         // If pref doesn't contain elapsed value, display zero to avoid spurious numbers on first run
-        val swElapsed =
-            if (prefs.contains("pref_sw_elapsed")) prefs.getLong("pref_sw_elapsed", 0L) else 0L
+        val swElapsed = if (prefs.contains("pref_sw_elapsed")) prefs.getLong("pref_sw_elapsed", 0L) else 0L
 
         binding.TimerButton.text =
             if (timerMillis > 0L) formatMillisToTime(timerMillis) else activity.getString(R.string.timer_button_label)
         // show alarm button using scheduled epoch if available, otherwise fallback to stored hour/minute
         binding.alarmButton.text = when {
-            alarmScheduledAt > 0L -> formatAlarmLabelFromEpoch(alarmScheduledAt)
-            alarmHour >= 0 -> String.format("%02d:%02d", alarmHour, alarmMinute)
-            else -> activity.getString(R.string.alarm_button_label)
+            alarmTime.isNullOrEmpty() && alarmTime.isNullOrBlank() -> activity.getString(R.string.alarm_button_label)
+            else -> alarmTime
         }
         // Activity shows centiseconds; use centisecond formatter for initial label
+        // remove alarm button setup
         binding.stopWatchBtn.text = formatStopwatchDisplayWithCentis(swElapsed)
 
+        14
         // Timer
         binding.TimerButton.setOnClickListener {
             // Build a horizontal LinearLayout containing three numeric EditTexts for H/M/S
@@ -93,7 +124,7 @@ class ClockUiController(
             container.addView(etM)
             container.addView(etS)
 
-            android.app.AlertDialog.Builder(activity)
+            AlertDialog.Builder(activity)
                 .setTitle("タイマーを設定（時 / 分 / 秒）")
                 .setView(container)
                 .setPositiveButton("開始") { _, _ ->
@@ -125,49 +156,34 @@ class ClockUiController(
             true
         }
 
-        // Alarm
+        // Alarm TODO
         binding.alarmButton.setOnClickListener {
             val now = LocalDateTime.now()
             val tpd = android.app.TimePickerDialog(activity, { _, hourOfDay, minute ->
                 // compute scheduled epoch (today or next day)
-                val nowDt = LocalDateTime.now()
-                var target = nowDt.withHour(hourOfDay).withMinute(minute).withSecond(0).withNano(0)
-                var delayMillis = java.time.Duration.between(nowDt, target).toMillis()
-                if (delayMillis <= 0) {
-                    delayMillis += java.time.Duration.ofDays(1).toMillis()
-                    target = target.plusDays(1)
-                }
+
+
+                Log.d("ClockUiController", "Selected time: $hourOfDay:$minute")
                 // persist hour/minute and scheduled epoch
-                prefs.edit()
-                    .putInt("pref_alarm_hour", hourOfDay)
-                    .putInt("pref_alarm_minute", minute)
-                    .putLong(
-                        "pref_alarm_scheduled_at",
-                        target.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                    )
-                    .apply()
                 // update button label with possible next-day marker
-                binding.alarmButton.text =
-                    formatAlarmLabelFromEpoch(prefs.getLong("pref_alarm_scheduled_at", -1L))
+                val text = "$hourOfDay:$minute"
+                binding.alarmButton.text = text
+                PrefsManager.setSetAlarmTime(activity,hourOfDay, minute)
                 // schedule with WorkManager
-                scheduleAlarmWithWorkManager(hourOfDay, minute)
+                requestSetAlarm(hourOfDay, minute)
             }, now.hour, now.minute, true)
             tpd.show()
         }
         binding.alarmButton.setOnLongClickListener {
-            prefs.edit().remove("pref_alarm_hour").remove("pref_alarm_minute")
-                .remove("pref_alarm_scheduled_at").apply()
-            binding.alarmButton.text = activity.getString(R.string.alarm_button_label)
-            WorkManager.getInstance(activity).cancelAllWorkByTag("smc_alarm")
 
-            // ここで ClockService に ACTION_STOP_ALARM を投げる
-            val stopIntent = Intent(activity, ClockService::class.java).apply {
-                action = "jp.gr.java_conf.SenseMusicClock.ACTION_STOP_ALARM"
-            }
-            activity.startService(stopIntent)
+            binding.alarmButton.text = activity.getString(R.string.alarm_button_label)
+            requestStopAlarm()
+            requestCancelAlarm()
 
             true
         }
+
+
 
         // Stopwatch
         binding.stopWatchBtn.setOnClickListener {

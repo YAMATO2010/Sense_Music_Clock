@@ -11,7 +11,7 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [PlayList::class, PlaylistItem::class, BlockList::class, BlocklistItem::class, SearchHistory::class, listeningHistory::class],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(DateConverters::class)

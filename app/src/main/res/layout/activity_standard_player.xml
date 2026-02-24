@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
 
+    android:fitsSystemWindows="true"
     android:layout_height="match_parent">
     <ImageView
         android:id="@+id/bgImageView"
@@ -36,12 +37,14 @@
         android:id="@+id/btnBackEdge"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="20dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="back"
         android:src="@android:drawable/ic_menu_revert"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <ImageView
         android:id="@+id/ivAlbumArt"
@@ -52,13 +55,14 @@
         android:scaleType="fitCenter"
 
         android:src="@drawable/default_album_art"
-        app:layout_constraintBottom_toTopOf="@+id/guidelineHalf"
+        app:layout_constraintBottom_toTopOf="@id/linearLayout6"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnBackEdge" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
+        android:id="@+id/linearLayout6"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="50dp"
@@ -133,7 +137,6 @@
         </LinearLayout>
 
 
-
         <SeekBar
             android:id="@+id/seekBar"
             android:layout_width="match_parent"
@@ -155,8 +158,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="50dp"
-            android:orientation="horizontal"
             android:gravity="center_horizontal"
+            android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/seekBar">
@@ -191,6 +194,20 @@
 
 
     </LinearLayout>
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/btnRepeat"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:background="@null"
+        android:scaleType="fitCenter"
+        android:src="@drawable/media3_icon_repeat_all"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

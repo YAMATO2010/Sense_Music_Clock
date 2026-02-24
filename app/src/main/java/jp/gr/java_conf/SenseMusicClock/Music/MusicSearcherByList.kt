@@ -79,7 +79,7 @@ class MusicSearcherByList(
     private var searchJob: Job? = null
 
     fun ini() {
-        Log.i("MusicSearcher", "ini: initialTracks=${initialTracks.size}")
+        Log.d("MusicSearcher", "ini: initialTracks=${initialTracks.size}")
         // Ensure recyclerView is ready to show a vertical list
         try {
             if (recyclerView.layoutManager == null) {
@@ -342,13 +342,13 @@ class SearchMusicAdapter(
         // ensure container and the full itemView are clickable (some layouts may intercept clicks)
         holder.container.isClickable = true
         holder.container.setOnClickListener {
-            Log.i("SearchMusicAdapter", "container clicked: ${track.mediaMetadata.title}")
+            Log.d("SearchMusicAdapter", "container clicked: ${track.mediaMetadata.title}")
             onItemClick(track)
         }
         // also attach listener to itemView itself to be robust against view-hierarchy click interception
         holder.itemView.isClickable = true
         holder.itemView.setOnClickListener {
-            Log.i("SearchMusicAdapter", "itemView clicked: ${track.mediaMetadata.title} ")
+            Log.d("SearchMusicAdapter", "itemView clicked: ${track.mediaMetadata.title} ")
             onItemClick(track)
         }
     }
