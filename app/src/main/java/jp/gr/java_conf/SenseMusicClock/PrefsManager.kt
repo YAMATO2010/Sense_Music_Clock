@@ -1,115 +1,372 @@
 package jp.gr.java_conf.SenseMusicClock
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import android.util.Log
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_EVENING
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_MORNING
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_NIGHT
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_NOON
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_OBLONG_EVENING
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_OBLONG_MORNING
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_OBLONG_NIGHT
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_OBLONG_NOON
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.NOW_EVENING
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.NOW_MORNING
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.NOW_NIGHT
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.NOW_NOON
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.ORIENTATION_OBLONG
+import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 object PrefsManager {
 
-
-    val SHAREDPREFERENCES_NAME = R.string.SHAREDPREFERENCES_NAME
-    val MUSIC_DIR_RELATIVE_PATHS_KEY = R.string.MUSIC_DIR_RELATIVE_PATHS_KEY
-    val VOLUME_ADJUSTMENT = R.string.VOLUME_ADJUSTMENT
-    val ReLoad_Tracks_KEY = R.string.RELOAD_TRACKS_KEY
-    val TILE_TITLE_DISPLAY = R.string.TILE_TITLE_DISPLAY
-    val PLAYMODE_LOOP_KEY = R.string.PLAYMODE_LOOP_KEY
-
-    val SET_ALARM_TIME_KEY = R.string.SET_ALARM_TIME_KEY
+    val mutex = Mutex()
 
 
-    fun getSharedPreferences(context: Context): SharedPreferences = context.getSharedPreferences(
-        context.getString(SHAREDPREFERENCES_NAME),
-        Context.MODE_PRIVATE
-    )
+    val PREFS_NAME = "smc_prefs"
 
-    //こいつだけは別のクラスが担当しているので、キーの取得のみここで行う
-    fun getMusicDirRelativePathKey(context: Context): String {
-        return context.getString(MUSIC_DIR_RELATIVE_PATHS_KEY)
+    private val MUSIC_DIR_RELATIVE_PATHS_KEY = stringPreferencesKey("music_dir_relative_paths")
+    private val VOLUME_ADJUSTMENT = intPreferencesKey("volume_adjustment")
+    private val ReLoad_Tracks_KEY = booleanPreferencesKey("reLoad_Tracks")
+    private val TILE_TITLE_DISPLAY = booleanPreferencesKey("tile_title_display")
+    private val PLAYMODE_LOOP_KEY = booleanPreferencesKey("playMode_loop")
+    private val CURRENT_PLAYLIST_ID_KEY = longPreferencesKey("current_playlist_id")
+    private val CURRENT_BLOCKLIST_ID_KEY = longPreferencesKey("current_blocklist_id")
+    private val SET_ALARM_TIME_KEY = stringPreferencesKey("set_alarm_time")
+
+    const val IMAGEFILE_KEY_OBLONG_MORNING_KEY= "imageFile_key_oblong_morning"
+    const val IMAGEFILE_KEY_OBLONG_NOON_KEY  = "imageFile_key_oblong_noon"
+    const val IMAGEFILE_KEY_OBLONG_EVENING_KEY = "imageFile_key_oblong_evening"
+    const val IMAGEFILE_KEY_OBLONG_NIGHT_KEY = "imageFile_key_oblong_night"
+    const val IMAGEFILE_KEY_LAND_MORNING_KEY = "imageFile_key_land_morning"
+    const val IMAGEFILE_KEY_LAND_NOON_KEY  = "imageFile_key_land_noon"
+    const val IMAGEFILE_KEY_LAND_EVENING_KEY = "imageFile_key_land_evening"
+    const val IMAGEFILE_KEY_LAND_NIGHT_KEY = "imageFile_key_land_night"
+
+
+
+    //背景画像
+    fun getImageFileKey(orientation: Int, partOfDay: Int, ): String {
+        val key = when (orientation) {
+            ORIENTATION_OBLONG -> { // oblong
+                when (partOfDay) {
+                    NOW_MORNING -> IMAGEFILE_KEY_OBLONG_MORNING
+                    NOW_NOON -> IMAGEFILE_KEY_OBLONG_NOON
+                    NOW_EVENING -> IMAGEFILE_KEY_OBLONG_EVENING
+                    NOW_NIGHT -> IMAGEFILE_KEY_OBLONG_NIGHT
+                    else -> IMAGEFILE_KEY_OBLONG_NIGHT // default
+                }
+            }
+
+            else -> { // land
+                when (partOfDay) {
+                    NOW_MORNING -> IMAGEFILE_KEY_LAND_MORNING
+                    NOW_NOON -> IMAGEFILE_KEY_LAND_NOON
+                    NOW_EVENING -> IMAGEFILE_KEY_LAND_EVENING
+                    NOW_NIGHT -> IMAGEFILE_KEY_LAND_NIGHT
+                    else -> IMAGEFILE_KEY_LAND_NIGHT // default
+                }
+            }
+        }
+
+        return key
+    }
+
+    suspend fun getImageFilePath(context: Context, key: String, default: String = ""): String {
+        if (key !in listOf(
+                IMAGEFILE_KEY_OBLONG_MORNING_KEY,
+                IMAGEFILE_KEY_OBLONG_NOON_KEY,
+                IMAGEFILE_KEY_OBLONG_EVENING_KEY,
+                IMAGEFILE_KEY_OBLONG_NIGHT_KEY,
+                IMAGEFILE_KEY_LAND_MORNING_KEY,
+                IMAGEFILE_KEY_LAND_NOON_KEY,
+                IMAGEFILE_KEY_LAND_EVENING_KEY,
+                IMAGEFILE_KEY_LAND_NIGHT_KEY
+            )
+        ) {
+            throw IllegalArgumentException("Invalid key: $key")
+        }
+        return context.getPrefsValue(stringPreferencesKey(key), default)
+    }
+    suspend fun getImageFilePath(context: Context,orientation: Int, partOfDay: Int , default: String = ""): String {
+        val key = getImageFileKey(orientation, partOfDay)
+        if (key !in listOf(
+                IMAGEFILE_KEY_OBLONG_MORNING_KEY,
+                IMAGEFILE_KEY_OBLONG_NOON_KEY,
+                IMAGEFILE_KEY_OBLONG_EVENING_KEY,
+                IMAGEFILE_KEY_OBLONG_NIGHT_KEY,
+                IMAGEFILE_KEY_LAND_MORNING_KEY,
+                IMAGEFILE_KEY_LAND_NOON_KEY,
+                IMAGEFILE_KEY_LAND_EVENING_KEY,
+                IMAGEFILE_KEY_LAND_NIGHT_KEY
+            )
+        ) {
+            throw IllegalArgumentException("Invalid key: $key")
+        }
+        return context.getPrefsValue(stringPreferencesKey(key), default)
+    }
+    suspend fun setImageFilePath(context: Context, key: String, value: String) {
+        if (key !in listOf(
+                IMAGEFILE_KEY_OBLONG_MORNING_KEY,
+                IMAGEFILE_KEY_OBLONG_NOON_KEY,
+                IMAGEFILE_KEY_OBLONG_EVENING_KEY,
+                IMAGEFILE_KEY_OBLONG_NIGHT_KEY,
+                IMAGEFILE_KEY_LAND_MORNING_KEY,
+                IMAGEFILE_KEY_LAND_NOON_KEY,
+                IMAGEFILE_KEY_LAND_EVENING_KEY,
+                IMAGEFILE_KEY_LAND_NIGHT_KEY
+            )
+        ) {
+            throw IllegalArgumentException("Invalid key: $key")
+        }
+   context.setPrefsValue(stringPreferencesKey(key), value)
+    }
+    suspend fun setImageFilePath(context: Context,orientation: Int, partOfDay: Int , value: String){
+        val key = getImageFileKey(orientation, partOfDay)
+        if (key !in listOf(
+                IMAGEFILE_KEY_OBLONG_MORNING_KEY,
+                IMAGEFILE_KEY_OBLONG_NOON_KEY,
+                IMAGEFILE_KEY_OBLONG_EVENING_KEY,
+                IMAGEFILE_KEY_OBLONG_NIGHT_KEY,
+                IMAGEFILE_KEY_LAND_MORNING_KEY,
+                IMAGEFILE_KEY_LAND_NOON_KEY,
+                IMAGEFILE_KEY_LAND_EVENING_KEY,
+                IMAGEFILE_KEY_LAND_NIGHT_KEY
+            )
+        ) {
+            throw IllegalArgumentException("Invalid key: $key")
+        }
+       context.setPrefsValue(stringPreferencesKey(key),value)
     }
 
 
-    fun getVolumeAdjustmentKey(context: Context): String {
-        return context.getString(VOLUME_ADJUSTMENT)
-    }
 
-    fun getVolumeAdjustment(context: Context): Int {
-        val prefs = getSharedPreferences(context)
-        return prefs.getInt(getVolumeAdjustmentKey(context), 0)
-    }
 
-    fun setVolumeAdjustment(context: Context, value: Int) {
-        val prefs = getSharedPreferences(context)
-        prefs.edit { putInt(getVolumeAdjustmentKey(context), value) }
-    }
 
-    fun getReloadTracksKey(context: Context): String {
-        return context.getString(ReLoad_Tracks_KEY)
-    }
 
-    fun getReloadTracks(context: Context): Boolean {
-        val prefs = getSharedPreferences(context)
-        return prefs.getBoolean(getReloadTracksKey(context), false)
-    }
 
-    fun setReloadTracks(context: Context, value: Boolean) {
-        val prefs = getSharedPreferences(context)
-        prefs.edit { putBoolean(getReloadTracksKey(context), value) }
-    }
 
-    fun getTileTitleDisplayKey(context: Context): String {
-        return context.getString(TILE_TITLE_DISPLAY)
-    }
-
-    fun getTileTitleDisplay(context: Context): Boolean {
-        val prefs = getSharedPreferences(context)
-        return prefs.getBoolean(getTileTitleDisplayKey(context), false)
-    }
-
-    fun setTileTitleDisplay(context: Context, value: Boolean) {
-        val prefs = getSharedPreferences(context)
-        prefs.edit { putBoolean(getTileTitleDisplayKey(context), value) }
-    }
-
-    fun getPlayModeLoopKey(context: Context): String {
-        return context.getString(PLAYMODE_LOOP_KEY)
-    }
-
-    fun getPlayModeLoop(context: Context): Boolean {
-        val prefs = getSharedPreferences(context)
-        return prefs.getBoolean(getPlayModeLoopKey(context), false)
-    }
-
-    fun setPlayModeLoop(context: Context, value: Boolean) {
-        val prefs = getSharedPreferences(context)
-        prefs.edit { putBoolean(getPlayModeLoopKey(context), value) }
-    }
-
-    fun getSetAlarmTimeKey(context: Context): String {
-        return context.getString(SET_ALARM_TIME_KEY)
+    // 現在のプレイリストID
+    suspend fun getCurrentPlaylistIdFlow(context: Context, default: Long = -1): Flow<Long> {
+        return context.getPrefsFlow(CURRENT_PLAYLIST_ID_KEY, default)
     }
 
 
-    fun getSetAlarmTime(context: Context): String? {
-        val prefs = getSharedPreferences(context)
-        return prefs.getString(getSetAlarmTimeKey(context), null)
+
+
+
+
+
+
+    // 現在の音量
+    fun getVolumeAdjustmentFlow(context: Context, default: Int = 0): Flow<Int> {
+        return context.getPrefsFlow(VOLUME_ADJUSTMENT, default)
     }
 
-    fun setSetAlarmTime(context: Context, hour: Int = 0, minute: Int = 0) {
-        val prefs = getSharedPreferences(context)
+    suspend fun getVolumeAdjustment(context: Context, default: Int = 0): Int {
+        return context.getPrefsValue(VOLUME_ADJUSTMENT, default)
+    }
+
+    suspend fun setVolumeAdjustment(context: Context, value: Int) {
+        context.setPrefsValue(VOLUME_ADJUSTMENT, value)
+    }
+
+
+
+
+
+
+
+    // 音楽ディレクトリの相対パス
+    fun getMusicDirRelativePathFlow(context: Context, default: String = TargetDirectoryPrefJSONManager.UNKNOWN): Flow<String> {
+        return context.getPrefsFlow(MUSIC_DIR_RELATIVE_PATHS_KEY, default)
+    }
+
+    suspend fun getMusicDirRelativePath(context: Context, default: String = TargetDirectoryPrefJSONManager.UNKNOWN): String {
+        return context.getPrefsValue(MUSIC_DIR_RELATIVE_PATHS_KEY, default)
+    }
+
+    suspend fun setMusicDirRelativePath(context: Context, value: String) {
+        context.setPrefsValue(MUSIC_DIR_RELATIVE_PATHS_KEY, value)
+    }
+
+    suspend fun clearMusicDirRelativePath(context: Context) {
+        context.clearPrefsValue(MUSIC_DIR_RELATIVE_PATHS_KEY)
+    }
+
+
+
+
+
+
+
+    // トラックの再読み込みフラグ
+    fun getReloadTracksFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        Log.d("PrefsManager", "getReloadTracksFlow() -> fetching flow with default=$default")
+        return context.getPrefsFlow(ReLoad_Tracks_KEY, default)
+    }
+
+    suspend fun getReloadTracks(context: Context, default: Boolean = false): Boolean {
+        Log.d("PrefsManager", "getReloadTracks() -> fetching value with default=$default")
+        return context.getPrefsValue(ReLoad_Tracks_KEY, default)
+    }
+
+    suspend fun setReloadTracks(context: Context, value: Boolean) {
+        Log.d("PrefsManager", "setReloadTracks() -> $value")
+        context.setPrefsValue(ReLoad_Tracks_KEY, value)
+    }
+    suspend fun setReloadTracks_reverse_andGet(context: Context): Boolean {
+        val newValue = !(getReloadTracks(context))
+        setReloadTracks(context, newValue)
+        return newValue
+    }
+
+
+
+
+
+
+
+
+
+    // jacketAdapterでtext plusのlayout使うかフラグ
+    fun getTileTitleDisplayFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(TILE_TITLE_DISPLAY, default)
+    }
+
+    suspend fun getTileTitleDisplay(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(TILE_TITLE_DISPLAY, default)
+    }
+
+    suspend fun setTileTitleDisplay(context: Context, value: Boolean) {
+        context.setPrefsValue(TILE_TITLE_DISPLAY, value)
+    }
+
+
+
+
+
+
+
+
+    // 再生モードのループフラグ
+    fun getPlayModeLoopFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+
+        return context.getPrefsFlow(PLAYMODE_LOOP_KEY, default)
+    }
+
+    suspend fun getPlayModeLoop(context: Context, default: Boolean = false): Boolean {
+
+
+        return context.getPrefsValue(PLAYMODE_LOOP_KEY, default)
+    }
+
+    suspend fun setPlayModeLoop(context: Context, value: Boolean) {
+        context.setPrefsValue(PLAYMODE_LOOP_KEY, value)
+    }
+
+
+
+
+
+
+
+
+    // アラームセット時間
+    fun getSetAlarmTimeFlow(context: Context): Flow<String> {
+        return context.getPrefsFlow(SET_ALARM_TIME_KEY,"" )
+    }
+
+    suspend fun getSetAlarmTime(context: Context, default: String = ""): String {
+        return context.getPrefsValue(SET_ALARM_TIME_KEY, default)
+    }
+
+    suspend fun setSetAlarmTime(context: Context, hour: Int = 0, minute: Int = 0) {
+
 
         val value = if (hour in 0..23 && minute in 0..59 && !(hour == 0 && minute == 0)) {
             "$hour:$minute"
         } else {
             ""
         }
-        prefs.edit { putString(getSetAlarmTimeKey(context), value) }
+        context.setPrefsValue(SET_ALARM_TIME_KEY, value)
     }
 
-    fun clearSetAlarmTime(context: Context) {
-        val prefs = getSharedPreferences(context)
-        prefs.edit { remove(getSetAlarmTimeKey(context)) }
+    suspend fun clearSetAlarmTime(context: Context) {
+        context.dataStore.edit { prefs ->
+            prefs.remove(SET_ALARM_TIME_KEY)
+        }
+    }
+
+
+
+
+
+
+
+
+    //ここら辺はDataStore用の汎用関数。
+
+
+    private fun<T> Context.getPrefsFlow(
+        key: Preferences.Key<T>,
+        default: T
+    ): Flow<T> {
+        return dataStore.data.map { prefs ->
+            prefs[key] ?: default
+        }.distinctUntilChanged()
+
+    }
+    private suspend fun<T> Context.getPrefsValue(
+        key: Preferences.Key<T>,
+        default: T
+    ): T {
+        return withContext(Dispatchers.IO) {
+            mutex.withLock {
+                dataStore.data.map { prefs ->
+                    prefs[key] ?: default
+                }.distinctUntilChanged().first()
+            }
+        }
+
+    }
+
+    private suspend fun <T> Context.setPrefsValue(key: Preferences.Key<T>, value: T) {
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                dataStore.edit { prefs ->
+                    prefs[key] = value
+                }
+            }
+        }
+    }
+
+
+
+    private suspend fun <T> Context.clearPrefsValue(key: Preferences.Key<T> ) {
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                dataStore.edit { prefs ->
+                    prefs.remove(key)
+                }
+            }
+        }
     }
 
 

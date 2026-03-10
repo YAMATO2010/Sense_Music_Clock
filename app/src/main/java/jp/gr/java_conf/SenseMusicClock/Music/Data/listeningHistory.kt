@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Embedded
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import java.util.Date
@@ -13,10 +14,21 @@ data class listeningHistory(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Date = Date(),
     @Embedded val fileItem: FileItem,
-    val fromUser : Boolean = false
-)
+    val fromUser : Boolean = false,
+    val listenCount : Int = 1
+){
+    companion object{
+        const val PLAYLISTID_LISTENINGHISTORY = -5959L
+    }
+}
 
 
+fun listeningHistory.toPlayListItem(index: Int): PlaylistItem {
+    return PlaylistItem(
+        playlistId = listeningHistory.PLAYLISTID_LISTENINGHISTORY,
+        fileItem = this.fileItem,
+        index = index,)
+}
 
 @Dao
 interface listeningHistoryDao {

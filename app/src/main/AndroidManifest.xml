@@ -11,8 +11,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <attribution
+        android:tag="sense_music_player"
+        android:label="@string/smc_music_label" />
+
 
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -22,13 +27,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SenseMusicClock"
-        tools:targetApi="31">
+        >
+
         <activity
-            android:name=".ListsActivity"
+            android:name=".Music.list.ListsActivity"
             android:exported="false" />
         <activity
             android:name=".Music.StandardPlayerActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
+
             android:exported="false"
             android:label="@string/title_activity_standard_player"
             android:theme="@style/Theme.SenseMusicClock.Fullscreen" />
@@ -36,6 +42,8 @@
         <service
             android:name=".MusicService"
             android:exported="true"
+            android:enabled="true"
+
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaLibraryService" />
@@ -44,12 +52,22 @@
         </service>
 
 
-        <service
-            android:name=".Clock.ClockService"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback"
-            />
 
+
+        <service android:name=".Clock.AlarmService"
+            android:exported="false"
+            android:enabled="true"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service android:name=".Clock.TimerService"
+            android:exported="false"
+            android:enabled="true"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service android:name=".Clock.StopWatchService"
+            android:exported="false"
+            android:enabled="true"
+            android:foregroundServiceType="mediaPlayback" />
         <activity
             android:name=".SettingsActivity"
             android:exported="false"

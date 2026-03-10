@@ -36,7 +36,11 @@ data class BlocklistItem (
     val blocklistId        : Long ,
     @Embedded val fileItem: FileItem
 
-    )
+    ){
+    companion object{
+        const val TOPLAYLISTID = -333L
+    }
+}
 
 
 
@@ -47,6 +51,9 @@ interface BlocklistDao {
 
     @Query("SELECT * FROM blockLists")
     suspend fun loadAllBlocklists(): List<BlockList>
+
+    @Query("SELECT * FROM blockLists WHERE blockListID = :blockListID")
+    suspend fun loadBlocklistById(blockListID: Long): BlockList?
 
     @Delete
     suspend fun deleteBlockList(blockList: BlockList)

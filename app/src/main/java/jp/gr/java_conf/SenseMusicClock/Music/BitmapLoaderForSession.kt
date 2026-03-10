@@ -18,11 +18,12 @@ import jp.gr.java_conf.SenseMusicClock.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @UnstableApi
 class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
     private val imageLoader = ImageLoader(context)
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> {
         // バイト配列からのデコードが必要な場合（通常はあまり使われません）
@@ -37,7 +38,7 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
         return mimeType.startsWith("image/")
     }
 
-    override fun loadBitmapFromMetadata(metadata: MediaMetadata): ListenableFuture<Bitmap>? {
+    override fun loadBitmapFromMetadata(metadata: MediaMetadata): ListenableFuture<Bitmap> {
 
         val albumArtUri = metadata.artworkUri
 
@@ -54,37 +55,30 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
 
 
     private fun loadBitmapFromUri(uri: Uri?): ListenableFuture<Bitmap> {
-        var future = SettableFuture.create<Bitmap>()
+        val future = SettableFuture.create<Bitmap>()
 
 
         scope.launch {
             val loader = ImageLoader(context)
 
             val request = ImageRequest.Builder(context)
+                .allowHardware(false)
+                .crossfade(false)
                 .data(uri)
                 .placeholder(R.drawable.default_album_art)
                 .error(R.drawable.default_album_art)
                 .fallback(R.drawable.default_album_art)
                 .build()
 
-            val result = loader.execute(request)
+            withContext(Dispatchers.Main) {
 
-            if (result.drawable == null) {
-                val request = ImageRequest.Builder(context)
-                    .data(R.drawable.default_album_art)
-                    .placeholder(R.drawable.default_album_art)
-                    .error(R.drawable.default_album_art)
-                    .fallback(R.drawable.default_album_art)
-                    .build()
                 val result = loader.execute(request)
-                if (result is SuccessResult) {
-                    future.set(result.drawable.toBitmap())
-                } else {
-                    future.setException(RuntimeException("Failed to load default bitmap"))
-                }
 
-            } else {
-                future.set(result.drawable?.toBitmap())
+                if (result.drawable == null) {
+                    loadDefaultBitmap()
+                } else {
+                    future.set(result.drawable?.toBitmap())
+                }
             }
 
 
@@ -99,16 +93,21 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
         val future = SettableFuture.create<Bitmap>()
 
         scope.launch {
+
             val request = ImageRequest.Builder(context)
                 .data(R.drawable.default_album_art)
                 .allowHardware(false) // 通知用BitmapはソフトウェアBitmapである必要がある
                 .build()
 
-            val result = imageLoader.execute(request)
-            if (result is SuccessResult) {
-                future.set((result.drawable as android.graphics.drawable.BitmapDrawable).bitmap)
-            } else {
-                future.setException(RuntimeException("Failed to load default bitmap"))
+
+            withContext(Dispatchers.Main) {
+
+                val result = imageLoader.execute(request)
+                if (result is SuccessResult) {
+                    future.set((result.drawable as android.graphics.drawable.BitmapDrawable).bitmap)
+                } else {
+                    future.setException(RuntimeException("Failed to load default bitmap"))
+                }
             }
         }
 

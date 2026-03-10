@@ -4,14 +4,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:padding="0dp">
+    android:id="@+id/item_square_container"
+    android:clickable="true"
+    android:padding="9dp">
 
     <!-- コンテナは wrap_content にして中央寄せ、小さなマージンで詰める -->
     <FrameLayout
         android:id="@+id/squareContainer"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:layout_margin="4dp"
+        android:layout_width="wrap_content"
+        android:maxWidth="160dp"
+        android:minWidth="160dp"
+        android:layout_height="0dp"
         android:background="@color/white_glass_item_square"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -19,18 +22,20 @@
         app:layout_constraintEnd_toEndOf="parent">
 
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:orientation="vertical"
             >
 
 
-            <ImageButton
+            <ImageView
                 android:id="@+id/artwork"
                 android:layout_width="match_parent"
-                android:layout_height="130dp"
+                android:layout_height="0dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginHorizontal="20dp"
+
+                android:layout_weight="5"
 
                 android:background="@null"
                 android:paddingBottom="5dp"
@@ -42,15 +47,17 @@
             <TextView
                 android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
-                android:layout_height="20dp"
-
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:maxLines="1"
                 android:gravity="center"
                 android:textColor="@color/black"
                 android:layout_marginBottom="5dp"
                 android:textSize="12sp"
 
+
                 app:layout_constraintTop_toBottomOf="@+id/artwork" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
 
 
     </FrameLayout>

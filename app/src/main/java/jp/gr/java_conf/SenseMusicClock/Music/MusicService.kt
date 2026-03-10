@@ -1,7 +1,6 @@
 // kotlin
 package jp.gr.java_conf.SenseMusicClock
 
-import IDENTIFIER_INITIAL_INDEX_PROBLEM
 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -9,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
+import android.os.Build
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
@@ -29,13 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
-import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryManager
-import jp.gr.java_conf.SenseMusicClock.PrefsManager.MUSIC_DIR_RELATIVE_PATHS_KEY
-import jp.gr.java_conf.SenseMusicClock.PrefsManager.PLAYMODE_LOOP_KEY
-import jp.gr.java_conf.SenseMusicClock.PrefsManager.ReLoad_Tracks_KEY
-import jp.gr.java_conf.SenseMusicClock.PrefsManager.VOLUME_ADJUSTMENT
-import kotlinx.coroutines.flow.onStart
+import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
 import kotlinx.coroutines.withContext
 
 
@@ -71,19 +65,22 @@ class MusicService : MediaLibraryService() {
             session: MediaLibrarySession,
             browser: MediaSession.ControllerInfo,
             params: LibraryParams?
-        ) = Futures.immediateFuture(
-            LibraryResult.ofItem(
-                MediaItem.Builder()
-                    .setMediaId("ROOT_ID")
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setIsBrowsable(true)
-                            .setIsPlayable(false)
-                            .build()
-                    )
-                    .build(), params
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            Log.d("MusicService", "onGetLibraryRoot called by controller=${browser.packageName}")
+            return Futures.immediateFuture(
+                LibraryResult.ofItem(
+                    MediaItem.Builder()
+                        .setMediaId("ROOT_ID")
+                        .setMediaMetadata(
+                            MediaMetadata.Builder()
+                                .setIsBrowsable(true)
+                                .setIsPlayable(false)
+                                .build()
+                        )
+                        .build(), params
+                )
             )
-        )
+        }
 
         // ② 「1MBの壁」を回避するページング実装
         override fun onGetChildren(
@@ -94,6 +91,10 @@ class MusicService : MediaLibraryService() {
             pageSize: Int,
             params: LibraryParams?
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            Log.d(
+                "MusicService",
+                "onGetChildren called parentId=$parentId page=$page pageSize=$pageSize controller=${browser.packageName}"
+            )
             val allSongs = LocalMusicRepository.getTracks() // リポジトリの全曲リスト
             val fromIndex = page * pageSize
             val toIndex = minOf(fromIndex + pageSize, allSongs.size)
@@ -110,171 +111,176 @@ class MusicService : MediaLibraryService() {
             session: MediaSession,
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
+            Log.d("MusicService", "onConnect called controller=${controller.packageName}")
             return super.onConnect(session, controller)
         }
 
     }
 
 
-
     override fun onCreate() {
         super.onCreate()
-
-
-        player = ExoPlayer.Builder(this).build()
-        val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(C.USAGE_MEDIA)
-            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-            .build()
-
-        player.setAudioAttributes(audioAttributes, true)
-
-        @UnstableApi
-        session =
-            MediaLibrarySession.Builder(this, player, callback)
-                .setSessionActivity(pendingIntent)
-                .setBitmapLoader(
-                    @UnstableApi
-                    BitmapLoaderForSession(this)
-                )
-                .build()
-        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        registerReceiver(becomingNoisyReceiver, filter)
-        scope.launch {
-
-            // Use the app's named SharedPreferences (same as TargetDirectoryManager)
-            val prefs = PrefsManager.getSharedPreferences(this@MusicService)
-            Log.d("MusicService", "prefs obtained (default) hash=${prefs.hashCode()}")
-            // デバッグ: 現在の SharedPreferences 全エントリを出力（キーと値の型を確認する）
-            Log.d("MusicService", "prefs.all = ${prefs.all}")
-
-
-            // 音量設定の監視
-            launch {
-                Log.d(
-                    "MusicService",
-                    "launching observeInt collector for key=${getString(VOLUME_ADJUSTMENT)}"
-                )
-                SharedPrefsFlow.observeInt(prefs, getString(VOLUME_ADJUSTMENT)).collect { value ->
-                    val vol = (value.coerceIn(0, 100)) / 100.0f
-                    player.volume = vol
-                    Log.d("MusicService", "Volume adjusted to $value -> $vol")
-                }
+        Log.d("MusicService", "onCreate start")
+        try {
+            val attributionContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                createAttributionContext("sense_music_player")
+            } else {
+                this // Android 10以前はそのまま
             }
-            launch {
-                SharedPrefsFlow.observeBoolean(prefs, getString(PLAYMODE_LOOP_KEY))
-                    .collect { value ->
-                        if (value == null) return@collect
-                        player.repeatMode =
-                            if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
+
+
+            player = ExoPlayer.Builder(attributionContext).build()
+            val intent = Intent(this, MainActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            // 追加: 再生中にCPUがスリープするのを防ぐ
+            player.setWakeMode(C.WAKE_MODE_LOCAL)
+
+
+            val audioAttributes = AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                .build()
+
+            player.setAudioAttributes(audioAttributes, true)
+
+            @UnstableApi
+            session =
+                MediaLibrarySession.Builder(this, player, callback)
+                    .setSessionActivity(pendingIntent)
+                    .setBitmapLoader(
+                        @UnstableApi
+                        BitmapLoaderForSession(this)
+                    )
+                    .build()
+
+            Log.d("MusicService", "MediaLibrarySession created: session=$session")
+            val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+            registerReceiver(becomingNoisyReceiver, filter)
+            scope.launch {
+
+
+                // 音量設定の監視
+                launch {
+
+                    PrefsManager.getVolumeAdjustmentFlow(this@MusicService).collect { value ->
+                        val vol = (value.coerceIn(0, 100)) / 100.0f
+                        player.volume = vol
+                        Log.d("MusicService", "Volume adjusted to $value -> $vol")
+                    }
+
+                }
+                launch {
+
+                    PrefsManager.getPlayModeLoopFlow(this@MusicService).collect { value ->
+                        player.repeatMode = if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
                         Log.d(
                             "MusicService",
                             "Playmode loop set to $value -> repeatMode=${player.repeatMode}"
                         )
+
                     }
-            }
+                }
 
 
+                // ディレクトリリストの監視
+                launch {
 
-            // ディレクトリリストの監視
-            launch {
-                Log.d(
-                    "MusicService",
-                    "launching observeString collector for key=${
-                        getString(MUSIC_DIR_RELATIVE_PATHS_KEY)
-                    }"
-                )
-                SharedPrefsFlow.observeString(prefs, getString(MUSIC_DIR_RELATIVE_PATHS_KEY))
-                    .collect { value ->
-                        Log.d("MusicService", "observeString.collect emitted value=$value")
-                        val UserRelativePaths = TargetDirectoryManager(this@MusicService).getAll()
+                    PrefsManager.getMusicDirRelativePathFlow(this@MusicService).collect { value ->
+                        val UserRelativePaths =
+                            TargetDirectoryPrefJSONManager(this@MusicService).getAll()
+                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
+                            this@MusicService,
+                            UserRelativePaths
+                        )
+                    }
+                }
+
+                launch {
+
+                    PrefsManager.getReloadTracksFlow(this@MusicService).collect {
+                        Log.d(
+                            "MusicService",
+                            "reload music directory requested  "
+                        )
+                        val UserRelativePaths =
+                            TargetDirectoryPrefJSONManager(this@MusicService).getAll()
                         LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
                             this@MusicService,
                             UserRelativePaths
                         )
 
                     }
-            }
+                }
 
-            launch {
-                SharedPrefsFlow.observeBoolean(prefs, getString(ReLoad_Tracks_KEY), false)
-                    .onStart {
-                        Log.d(
-                            "MusicService",
-                            "launching observeBoolean collector for key=${
-                                getString(
-                                    ReLoad_Tracks_KEY
-                                )
-                            }"
-                        )
+                launch {
+                    LocalMusicRepository.tracksFlow.collect { value ->
+                        withContext(Dispatchers.Main) {
+                            player.setMediaItems(value)
+                        }
                     }
-                    .collect { _ ->
-                        Log.d(
-                            "MusicService",
-                            "reload music directory requested (prefs key=${
-                                getString(ReLoad_Tracks_KEY)
-                            }) -> reloading"
-                        )
-                        val UserRelativePaths = TargetDirectoryManager(this@MusicService).getAll()
+                }
+                try {
+                    if (LocalMusicRepository.getTracks().isEmpty()) {
+                        val UserRelativePaths =
+                            TargetDirectoryPrefJSONManager(this@MusicService).getAll()
                         LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
                             this@MusicService,
                             UserRelativePaths
                         )
-
                     }
-            }
-
-            launch {
-                LocalMusicRepository.tracksFlow.collect { value ->
-                    withContext(Dispatchers.Main) {
-                        player.setMediaItems(value)
-                    }
+                } catch (e: Exception) {
+                    Log.w("MusicService", "failed to load local tracks", e)
                 }
-            }
-            try {
-                if (LocalMusicRepository.tracksFlow.value.isEmpty()) {
-                    val UserRelativePaths = TargetDirectoryManager(this@MusicService).getAll()
-                    LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                        this@MusicService,
-                        UserRelativePaths
-                    )
-                }
-            } catch (e: Exception) {
-                Log.w("MusicService", "failed to load local tracks", e)
-            }
 
 
+            }
+
+        } catch (e: Exception) {
+            Log.e("MusicService", "onCreate initialization failed", e)
         }
-
-
+        Log.d("MusicService", "onCreate end")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        return START_STICKY
+        Log.d(
+            "MusicService",
+            "onStartCommand action=${intent?.action} flags=$flags startId=$startId"
+        )
+        return try {
+            super.onStartCommand(intent, flags, startId)
+            Log.d("MusicService", "onStartCommand processed")
+            START_STICKY
+        } catch (e: Exception) {
+            Log.e("MusicService", "onStartCommand exception", e)
+            START_STICKY
+        }
 
     }
 
 
     override fun onDestroy() {
-        session?.run {
-            player.release()
-            release()
-            session = null
+        Log.d("MusicService", "onDestroy start")
+        try {
+            session?.run {
+                player.release()
+                release()
+                session = null
+            }
+            unregisterReceiver(becomingNoisyReceiver)
+            scope.cancel()
+        } catch (e: Exception) {
+            Log.e("MusicService", "onDestroy cleanup failed", e)
         }
-        unregisterReceiver(becomingNoisyReceiver)
-        scope.cancel()
 
 
         super.onDestroy()
+        Log.d("MusicService", "onDestroy end")
     }
 
 

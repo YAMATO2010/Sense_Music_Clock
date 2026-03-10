@@ -3,118 +3,313 @@ package jp.gr.java_conf.SenseMusicClock.Clock
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.EditText
-import androidx.core.content.ContextCompat
-import androidx.work.Data
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-
+import android.widget.LinearLayout
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import jp.gr.java_conf.SenseMusicClock.MainActivity
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
-import java.time.Duration
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import java.util.Locale.getDefault
 
 /**
  * ClockUiController: タイマー／アラーム／ストップウォッチに関する UI ロジックを MainActivity から分離するコントローラ。
- * - Activity と viewBinding を受け取り、ボタンのイベント・SharedPreferences・WorkManager・BroadcastReceiver を管理する。
+ * - Activity と viewBinding を受け取り、ボタンのイベント・SharedPreferences・時計関連の各サービスとの接続 を管理する。
  * - 音楽再生や RecyclerView などのロジックには触れない（独立）。
- * ClockUiController: タイマー／ストップウォッチに関する UI ロジックを MainActivity から分離するコントローラ。
- * - Activity と viewBinding を受け取り、ボタンのイベント・SharedPreferences・BroadcastReceiver を管理する。
- * - アラームは外部で扱うため、ここからは削除。
  */
 class ClockUiController(
     private val activity: MainActivity,
     private val binding: ActivityMainBinding
 ) {
 
-    private val prefs: SharedPreferences by lazy {
-        PrefsManager.getSharedPreferences(activity)
-    }
+
+    private var stopWatchService: StopWatchService? = null
+    private var timerService: TimerService? = null
+
 
     fun requestSetAlarm(hour: Int, minute: Int) {
         Log.d("ClockUiController", "Requesting set alarm for $hour:$minute")
-        val intent : Intent = Intent(activity, AlarmService::class.java).apply {
+        val intent: Intent = Intent(activity, AlarmService::class.java).apply {
             action = AlarmService.ACTION_SET_ALARM
             putExtra(AlarmService.ALARM_HOUR_KEY, hour)
             putExtra(AlarmService.ALARM_MINUTE_KEY, minute)
         }
 
         activity.startForegroundService(intent)
+        Log.d(
+            "ClockUiController",
+            "startForegroundService sent for AlarmService with $hour:$minute"
+        )
 
 
     }
 
-    fun requestStopAlarm() {
+    suspend fun requestStopAlarm() {
+        Log.d("ClockUiController", "requestStopAlarm called")
         val intent = Intent(activity, AlarmService::class.java).apply {
             action = AlarmService.ACTION_STOP_ALARM
         }
         activity.startService(intent)
         PrefsManager.clearSetAlarmTime(activity)
-        Log.d("ClockUiController", "Requested stop alarm")
+        Log.d("ClockUiController", "Requested stop alarm (startService) and cleared prefs")
     }
-    private fun requestCancelAlarm(){
+
+    fun requestResetStopWatch() {
+        Log.d("ClockUiController", "requestresetStopWatch called")
+        val intent = Intent(activity, StopWatchService::class.java).apply {
+            action = StopWatchService.ACTION_RESET_STOPWATCH
+        }
+        activity.startService(intent)
+        Log.d("ClockUiController", "startService sent to StopWatchService to reset")
+        unbindService_StopWatch()
+    }
+
+    private suspend fun requestCancelAlarm() {
+        Log.d("ClockUiController", "requestCancelAlarm called")
 
         val intent = Intent(activity, AlarmService::class.java).apply {
             action = AlarmService.ACTION_CANCEL_ALARM
         }
         activity.startService(intent)
         PrefsManager.clearSetAlarmTime(activity)
-        Log.d("ClockUiController", "Requested cancel alarm")
+        Log.d("ClockUiController", "Requested cancel alarm (startService) and cleared prefs")
     }
 
-    private var receiver: android.content.BroadcastReceiver? = null
+
+    private fun requestStartTimer(duration: Long) {
+        Log.d("ClockUiController", "requestStartTimer called with duration=$duration")
+
+
+        val intent = Intent(activity, TimerService::class.java).apply {
+            action = TimerService.ACTION_START_TIMER
+            putExtra(TimerService.EXTRA_TIMER_DURATION, duration)
+        }
+        activity.startForegroundService(intent)
+        Log.d(
+            "ClockUiController",
+            "startForegroundService sent for TimerService duration=$duration"
+        )
+        BindService_Timer()
+
+    }
+
+    private fun requestStopTimer() {
+        Log.d("ClockUiController", "requestStopTimer called")
+        val intent = Intent(activity, TimerService::class.java).apply {
+            action = TimerService.ACTION_STOP_TIMER
+        }
+        activity.startService(intent)
+        Log.d("ClockUiController", "startService sent to TimerService to stop")
+    }
+
+
+    private val timerConnection = object : android.content.ServiceConnection {
+        override fun onServiceConnected(
+            name: android.content.ComponentName?,
+            service: android.os.IBinder?
+        ) {
+            Log.d(
+                "ClockUiController",
+                "timerConnection.onServiceConnected: name=$name service=$service"
+            )
+            // Not used since we're using BroadcastReceiver for updates
+            val binder = service as? TimerService.LocalBinder
+            timerService = binder?.getService()
+            timerService?.let {
+
+
+                activity.lifecycleScope.launch {
+                    activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+
+                        Log.d("ClockUiController", "Collecting remainingTime from TimerService")
+                        it.remainingTime.collect { value ->
+
+
+                            if (binding.TimerButton.text != "タイマー" && value <= 0L) {
+                                binding.TimerButton.text = "完了！"
+                            } else {
+                                binding.TimerButton.text = formatMillisToTime(value)
+                            }
+                        }
+                    }
+                }
+
+            }
+
+
+        }
+
+
+        override fun onServiceDisconnected(name: android.content.ComponentName?) {
+            Log.d("ClockUiController", "timerConnection.onServiceDisconnected: name=$name")
+
+            binding.TimerButton.text = "タイマー"
+            timerService = null
+            // Not used
+        }
+    }
+
+    private val stopWatchConnection = object : android.content.ServiceConnection {
+        override fun onServiceConnected(
+            name: android.content.ComponentName?,
+            service: android.os.IBinder?
+        ) {
+            Log.d(
+                "ClockUiController",
+                "stopWatchConnection.onServiceConnected: name=$name service=$service"
+            )
+
+            val binder = service as? StopWatchService.LocalBinder
+            stopWatchService = binder?.getService()
+            handler.postDelayed(timer_textOutput, 0L)
+        }
+
+        override fun onServiceDisconnected(name: android.content.ComponentName?) {
+            Log.d("ClockUiController", "stopWatchConnection.onServiceDisconnected: name=$name")
+
+            binding.stopWatchBtn.text = "ストップウォッチ"
+            // Not used
+            handler.removeCallbacks(timer_textOutput)
+        }
+    }
+
+    fun onDestroy() {
+        unbindService_Timer()
+        unbindService_StopWatch()
+        handler.removeCallbacks(timer_textOutput)
+    }
+
+    val handler = Handler(Looper.getMainLooper())
+    val timer_textOutput = object : Runnable {
+        override fun run() {
+            // timeに0.1秒を追加
+
+            stopWatchService?.let {
+                val millis = it.getElapsedTime_Millis()
+                val text = formatStopwatchDisplayWithCentis(millis)
+                binding.stopWatchBtn.text = text
+
+
+            }
+
+            //　なんか、0.01秒ごとに更新したいけど、それだと負荷が高すぎるので、0.01秒から0.1秒の間でランダムに遅延させることで少数第二位の表示を擬似的に実現する
+            val delayMillis = (10..70).random().toLong()
+
+            handler.postDelayed(this, delayMillis)
+        }
+    }
+
+
+    fun startService_StopWatch() {
+        Log.d("ClockUiController", "startService_StopWatch called")
+        val intent = Intent(activity, StopWatchService::class.java).apply {
+            action = StopWatchService.ACTION_AUTO_STOPWATCH
+        }
+        activity.startService(intent)
+        Log.d("ClockUiController", "startService sent for StopWatchService")
+    }
+
+
+    fun BindService_StopWatch() {
+        Log.d("ClockUiController", "BindService_StopWatch called")
+        val intent = Intent(activity, StopWatchService::class.java)
+        activity.bindService(intent, stopWatchConnection, 0)
+        Log.d("ClockUiController", "bindService requested for StopWatchService")
+    }
+
+    fun unbindService_StopWatch() {
+        Log.d("ClockUiController", "unbindService_StopWatch called")
+        try {
+            activity.unbindService(stopWatchConnection)
+            Log.d("ClockUiController", "unbindService StopWatch succeeded")
+        } catch (e: Exception) {
+            Log.w("ClockUiController", "unbindService StopWatch failed", e)
+        }
+    }
+
+    fun unbindService_Timer() {
+        Log.d("ClockUiController", "unbindService_Timer called")
+        try {
+            activity.unbindService(timerConnection)
+            Log.d("ClockUiController", "unbindService Timer succeeded")
+        } catch (e: Exception) {
+            Log.w("ClockUiController", "unbindService Timer failed", e)
+        }
+    }
+
+
+    fun BindService_Timer() {
+        Log.d("ClockUiController", "BindService_Timer called")
+        val intent = Intent(activity, TimerService::class.java)
+        activity.bindService(intent, timerConnection, 0)
+        Log.d("ClockUiController", "bindService requested for TimerService")
+    }
+
+    fun startAndBindService_StopWatch() {
+        startService_StopWatch()
+        BindService_StopWatch()
+    }
+
 
     fun init() {
         // restore labels
-        val timerMillis = prefs.getLong("pref_timer_millis", 0L)
 
-        val alarmTime = PrefsManager.getSetAlarmTime(activity)
-        // If pref doesn't contain elapsed value, display zero to avoid spurious numbers on first run
-        val swElapsed = if (prefs.contains("pref_sw_elapsed")) prefs.getLong("pref_sw_elapsed", 0L) else 0L
 
-        binding.TimerButton.text =
-            if (timerMillis > 0L) formatMillisToTime(timerMillis) else activity.getString(R.string.timer_button_label)
-        // show alarm button using scheduled epoch if available, otherwise fallback to stored hour/minute
-        binding.alarmButton.text = when {
-            alarmTime.isNullOrEmpty() && alarmTime.isNullOrBlank() -> activity.getString(R.string.alarm_button_label)
-            else -> alarmTime
+        activity.bindService(
+            Intent(activity, TimerService::class.java),
+            timerConnection,
+            Context.BIND_AUTO_CREATE
+        )
+        activity.lifecycleScope.launch {
+            val alarmTime = PrefsManager.getSetAlarmTime(activity)
+            binding.alarmButton.text = when {
+                alarmTime.isEmpty() || alarmTime.isBlank() -> activity.getString(R.string.alarm_button_label)
+                else -> alarmTime
+            }
         }
+        // If pref doesn't contain elapsed value, display zero to avoid spurious numbers on first run
+
+        binding.TimerButton.text = activity.getString(R.string.timer_button_label)
+        // show alarm button using scheduled epoch if available, otherwise fallback to stored hour/minute
+
         // Activity shows centiseconds; use centisecond formatter for initial label
         // remove alarm button setup
-        binding.stopWatchBtn.text = formatStopwatchDisplayWithCentis(swElapsed)
+        binding.stopWatchBtn.text = "ストップウォッチ" // initial label for stop watch
 
         14
         // Timer
         binding.TimerButton.setOnClickListener {
             // Build a horizontal LinearLayout containing three numeric EditTexts for H/M/S
-            val container = android.widget.LinearLayout(activity).apply {
-                orientation = android.widget.LinearLayout.HORIZONTAL
+            val container = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
                 setPadding(32, 16, 32, 16)
             }
-            val lp = android.widget.LinearLayout.LayoutParams(
+            val lp = LinearLayout.LayoutParams(
                 0,
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
                 1f
             )
-            val etH = android.widget.EditText(activity).apply {
+            val etH = EditText(activity).apply {
                 hint = "時"
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
                 layoutParams = lp
                 setText("")
             }
-            val etM = android.widget.EditText(activity).apply {
+            val etM = EditText(activity).apply {
                 hint = "分"
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
                 layoutParams = lp
                 setText("")
             }
-            val etS = android.widget.EditText(activity).apply {
+            val etS = EditText(activity).apply {
                 hint = "秒"
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
                 layoutParams = lp
@@ -134,25 +329,19 @@ class ClockUiController(
                     val totalSeconds = h * 3600L + m * 60L + s
                     if (totalSeconds > 0L) {
                         val millis = totalSeconds * 1000L
-                        prefs.edit().putLong("pref_timer_millis", millis).apply()
+
+                        requestStartTimer(millis)
                         binding.TimerButton.text = formatMillisToTime(millis)
-                        val intent = Intent(activity, ClockService::class.java).apply {
-                            action = ClockService.ACTION_START_TIMER
-                            putExtra(ClockService.EXTRA_DURATION, millis)
-                        }
-                        ContextCompat.startForegroundService(activity, intent)
                     }
                 }
                 .setNegativeButton("キャンセル", null)
                 .show()
         }
         binding.TimerButton.setOnLongClickListener {
-            prefs.edit().remove("pref_timer_millis").apply()
+
             binding.TimerButton.text = activity.getString(R.string.timer_button_label)
-            val intent = Intent(activity, ClockService::class.java).apply {
-                action = ClockService.ACTION_STOP_TIMER
-            }
-            activity.startService(intent)
+            requestStopTimer()
+            unbindService_Timer()
             true
         }
 
@@ -168,103 +357,49 @@ class ClockUiController(
                 // update button label with possible next-day marker
                 val text = "$hourOfDay:$minute"
                 binding.alarmButton.text = text
-                PrefsManager.setSetAlarmTime(activity,hourOfDay, minute)
-                // schedule with WorkManager
-                requestSetAlarm(hourOfDay, minute)
+                activity.lifecycleScope.launch {
+
+                    PrefsManager.setSetAlarmTime(activity, hourOfDay, minute)
+                    // schedule with WorkManager
+                    requestSetAlarm(hourOfDay, minute)
+                }
             }, now.hour, now.minute, true)
             tpd.show()
         }
         binding.alarmButton.setOnLongClickListener {
 
             binding.alarmButton.text = activity.getString(R.string.alarm_button_label)
-            requestStopAlarm()
-            requestCancelAlarm()
+            activity.lifecycleScope.launch {
+                requestStopAlarm()
+
+                requestCancelAlarm()
+            }
 
             true
         }
-
 
 
         // Stopwatch
         binding.stopWatchBtn.setOnClickListener {
-            val running = prefs.getBoolean("pref_sw_running", false)
-            val intent = Intent(activity, ClockService::class.java)
-            if (running) {
-                intent.action = ClockService.ACTION_PAUSE_STOPWATCH
-                prefs.edit().putBoolean("pref_sw_running", false).apply()
-                activity.startService(intent)
-            } else {
-                intent.action = ClockService.ACTION_START_STOPWATCH
-                prefs.edit().putBoolean("pref_sw_running", true).apply()
-                ContextCompat.startForegroundService(activity, intent)
-            }
+            startAndBindService_StopWatch()
+
         }
         binding.stopWatchBtn.setOnLongClickListener {
-            val intent = Intent(activity, ClockService::class.java).apply {
-                action = ClockService.ACTION_RESET_STOPWATCH
-            }
-            activity.startService(intent)
-            binding.stopWatchBtn.text = formatStopwatchDisplay(0L)
-            prefs.edit().putLong("pref_sw_elapsed", 0L).putBoolean("pref_sw_running", false).apply()
+
+            requestResetStopWatch()
             true
         }
-
-        // BroadcastReceiver
-        val filter = IntentFilter().apply {
-            addAction(ClockService.BROADCAST_TICK)
-            addAction(ClockService.BROADCAST_FINISHED)
-            addAction(ClockService.BROADCAST_STOPWATCH_TICK)
-        }
-        receiver = object : android.content.BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                when (intent?.action) {
-                    ClockService.BROADCAST_TICK -> {
-                        val remaining = intent.getLongExtra(ClockService.EXTRA_REMAINING, 0L)
-                        binding.TimerButton.text = formatMillisToTime(remaining)
-                        prefs.edit().putLong("pref_timer_millis", remaining).apply()
-                    }
-
-                    ClockService.BROADCAST_FINISHED -> {
-                        binding.TimerButton.text = activity.getString(R.string.timer_done_label)
-                        prefs.edit().remove("pref_timer_millis").apply()
-                    }
-
-                    ClockService.BROADCAST_STOPWATCH_TICK -> {
-                        val elapsed = intent.getLongExtra(ClockService.EXTRA_ELAPSED, 0L)
-                        // Activity shows centiseconds, service sends millis; format accordingly
-                        binding.stopWatchBtn.text = formatStopwatchDisplayWithCentis(elapsed)
-                        prefs.edit().putLong("pref_sw_elapsed", elapsed).apply()
-                    }
-                }
-            }
-        }
-
-        activity.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
 
     }
 
     fun destroy() {
         try {
-            receiver?.let { activity.unregisterReceiver(it) }
+
         } catch (e: Exception) {
-            android.util.Log.w("ClockUiController", "unregisterReceiver failed", e)
+            Log.w("ClockUiController", "unregisterReceiver failed", e)
         }
     }
 
-    private fun scheduleAlarmWithWorkManager(hour: Int, minute: Int) {
-        val now = LocalDateTime.now()
-        val target = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
-        var delayMillis = Duration.between(now, target).toMillis()
-        if (delayMillis <= 0) delayMillis += Duration.ofDays(1).toMillis()
-
-        val data = Data.Builder().putLong("delayMillis", delayMillis).build()
-        val request = OneTimeWorkRequestBuilder<AlarmWorker>()
-            .setInitialDelay(delayMillis, java.util.concurrent.TimeUnit.MILLISECONDS)
-            .addTag("smc_alarm")
-            .setInputData(data)
-            .build()
-        WorkManager.getInstance(activity).enqueue(request)
-    }
 
     private fun formatMillisToTime(millis: Long): String {
         val totalSeconds = millis / 1000
@@ -272,13 +407,13 @@ class ClockUiController(
         val minutes = ((totalSeconds / 60) % 60).toInt()
         val hours = (totalSeconds / 3600).toInt()
         return if (hours > 0) String.format(
-            java.util.Locale.getDefault(),
+            getDefault(),
             "%02d:%02d:%02d",
             hours,
             minutes,
             seconds
         )
-        else String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
+        else String.format(getDefault(), "%02d:%02d", minutes, seconds)
     }
 
     private fun formatStopwatchDisplayWithCentis(millis: Long): String {
@@ -287,14 +422,14 @@ class ClockUiController(
         val minutes = (millis / 60000L) % 60L
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
         return if (hours > 0) String.format(
-            java.util.Locale.getDefault(),
+            getDefault(),
             "%02d:%02d:%02d.%02d",
             hours,
             minutes,
             seconds,
             cs
         )
-        else String.format(java.util.Locale.getDefault(), "%02d:%02d.%02d", minutes, seconds, cs)
+        else String.format(getDefault(), "%02d:%02d.%02d", minutes, seconds, cs)
     }
 
     private fun formatStopwatchDisplay(millis: Long): String {
@@ -302,19 +437,19 @@ class ClockUiController(
         val minutes = (millis / 60000L) % 60L
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
         return if (hours > 0) String.format(
-            java.util.Locale.getDefault(),
+            getDefault(),
             "%02d:%02d:%02d",
             hours,
             minutes,
             seconds
         )
-        else String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
+        else String.format(getDefault(), "%02d:%02d", minutes, seconds)
     }
 
     private fun formatAlarmLabelFromEpoch(epochMillis: Long): String {
         if (epochMillis <= 0L) return activity.getString(R.string.alarm_button_label)
         val z = java.time.Instant.ofEpochMilli(epochMillis).atZone(java.time.ZoneId.systemDefault())
-        val hhmm = String.format(java.util.Locale.getDefault(), "%02d:%02d", z.hour, z.minute)
+        val hhmm = String.format(getDefault(), "%02d:%02d", z.hour, z.minute)
         // show marker if scheduled day is after today
         val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
         val scheduledDate = z.toLocalDate()

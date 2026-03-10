@@ -50,6 +50,9 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlists")
     suspend fun loadAllPlaylists(): List<PlayList>
 
+    @Query("SELECT * FROM playlists WHERE playlistId = :playlistId")
+    suspend fun loadPlaylistById(playlistId: Long): PlayList?
+
 
     @Delete
     suspend fun deletePlaylist(playlist: PlayList)

@@ -1,5 +1,6 @@
 package jp.gr.java_conf.SenseMusicClock
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,12 +10,16 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
+import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
-import dummyListId
+import androidx.preference.SeekBarPreference
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
+import jp.gr.java_conf.SenseMusicClock.Music.list.ListsActivity
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 class SettingsActivity : AppCompatActivity() {
@@ -67,6 +72,7 @@ class SettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // 明示的に名前付き SharedPreferences を使う（XML の属性に依存せず確実に同じ prefs を使用する）
 
+
             val openImageLauncher =
                 registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                     if (uri != null) {
@@ -79,9 +85,11 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-            preferenceManager.sharedPreferencesName = getString(PrefsManager.SHAREDPREFERENCES_NAME)
-            preferenceManager.sharedPreferencesMode = MODE_PRIVATE
 
+
+
+            val MyDataStore = MyDataStore(requireContext(), lifecycleScope)
+            preferenceManager.preferenceDataStore = MyDataStore
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
             val pickPref: Preference? = findPreference("action_selectDirectory")
@@ -91,13 +99,10 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
-            val reloadPref: Preference? = findPreference(getString(PrefsManager.ReLoad_Tracks_KEY))
+            val reloadPref: Preference? = findPreference("reLoad_Tracks")
             reloadPref?.setOnPreferenceClickListener {
-                val pref = preferenceManager.sharedPreferences
-                val nowTF = !(pref?.getBoolean(getString(PrefsManager.ReLoad_Tracks_KEY), false) ?: false)
-
-                pref?.edit {
-                    putBoolean(getString(PrefsManager.ReLoad_Tracks_KEY), nowTF)
+                lifecycleScope.launch {
+                    PrefsManager.setReloadTracks_reverse_andGet(requireContext())
                 }
                 true
 
@@ -116,7 +121,10 @@ class SettingsActivity : AppCompatActivity() {
             val selectImageFilePref: Preference? = findPreference("background_select")
             selectImageFilePref?.setOnPreferenceClickListener {
 
-                requireActivity().launchSelectBackgroundImageDialog()
+                val activity = requireActivity() as? AppCompatActivity
+
+                activity?.launchSelectBackgroundImageDialog()
+
                 true
             }
 
@@ -186,4 +194,64 @@ class SettingsActivity : AppCompatActivity() {
 
         }
     }
+
+    class MyDataStore(
+        private val context: Context,
+        private val scope: CoroutineScope
+    ) : PreferenceDataStore() {
+
+        // --- 保存処理 (XML -> DataStore) ---
+        override fun putInt(key: String, value: Int) {
+            Log.d("MyDataStore", "putInt called with key=$key, value=$value")
+            scope.launch {
+                when (key) {
+                    "volume_adjustment" -> {
+                        PrefsManager.setVolumeAdjustment(context, value)
+                    }
+
+                }
+
+            }
+        }
+
+        // --- 読み込み処理 (DataStore -> XML) ---
+        override fun getInt(key: String, defaultValue: Int): Int {
+            // XML側は「同期」を求めるので、runBlocking等で一瞬待つ必要がある
+            Log.d("MyDataStore", "getInt called with key=$key, defaultValue=$defaultValue")
+            return runBlocking {
+
+                when (key) {
+                    "volume_adjustment" -> PrefsManager.getVolumeAdjustment(context)
+                    else -> defaultValue
+                }
+            }
+        }
+
+        override fun putBoolean(key: String?, value: Boolean) {
+            Log.d("MyDataStore", "putBoolean called with key=$key, value=$value")
+
+            runBlocking {
+
+                when (key) {
+                    "tile_title_display" -> PrefsManager.setTileTitleDisplay(context, value)
+                    "playMode_loop" -> PrefsManager.setPlayModeLoop(context, value)
+                }
+            }
+
+        }
+
+        override fun getBoolean(key: String?, defValue: Boolean): Boolean {
+            Log.d("MyDataStore", "getBoolean called with key=$key, defValue=$defValue")
+            return runBlocking {
+                when (key) {
+                    "tile_title_display" -> PrefsManager.getTileTitleDisplay(context)
+                    "playMode_loop" -> PrefsManager.getPlayModeLoop(context)
+                    else -> defValue
+                }
+            }
+        }
+
+        // StringやBooleanなど、他の型も同様に override する
+    }
+
 }

@@ -1,13 +1,19 @@
 package jp.gr.java_conf.SenseMusicClock
 
-import android.app.Activity
+
+import android.content.ContentValues
 import android.content.Context
+import android.provider.MediaStore
+import android.util.Log
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.edit
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.SharedPreferencesMigration
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -26,7 +32,105 @@ import kotlinx.coroutines.withContext
 import org.checkerframework.checker.index.qual.Positive
 import java.io.File
 
-fun Activity.launchSelectBackgroundImageDialog(
+
+val app_dir = ContentValues().apply {
+    put(MediaStore.Audio.Media.DISPLAY_NAME, ".nomedia") // フォルダ名
+    put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/SMC")// 保存先の相対パス
+    put(MediaStore.Audio.Media.IS_PENDING, 0)
+    put(MediaStore.Audio.Media.MIME_TYPE, "Audio/mpeg") // ファイルタイプ
+}
+
+const val dummyListId = -1236457810114514L
+
+
+const val IDENTIFIER_INITIAL_INDEX_PROBLEM = "  ///IDENTIFIER_INITIAL_INDEX_PROBLEM"
+const val MAX_SCROLL_DISTANCE_FOR_ANIMATION = 30
+
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = PrefsManager.PREFS_NAME,
+    produceMigrations = { context ->
+        listOf(SharedPreferencesMigration(context, PrefsManager.PREFS_NAME))
+    })
+
+
+
+fun keysForTrackTopLevel(t: MediaItem): List<String> {
+    val keys = mutableListOf<String>()
+    try {
+
+
+        keys.add("L:${t.mediaId}")
+        val tMetadata = t.mediaMetadata
+
+        keys.add("M:${tMetadata.title}|${tMetadata.artist}|${tMetadata.albumTitle}")
+    } catch (e: Exception) {
+        Log.w("MusicSearcher", "keysForTrackTopLevel failed", e)
+    }
+    return keys
+}
+
+/**
+ * Build key->original-index map from a list of IndexedValue<Track>.
+ */
+fun buildPositionMapFromIndexedTopLevel(indexed: List<IndexedValue<MediaItem>>): Map<String, Int> {
+    val m = mutableMapOf<String, Int>()
+    for (iv in indexed) {
+        val idx = iv.index
+        val t = iv.value
+        for (k in keysForTrackTopLevel(t)) {
+            if (!m.containsKey(k)) m[k] = idx
+        }
+    }
+    return m
+}
+
+fun List<PlaylistItem>.moveDuplicatesToBack(): List<PlaylistItem> {
+    val seen = mutableSetOf<Int>()
+    val uniqueItems = mutableListOf<PlaylistItem>()
+    val duplicateItems = mutableListOf<PlaylistItem>()
+
+
+
+    for (item in this) {
+        val key = item.index
+        if (seen.contains(key)) {
+            val newIndex = seen.toList().max() + 1
+            val newItem = item.copy(index = newIndex)
+            Log.d("moveDuplicatesToBack", "Duplicate found: $item, moving to index $newIndex")
+            seen.add(newIndex)
+            duplicateItems.add(newItem)
+
+        } else {
+            seen.add(key)
+            uniqueItems.add(item)
+        }
+    }
+    return uniqueItems + duplicateItems
+
+}
+
+
+fun List<MediaItem>.sortedByPlaylistItems(playlistItemList: List<PlaylistItem>): List<MediaItem> {
+
+    val playlistItems = playlistItemList.moveDuplicatesToBack().sortedBy { it.index }
+    val sortedList = mutableListOf<MediaItem>()
+    for (path in playlistItems) {
+        val fileItem = path.fileItem
+        val mediaItem =
+            this.find { it.getRelativePath() == fileItem.relativePath && it.getDisplayName() == fileItem.fileName }
+        if (mediaItem != null) {
+            sortedList.add(mediaItem)
+        } else {
+            Log.w("sortedByPlaylistItems", "MediaItem not found for path: $path")
+        }
+
+    }
+    return sortedList
+
+}
+
+fun AppCompatActivity.launchSelectBackgroundImageDialog(
     originFileList: List<File> = getAllFile_inInternalStorage(
         BackgroundResolver.BACKGROUNDS_PATH
     )
@@ -78,10 +182,10 @@ fun Activity.launchSelectBackgroundImageDialog(
                 else -> ""
             }
 
-            BackgroundResolver.getPrefsKey(selectedOrientation, selectedPartOfDay).let {
+            PrefsManager.getImageFileKey(selectedOrientation, selectedPartOfDay).let {
                 val path = file.name
-                PrefsManager.getSharedPreferences(this).edit {
-                    putString(it, path)
+                this.lifecycleScope.launch {
+                    PrefsManager.setImageFilePath(this@launchSelectBackgroundImageDialog, it, path)
                 }
                 if (path == "") {
                     Toast.makeText(
@@ -177,19 +281,71 @@ fun AppCompatActivity.launchClearBackgroundImageFileDialog(
 fun MediaMetadata.getRelativePath(): String? {
     return this.extras?.getString(LocalMusicRepository.EXTRA_RELATIVE_PATH)
 }
+
 fun MediaMetadata.getDisplayName(): String? {
     return this.extras?.getString(LocalMusicRepository.EXTRA_DISPLAY_NAME)
 }
+
 fun MediaMetadata.getDataPath(): String? {
     return this.extras?.getString(LocalMusicRepository.EXTRA_DATA_PATH)
 }
+
 fun MediaMetadata.getAlbumId(): Long? {
     return this.extras?.getLong(LocalMusicRepository.EXTRA_ALBUM_ID)
 }
+
 fun MediaMetadata.getArtistId(): Long? {
     return this.extras?.getLong(LocalMusicRepository.EXTRA_ARTIST_ID)
 }
 
+
+fun MediaItem.getRelativePath(): String? {
+
+    return this.mediaMetadata.getRelativePath()
+}
+
+fun MediaItem.getDisplayName(): String? {
+    return this.mediaMetadata.getDisplayName()
+}
+
+fun MediaItem.getDataPath(): String? {
+    return this.mediaMetadata.getDataPath()
+}
+
+fun MediaItem.getAlbumId(): Long? {
+    return this.mediaMetadata.getAlbumId()
+}
+
+fun MediaItem.getArtistId(): Long? {
+    return this.mediaMetadata.getArtistId()
+}
+
+fun List<MediaItem>.filterByBlocklist(blocklistItems: List<BlocklistItem>): List<MediaItem> {
+    return this.filter { mediaItem ->
+        val relativePath = mediaItem.getRelativePath()
+        val displayName = mediaItem.getDisplayName()
+        !blocklistItems.any { it.fileItem.relativePath == relativePath && it.fileItem.fileName == displayName }
+    }
+}
+
+fun List<FileItem>.toPlaylistItems(playlistId: Long): List<PlaylistItem> {
+    return this.mapIndexed { index, fileItem ->
+        PlaylistItem(
+            playlistId = playlistId,
+            fileItem = fileItem,
+            index = index
+        )
+    }
+}
+
+fun List<FileItem>.toBlocklistItems(blocklistId: Long): List<BlocklistItem> {
+    return this.map { fileItem ->
+        BlocklistItem(
+            blocklistId = blocklistId,
+            fileItem = fileItem,
+        )
+    }
+}
 
 suspend fun Context.loadPlaylist(): List<PlayList> {
 
@@ -286,6 +442,8 @@ fun MediaItem.CreateFileItem(playlistId: Long = 0, index: Int = 0): FileItem? {
 
 }
 
+
+//EditTextだけのシンプルなダイアログを表示する関数
 fun AppCompatActivity.showEditTextDialog(
     title: String,
 
@@ -313,6 +471,15 @@ fun AppCompatActivity.showEditTextDialog(
         .show()
 }
 
+
+/*
+だいぶ前に書いたコードなので推測ですが
+おそらくitemがnullのときはプレイリストの選択だけを行い、
+itemが非nullのときはプレイリストの選択と同時にそのアイテムを選択したプレイリストに追加する挙動を意図していると思われます。
+nullの場合、というのはプレイリストを選択し、listActivityなどでそのプレイリストの内容を表示する場合で、
+非nullの場合はMainActivityで曲を選択して「この曲をプレイリストに追加」みたいな操作をしたときに、
+その曲をどのプレイリストに追加するかを選ぶためのダイアログになるのではないでしょうか。
+ */
 
 fun AppCompatActivity.showPlaylistSelectDialog(
     playlists: List<PlayList>,

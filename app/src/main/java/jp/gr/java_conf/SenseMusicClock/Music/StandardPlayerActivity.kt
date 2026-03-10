@@ -5,15 +5,20 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.ImageButton
 import android.widget.SeekBar
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -25,6 +30,7 @@ import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
 import jp.gr.java_conf.SenseMusicClock.load_forRoot
+import kotlinx.coroutines.launch
 
 class StandardPlayerActivity : AppCompatActivity() {
 
@@ -48,15 +54,18 @@ class StandardPlayerActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_TIME_TICK) {
                 // 1分経つごとに呼ばれる
-                if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
-                        context,
-                        resources.configuration.orientation
-                    ).key != lastSourceBackGround
-                ) {
-                    lastSourceBackGround = binding.bgImageView.load_forRoot(
-                        context,
-                        resources.configuration.orientation
-                    )
+                lifecycleScope.launch {
+
+                    if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
+                            context,
+                            resources.configuration.orientation
+                        ).key != lastSourceBackGround
+                    ) {
+                        lastSourceBackGround = binding.bgImageView.load_forRoot(
+                            context,
+                            resources.configuration.orientation
+                        )
+                    }
                 }
             }
         }
@@ -160,15 +169,33 @@ class StandardPlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityStandardPlayerBinding.inflate(layoutInflater)
-        enableEdgeToEdge()
-        setContentView(binding.root)
-        token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        lastSourceBackGround = binding.bgImageView.load_forRoot(
-            this@StandardPlayerActivity,
-            resources.configuration.orientation
-        )
 
+        binding = ActivityStandardPlayerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            // システムバーのインセット（余白）を取得
+            val navigationBarsInsets =
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            // 取得したボトムインセット（ナビゲーションバーの高さ）をパディングに設定
+            view.setPadding(
+                navigationBarsInsets.left,
+                navigationBarsInsets.top,
+                navigationBarsInsets.right,
+                navigationBarsInsets.bottom
+            )
+
+            // インセットを消費したことを伝える
+            // これにより、他のビューに同じインセットが適用されるのを防ぐ
+            insets
+        }
+        token = SessionToken(this, ComponentName(this, MusicService::class.java))
+        lifecycleScope.launch {
+            lastSourceBackGround = binding.bgImageView.load_forRoot(
+                this@StandardPlayerActivity,
+                resources.configuration.orientation
+            )
+        }
 
         val controllerFuture = MediaController.Builder(this, token).buildAsync()
 
@@ -193,6 +220,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                             placeholder(R.drawable.default_album_art)
                             error(R.drawable.default_album_art)
                             crossfade(true)
+                                .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
                         }
 
                         startProgressUpdates()
@@ -232,6 +260,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                                     placeholder(R.drawable.default_album_art)
                                     error(R.drawable.default_album_art)
                                     crossfade(true)
+                                        .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
                                 }
 
 
@@ -294,28 +323,32 @@ class StandardPlayerActivity : AppCompatActivity() {
                 }
             }
         }
-        val pref = PrefsManager.getSharedPreferences(this)
-        val nowRepeatMode = pref.getBoolean(getString(R.string.PLAYMODE_LOOP_KEY), false)
 
-        if (nowRepeatMode) {
+        lifecycleScope.launch {
 
-            binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
-        } else {
-            binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+            val nowRepeatMode = PrefsManager.getPlayModeLoop(this@StandardPlayerActivity)
+
+            if (nowRepeatMode) {
+
+                binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
+            } else {
+                binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+            }
         }
         binding.btnRepeat.setOnClickListener {
-            val pref = PrefsManager.getSharedPreferences(this)
-            val nowRepeatMode = pref.getBoolean(getString(R.string.PLAYMODE_LOOP_KEY), false)
-            val isNewRepeatMode_oneLoop = !nowRepeatMode
-            pref.edit().putBoolean(getString(R.string.PLAYMODE_LOOP_KEY), isNewRepeatMode_oneLoop)
-                .apply()
+            lifecycleScope.launch {
+                val iscurrentRepeatMode_oneLoop = PrefsManager.getPlayModeLoop(this@StandardPlayerActivity)
 
-            if (isNewRepeatMode_oneLoop) {
-                val view = it as android.widget.ImageButton
-                view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
-            } else {
-                val view = it as android.widget.ImageButton
-                view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+                val isNewRepeatMode_oneLoop = !iscurrentRepeatMode_oneLoop
+                PrefsManager.setPlayModeLoop(this@StandardPlayerActivity, isNewRepeatMode_oneLoop)
+
+                if (isNewRepeatMode_oneLoop) {
+                    val view = it as ImageButton
+                    view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
+                } else {
+                    val view = it as ImageButton
+                    view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+                }
             }
         }
 
@@ -323,8 +356,11 @@ class StandardPlayerActivity : AppCompatActivity() {
         val orientation = resources.configuration.orientation
 
         binding.scrimOverlay.background = ColorDrawable(getColor(R.color.black_overlay))
-        lastSourceBackGround =
-            binding.bgImageView.load_forRoot(this@StandardPlayerActivity, orientation)
+        lifecycleScope.launch {
+
+            lastSourceBackGround =
+                binding.bgImageView.load_forRoot(this@StandardPlayerActivity, orientation)
+        }
 
 
 
@@ -392,9 +428,13 @@ class StandardPlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        lastSourceBackGround =
-            binding.bgImageView.load_forRoot(this, resources.configuration.orientation)
+        lifecycleScope.launch {
+
+            lastSourceBackGround =
+                binding.bgImageView.load_forRoot(this@StandardPlayerActivity, resources.configuration.orientation)
+        }
         registerReceiver(timeTickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
+
     }
 
 
@@ -403,6 +443,12 @@ class StandardPlayerActivity : AppCompatActivity() {
         // cleanup
         //stopProgressUpdates()
 
+        try {
+
+        unregisterReceiver(timeTickReceiver)
+        }catch (e: Exception) {
+            Log.w("StandardPlayerActivity", "unregisterReceiver failed", e)
+        }
         mediaController?.release()
 
         mediaController = null

@@ -4,36 +4,39 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:padding="0dp">
+    android:layout_gravity="center"
+    android:id="@+id/item_square_container"
+    android:clickable="true"
+
+    android:padding="9dp">
 
     <!-- コンテナは wrap_content にして中央寄せ、小さなマージンで詰める -->
-    <FrameLayout
-        android:id="@+id/squareContainer"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:layout_margin="4dp"
-
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
 
 
 
 
 
-            <ImageButton
+
+            <ImageView
                 android:id="@+id/artwork"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:maxWidth="160dp"
+                android:minWidth="160dp"
+                android:layout_height="0dp"
                 android:background="@null"
+                app:layout_constraintDimensionRatio="1:1"
                 android:scaleType="fitCenter"
+
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 />
 
 
 
 
-    </FrameLayout>
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

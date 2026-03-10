@@ -2,7 +2,6 @@
 package jp.gr.java_conf.SenseMusicClock
 
 
-import IDENTIFIER_INITIAL_INDEX_PROBLEM
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -25,8 +24,11 @@ import android.view.View
 import android.widget.TextView
 import kotlinx.coroutines.launch
 import android.graphics.Color
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat.getMainExecutor
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.getInstance
 import androidx.media3.common.MediaItem
@@ -34,17 +36,13 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
-import app_dir
 import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
 import coil.load
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
-import jp.gr.java_conf.SenseMusicClock.Music.SharedPrefsFlow
 import jp.gr.java_conf.SenseMusicClock.Music.StandardPlayerActivity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -53,8 +51,7 @@ class MainActivity : AppCompatActivity() {
 
     private var mediaBrowser: MediaBrowser? = null
 
-
-    lateinit var storageAccessHelper: StorageAccessHelper
+    var storageAccessHelper: StorageAccessHelper? = null
 
     // 追加: アダプタをクラスプロパティ化
     private lateinit var jacketAdapter: JacketAdapter
@@ -80,12 +77,16 @@ class MainActivity : AppCompatActivity() {
             if (intent?.action == Intent.ACTION_TIME_TICK) {
                 // 1分経つごとに呼ばれる
                 // ロゴ背景の更新を試みる。頻度が高いので、前回と同じ背景なら更新しないようにして無駄な処理を避ける
-                if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
-                        context,
-                        orientation
-                    ).key != lastSourceBackGround
-                ) {
-                    lastSourceBackGround = binding.bgImageView.load_forRoot(context, orientation)
+                lifecycleScope.launch {
+
+                    if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
+                            context,
+                            orientation
+                        ).key != lastSourceBackGround
+                    ) {
+                        lastSourceBackGround =
+                            binding.bgImageView.load_forRoot(context, orientation)
+                    }
                 }
             }
         }
@@ -93,7 +94,29 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("LeakCheck", "MainActivity onCreate $this")
+
+
         binding = ActivityMainBinding.inflate(layoutInflater)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            // システムバーのインセット（余白）を取得
+            val navigationBarsInsets =
+                insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            // 取得したボトムインセット（ナビゲーションバーの高さ）をパディングに設定
+            view.setPadding(
+                navigationBarsInsets.left,
+                navigationBarsInsets.top,
+                navigationBarsInsets.right,
+                navigationBarsInsets.bottom
+            )
+
+            // インセットを消費したことを伝える
+            // これにより、他のビューに同じインセットが適用されるのを防ぐ
+            insets
+        }
+
 
         ViewModelProvider(this, getInstance(application))
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
@@ -403,13 +426,16 @@ class MainActivity : AppCompatActivity() {
         registerReceiver(timeTickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
         // On resume: if orientation changed since last time, set pending instant scroll and reconfigure layout
 
-        lastSourceBackGround = binding.bgImageView.load_forRoot(this, orientation)
+        lifecycleScope.launch {
+
+            lastSourceBackGround = binding.bgImageView.load_forRoot(this@MainActivity, orientation)
+        }
         mediaBrowser?.let {
             runOnUiThread {
                 mainViewModel.clearTracks()
             }
             val newList = mutableListOf<MediaItem>()
-            loadAllMedias(newList,it)
+            loadAllMedias(newList, it)
         }
     }
 
@@ -436,7 +462,17 @@ class MainActivity : AppCompatActivity() {
 
         // destroy clock controller (it unregisters its own receiver)
         try {
-            clockUiController?.destroy()
+            binding.textClock.format24Hour = null
+            binding.textClock.format12Hour = null
+
+            clockUiController?.let {
+                it.onDestroy()
+                it.destroy()
+            }
+            unregisterReceiver(timeTickReceiver)
+            clockUiController = null
+            storageAccessHelper = null
+            musicSearcher = null
         } catch (e: Exception) {
             Log.w("MainActivity", "clockUiController destroy failed", e)
         }
@@ -473,7 +509,7 @@ class MainActivity : AppCompatActivity() {
                                 mainViewModel.clearTracks()
                             }
                             val newList = mutableListOf<MediaItem>()
-                            loadAllMedias(newList,it)
+                            loadAllMedias(newList, it)
                         }
 
 
@@ -502,8 +538,8 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     mainViewModel.clearTracks()
                 }
-                val newList  = mutableListOf<MediaItem>()
-                loadAllMedias(newList,it)
+                val newList = mutableListOf<MediaItem>()
+                loadAllMedias(newList, it)
 
 
             }
@@ -534,21 +570,21 @@ class MainActivity : AppCompatActivity() {
 
 
                 // 次のページをリクエスト（再帰的に呼ぶ）
-                loadAllMedias(list,browser, page + 1)
+                loadAllMedias(list, browser, page + 1)
             } else {
                 // すべてのアイテムを取得し終わった後の処理
                 Log.d("MainActivity", "All media items loaded: total=${tracks.value?.size ?: 0}")
-                loadAllMediasComplete(list,browser)
+                loadAllMediasComplete(list, browser)
 
             }
         }, getMainExecutor(this))
     }
 
 
-    private fun loadAllMediasComplete(newList : MutableList<MediaItem>, browser: MediaBrowser) {
+    private fun loadAllMediasComplete(newList: MutableList<MediaItem>, browser: MediaBrowser) {
 
         Log.d("loadAllMediasComplete", " loadAllMediasComplete called")
-        mainViewModel.setTracks( newList)
+        mainViewModel.setTracks(newList)
         setLoadingVisible(false)
 
 
@@ -615,15 +651,8 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
 
 
-                launch {
-                    val pref = PrefsManager.getSharedPreferences(this@MainActivity)
-                    SharedPrefsFlow.observeBoolean(
-                        pref,
-                        PrefsManager.getTileTitleDisplayKey(this@MainActivity)
-                    )
-                        .collect {
-                            jacketAdapter.notifyItemChanged(0, jacketAdapter.itemCount)
-                        }
+                PrefsManager.getTileTitleDisplayFlow(this@MainActivity).collect {
+                    jacketAdapter.notifyItemChanged(0, jacketAdapter.itemCount)
                 }
 
 
@@ -796,8 +825,9 @@ class MainActivity : AppCompatActivity() {
         try {
             if (orientation == 1) {
                 // portrait: 1 列表示
-                val span = 1
-                binding.recyclerJackets.layoutManager = GridLayoutManager(this, span)
+
+                binding.recyclerJackets.layoutManager =
+                    LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
                 binding.recyclerJackets.setPadding(this.dpToPx(8), 0, this.dpToPx(8), 0)
                 binding.recyclerJackets.clipToPadding = false
             } else {

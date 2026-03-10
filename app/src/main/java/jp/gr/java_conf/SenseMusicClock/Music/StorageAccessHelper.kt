@@ -2,7 +2,6 @@ package jp.gr.java_conf.SenseMusicClock.Music
 
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -11,7 +10,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
+import kotlinx.coroutines.launch
 
 class StorageAccessHelper(
     private val activity: AppCompatActivity,
@@ -20,7 +21,7 @@ class StorageAccessHelper(
     private val onPermissionDenied: () -> Unit = {}
 
 ) {
-    private val prefs by lazy { PrefsManager.getSharedPreferences(activity) }
+
 
     private val perm: String =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -38,7 +39,9 @@ class StorageAccessHelper(
 
 
                 val rel = parseTreeUriToRelativePath(uri)
-                TargetDirectoryManager(activity).add(rel ?: return@registerForActivityResult)
+                activity.lifecycleScope.launch {
+                    TargetDirectoryPrefJSONManager(activity).add(rel ?: return@launch)
+                }
 
                 onDirectoryPicked(rel, uri)
             } else {
@@ -59,28 +62,32 @@ class StorageAccessHelper(
     fun ensureReadAudioPermission() {
 
 
-        if (ContextCompat.checkSelfPermission(activity, perm) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                activity,
+                perm
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             onPermissionGranted()
             return
         }
 
 
-            requestPermissionLauncher.launch(perm)
+        requestPermissionLauncher.launch(perm)
 
     }
 
     fun hasReadAudioPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(activity, perm) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(
+            activity,
+            perm
+        ) == PackageManager.PERMISSION_GRANTED
     }
-
 
 
     fun launchPickDirectory(initialUri: Uri? = null) {
         pickDirLauncher.launch(initialUri)
     }
 
-    fun getSavedRelativePath(): String? = prefs.getString("music_dir_relative_path", null)
-    fun getSavedUri(): Uri? = prefs.getString("music_dir_uri", null)?.let { Uri.parse(it) }
 
     /**
      * SAF の tree Uri から DocumentsContract.getTreeDocumentId を使って

@@ -1,19 +1,21 @@
 package jp.gr.java_conf.SenseMusicClock
 
 
-
 import android.content.ContentUris
 import android.content.Context
-import android.content.SharedPreferences
+
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.Display
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,63 +25,72 @@ import kotlinx.coroutines.flow.flow
 object LocalMusicRepository {
 
 
+    private var _tracksFlow = MutableStateFlow(listOf<MediaItem>())
 
-    private var _tracksFlow = MutableStateFlow( listOf<MediaItem>())
-
-    val tracksFlow : StateFlow<List<MediaItem>> = _tracksFlow.asStateFlow()
+    val tracksFlow: StateFlow<List<MediaItem>> = _tracksFlow.asStateFlow()
     private val idToIndexMap = mutableMapOf<String, Int>()
 
-    val EXTRA_ALBUM_ID = "ALBUM_ID"
-    val EXTRA_ARTIST_ID = "ARTIST_ID"
-    val EXTRA_RELATIVE_PATH = "RELATIVE_PATH"
+    const val EXTRA_ALBUM_ID = "ALBUM_ID"
+    const val EXTRA_ARTIST_ID = "ARTIST_ID"
+    const val EXTRA_RELATIVE_PATH = "RELATIVE_PATH"
 
-    val EXTRA_DISPLAY_NAME = "DISPLAY_NAME"
+    const val EXTRA_DISPLAY_NAME = "DISPLAY_NAME"
 
-    val EXTRA_DATA_PATH = "DATA_PATH"
+    const val EXTRA_DATA_PATH = "DATA_PATH"
 
 
-    // 追加: 指定された相対パス群（または URI ベースのパス）とファイル名で絞り込む selection/args を生成する
-    // - paths: RELATIVE_PATH に含めたいフォルダパスのリスト（例: "Music/SMC"）
-    // - fileName: ファイル名での絞り込み（部分一致）。null または空文字ならファイル名条件は追加されない
-    // 戻り値: Pair(selectionString, selectionArgsArray)
-    fun buildPathAndFilenameSelection(paths: List<String>, fileName: String?): Pair<String, Array<String>> {
+    /*TODO プレイリストの選択肢を増やすときはここに追加する
+    fun playlist_selection(): Pair<String, Array<String>> {
+
+
+    }
+
+     */
+
+    fun selection(UserRelativePaths: List<String> = emptyList()): Pair<String, Array<String>> {
+        val relativePaths = listOf("Music/SMC") + UserRelativePaths
+
+        val parts = mutableListOf<String>()
+        val args = mutableListOf<String>()
+        for (p in relativePaths) {
+            parts.add("(${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?)")
+            parts.add("(${MediaStore.Audio.Media.DATA} LIKE ?)")
+            args.add("${p.removeSuffix("/")}/%")
+            args.add("%/${p.removePrefix("/")}%")
+        }
+        val selection = parts.joinToString(" OR ")
+
+        return Pair(selection, args.toTypedArray())
+    }
+
+    fun playlist_selection(playlistItems: List<PlaylistItem>): Pair<String, Array<String>> {
+
         val parts = mutableListOf<String>()
         val args = mutableListOf<String>()
 
-        for (p in paths) {
-            // RELATIVE_PATH はディレクトリ部分を持つので先頭/末尾を整形して部分一致で検索
-            parts.add("(${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?)")
-            args.add("${p.removeSuffix("/")}%")
-
-            // DATA（フルパス）側でもフォルダを含むか確認する（互換性のため）
-            parts.add("(${MediaStore.Audio.Media.DATA} LIKE ?)")
-            args.add("%/${p.removePrefix("/")}%")
+        for (item in playlistItems.map { it.fileItem }) {
+            parts.add("(${MediaStore.Audio.Media.RELATIVE_PATH} = ? AND ${MediaStore.Audio.Media.DISPLAY_NAME} = ?)")
+            args.add(item.relativePath)
+            args.add(item.fileName)
+            Log.d("LocalMusicRepository", "playlist_selection: added selection for ${item.relativePath}/${item.fileName}")
         }
+        val selection = parts.joinToString(" OR ")
+        return (selection to args.toTypedArray())
+    }
 
-        // fileName が指定されていれば DISPLAY_NAME と DATA の両方で部分一致を追加
-        val name = fileName?.takeIf { it.isNotBlank() }
-        if (name != null) {
-            parts.add("(${MediaStore.Audio.Media.DISPLAY_NAME} LIKE ?)")
-            args.add("%${name}%")
+    fun sortOrder(): String {
 
-            parts.add("(${MediaStore.Audio.Media.DATA} LIKE ?)")
-            args.add("%${name}%")
-        }
-
-        val selection = if (parts.isEmpty()) "1=1" else parts.joinToString(" OR ")
-        return selection to args.toTypedArray()
+        val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
+        return sortOrder
     }
 
 
     suspend fun loadLocalMusicFromAppDir(
         context: Context,
-        UserRelativePaths: List<String> = emptyList()
-    ): List<MediaItem> {
-        val relativePaths = listOf("Music/SMC") + UserRelativePaths
-
-        if (relativePaths.isEmpty()) return emptyList()
-        val list = mutableListOf<MediaItem>()
-        val projection = arrayOf(
+        selection: String?,
+        selectionArgs: Array<String>?,
+        sortOrder: String?,
+        projection: Array<String>? = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ALBUM,
@@ -89,19 +100,14 @@ object LocalMusicRepository {
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.RELATIVE_PATH,
-            MediaStore.Audio.Media.DISPLAY_NAME
-        )
+            MediaStore.Audio.Media.DISPLAY_NAME,
 
-        val parts = mutableListOf<String>()
-        val args = mutableListOf<String>()
-        for (p in relativePaths) {
-            parts.add("(${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?)")
-            parts.add("(${MediaStore.Audio.Media.DATA} LIKE ?)")
-            args.add("${p.removeSuffix("/")}%")
-            args.add("%/${p.removePrefix("/")}%")
-        }
-        val selection = parts.joinToString(" OR ")
-        val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
+            ),
+        isShuffle: Boolean = true
+
+    ): List<MediaItem> {
+
+        val list = mutableListOf<MediaItem>()
 
         // クエリとカーソル走査を IO コンテキストで行う（カーソルが開いている間は同じスレッドで処理）
         withContext(Dispatchers.IO) {
@@ -109,7 +115,7 @@ object LocalMusicRepository {
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 projection,
                 selection,
-                args.toTypedArray(),
+                selectionArgs,
                 sortOrder
             )
 
@@ -141,9 +147,10 @@ object LocalMusicRepository {
                     if (relativePath.contains(".nomedia")) continue
                     val displayName = c.getString(displayNameIdx) ?: ""
                     if (displayName.contains(".nomedia")) continue
-                    val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+                    val uri =
+                        ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
 
-                    val albumArtUri : Uri? = try {
+                    val albumArtUri: Uri? = try {
                         "content://media/external/audio/albumart".toUri()
                             .buildUpon()
                             .appendPath(albumId.toString())
@@ -156,7 +163,7 @@ object LocalMusicRepository {
                     val extras = Bundle().apply {
                         putLong(EXTRA_ALBUM_ID, albumId)
                         putLong(EXTRA_ARTIST_ID, artistId)
-                        putString(EXTRA_RELATIVE_PATH,relativePath )
+                        putString(EXTRA_RELATIVE_PATH, relativePath)
                         putString(EXTRA_DISPLAY_NAME, displayName)
                         putString(EXTRA_DATA_PATH, path)
                     }
@@ -186,15 +193,13 @@ object LocalMusicRepository {
             }
         }
 
-        // 取得したリストをシャッフルして順序をランダム化する
-        list.shuffle()
+        if (isShuffle) {
+            // 取得したリストをシャッフルして順序をランダム化する
+            list.shuffle()
+        }
 
         return list
     }
-
-
-
-
 
 
     fun setTracks(newTracks: List<MediaItem>) {
@@ -213,13 +218,28 @@ object LocalMusicRepository {
         idToIndexMap.clear()
     }
 
+    suspend fun loadLocalMusicAndSetTracksAndCreateMap_playlist(context: Context, playlistItems: List<PlaylistItem>) {
+        setTracksAndCreateMap(loadPlaylistMusic(context,playlistItems))
+    }
+    suspend fun loadPlaylistMusic(context: Context, playlistItems: List<PlaylistItem>): List<MediaItem> {
+        val (selection, selectionArgs) = playlist_selection(playlistItems)
+
+        val PlaylistTracks = loadLocalMusicFromAppDir(context, selection, selectionArgs, null)
+        return PlaylistTracks
+    }
+
+
+
 
     suspend fun loadLocalMusicAndSetTracksAndCreateMap(
         context: Context,
         UserRelativePaths: List<String> = emptyList()
     ) {
-        val localTracks =  loadLocalMusicFromAppDir(context, UserRelativePaths)
-        setTracksAndCreateMap( localTracks )
+        val (selection, selectionArgs) = selection(UserRelativePaths)
+        val sortOrder = sortOrder()
+
+        val localTracks = loadLocalMusicFromAppDir(context, selection, selectionArgs, sortOrder)
+        setTracksAndCreateMap(localTracks)
     }
 
 
@@ -236,7 +256,6 @@ object LocalMusicRepository {
     }
 
     fun getTracks(): List<MediaItem> = tracksFlow.value
-
 
 
 }

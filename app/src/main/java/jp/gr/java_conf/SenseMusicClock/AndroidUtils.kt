@@ -1,6 +1,6 @@
 package jp.gr.java_conf.SenseMusicClock
 
-import MAX_SCROLL_DISTANCE_FOR_ANIMATION
+
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -11,10 +11,17 @@ import android.os.Vibrator
 import android.provider.OpenableColumns
 import android.util.DisplayMetrics
 import android.util.Log
+import androidx.datastore.preferences.core.Preferences
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 
@@ -30,17 +37,16 @@ fun pendingIntentFlags(minSdkForImmutable: Int = Build.VERSION_CODES.S): Int {
         PendingIntent.FLAG_UPDATE_CURRENT
 }
 
-fun Context.saveToInternalStorage(uri: android.net.Uri,childPath : String = ""): File {
+fun Context.saveToInternalStorage(uri: android.net.Uri, childPath: String = ""): File {
     val dir = File(filesDir, childPath)
     if (!dir.exists()) dir.mkdirs()
-
 
 
     var fileName = getFileNameFromUri(uri) ?: "image_${System.currentTimeMillis()}"
 
 
 
-    if (File(dir, fileName).exists()){
+    if (File(dir, fileName).exists()) {
 
         // 拡張子とベース名に分割
         val dotIndex = fileName.lastIndexOf('.')
@@ -83,19 +89,26 @@ fun Context.getFileNameFromUri(uri: android.net.Uri): String? {
     return null
 }
 
-fun Context.getAllFile_inInternalStorage(childPath: String):List<File>{
+fun Context.getAllFile_inInternalStorage(childPath: String): List<File> {
 
     val dir = File(filesDir, childPath)
     return dir.walk()
         .filter { it.isFile } // ファイルだけを抽出
         .onEach { Log.d("InternalStorageFile", "File: ${it.absolutePath}") } // ログ出し
         .toList()
+
 }
+
 fun Context.vibrateOnceSafe(durationMs: Long = 1000L) {
     try {
 
         val vibrator = getSystemService(Vibrator::class.java)
-        vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
+        vibrator?.vibrate(
+            VibrationEffect.createOneShot(
+                durationMs,
+                VibrationEffect.DEFAULT_AMPLITUDE
+            )
+        )
     } catch (e: Exception) {
         Log.w("AndroidUtils", "vibrateOnceSafe failed", e)
     }
@@ -114,7 +127,13 @@ fun RecyclerView.smoothScrollToPositionCentered(position: Int, speedMsPerInch: F
     val safeSpeed = speedMsPerInch.coerceAtLeast(10f)
 
     val scroller = object : LinearSmoothScroller(context) {
-        override fun calculateDtToFit(viewStart: Int, viewEnd: Int, boxStart: Int, boxEnd: Int, snapPreference: Int): Int {
+        override fun calculateDtToFit(
+            viewStart: Int,
+            viewEnd: Int,
+            boxStart: Int,
+            boxEnd: Int,
+            snapPreference: Int
+        ): Int {
             // ビューのサイズとRecyclerView自体のサイズから、中央に配置するためのオフセットを計算
             try {
                 val viewSize = viewEnd - viewStart
@@ -123,7 +142,7 @@ fun RecyclerView.smoothScrollToPositionCentered(position: Int, speedMsPerInch: F
                 // move viewStart to boxStartCenter
                 return boxStartCenter - viewStart
             } catch (e: Exception) {
-                Log.e("RecyclerView","smoothScrollToCenter error: ${e.localizedMessage}")
+                Log.e("RecyclerView", "smoothScrollToCenter error: ${e.localizedMessage}")
 
                 return super.calculateDtToFit(viewStart, viewEnd, boxStart, boxEnd, snapPreference)
             }
@@ -147,12 +166,17 @@ fun RecyclerView.smoothScrollToPositionCentered(position: Int, speedMsPerInch: F
         }
     }
 }
-fun RecyclerView.shouldSkipAnimation(position: Int,maxScrollDistanceForAnimation : Int = 30): Boolean{
+
+fun RecyclerView.shouldSkipAnimation(
+    position: Int,
+    maxScrollDistanceForAnimation: Int = 30
+): Boolean {
     try {
 
-        val currentPos = (layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: -1
-        if (currentPos == -1){
-            Log.e("RecyclerView","shouldSkipAnimation: findFirstVisibleItemPosition() is null")
+        val currentPos =
+            (layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: -1
+        if (currentPos == -1) {
+            Log.e("RecyclerView", "shouldSkipAnimation: findFirstVisibleItemPosition() is null")
             return true
         }
 
@@ -167,17 +191,21 @@ fun RecyclerView.shouldSkipAnimation(position: Int,maxScrollDistanceForAnimation
 
 }
 
-suspend fun RecyclerView.smoothScrollToPositionWithSkipAnimationCheck(position: Int,speedMsPerInch: Float = 150f,maxScrollDistanceForAnimation : Int = MAX_SCROLL_DISTANCE_FOR_ANIMATION) {
-    if (shouldSkipAnimation(position,maxScrollDistanceForAnimation)){
+suspend fun RecyclerView.smoothScrollToPositionWithSkipAnimationCheck(
+    position: Int,
+    speedMsPerInch: Float = 150f,
+    maxScrollDistanceForAnimation: Int = MAX_SCROLL_DISTANCE_FOR_ANIMATION
+) {
+    if (shouldSkipAnimation(position, maxScrollDistanceForAnimation)) {
         // アニメーションをスキップして即座に移動
-        stepScrollToItem(position,speedMsPerInch)
-    }else {
+        stepScrollToItem(position, speedMsPerInch)
+    } else {
         // 滑らかなスクロールで移動
         smoothScrollToPositionCentered(position, speedMsPerInch)
     }
 }
 
-fun RecyclerView.scrollToPositionCentered(position: Int){
+fun RecyclerView.scrollToPositionCentered(position: Int) {
 
     // 1. 基本的なバリデーション（範囲外なら何もしない）
     val adapterItemCount = adapter?.itemCount ?: 0
@@ -199,14 +227,16 @@ fun RecyclerView.scrollToPositionCentered(position: Int){
     lm.scrollToPositionWithOffset(position, offset)
 
 }
-suspend fun RecyclerView.stepScrollToItem(targetPos: Int,speed: Float = 5f ) {
-    val currentPos = (layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: return
+
+suspend fun RecyclerView.stepScrollToItem(targetPos: Int, speed: Float = 5f) {
+    val currentPos =
+        (layoutManager as? LinearLayoutManager)?.findFirstVisibleItemPosition() ?: return
     val distance = targetPos - currentPos
 
     // 1. ちょっとだけスクロール（助走）
     // 現在地からターゲット方向に2〜3個分だけアニメーション
     val takeOffPos = currentPos + (if (distance > 0) 10 else -10)
-    smoothScrollToPositionCentered(takeOffPos,speed) // 速めで！
+    smoothScrollToPositionCentered(takeOffPos, speed) // 速めで！
 
     // スクロールが落ち着くまで少し待機（ディレイ）
     delay(200)
@@ -221,19 +251,41 @@ suspend fun RecyclerView.stepScrollToItem(targetPos: Int,speed: Float = 5f ) {
 
     smoothScrollToPositionCentered(targetPos, speed) // 最後は丁寧に
 }
-fun calculateScrollSpeed(from : Int, to :Int): Float {
+
+fun calculateScrollSpeed(from: Int, to: Int): Float {
 
     val diff = kotlin.math.abs(from - to)
     val rawSpeed = (150 / (1 + diff)).toFloat()
     val speed = rawSpeed.coerceIn(1f, 300f)
     return speed
 }
-fun pendingServiceIntent(context: Context, requestCode: Int, intent: Intent, minSdkForImmutable: Int = Build.VERSION_CODES.S): PendingIntent {
-    return PendingIntent.getService(context, requestCode, intent, pendingIntentFlags(minSdkForImmutable))
+
+fun pendingServiceIntent(
+    context: Context,
+    requestCode: Int,
+    intent: Intent,
+    minSdkForImmutable: Int = Build.VERSION_CODES.S
+): PendingIntent {
+    return PendingIntent.getService(
+        context,
+        requestCode,
+        intent,
+        pendingIntentFlags(minSdkForImmutable)
+    )
 }
 
-fun pendingActivityIntent(context: Context, requestCode: Int, intent: Intent, minSdkForImmutable: Int = Build.VERSION_CODES.S): PendingIntent {
-    return PendingIntent.getActivity(context, requestCode, intent, pendingIntentFlags(minSdkForImmutable))
+fun pendingActivityIntent(
+    context: Context,
+    requestCode: Int,
+    intent: Intent,
+    minSdkForImmutable: Int = Build.VERSION_CODES.S
+): PendingIntent {
+    return PendingIntent.getActivity(
+        context,
+        requestCode,
+        intent,
+        pendingIntentFlags(minSdkForImmutable)
+    )
 }
 
 fun formatMillisToTime(millis: Long): String {
@@ -243,3 +295,4 @@ fun formatMillisToTime(millis: Long): String {
     return if (hours > 0) String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
     else String.format(Locale.US, "%02d:%02d", minutes, seconds)
 }
+

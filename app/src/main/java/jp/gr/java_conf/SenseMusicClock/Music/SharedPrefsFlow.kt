@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.Flow
 
+/*
 object SharedPrefsFlow {
     fun observeString(prefs: SharedPreferences, key: String, default: String? = null): Flow<String?> =
         callbackFlow {
@@ -87,3 +88,6 @@ object SharedPrefsFlow {
             }
         }.distinctUntilChanged()
 }
+
+
+ */

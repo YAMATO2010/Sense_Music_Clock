@@ -8,7 +8,9 @@ import android.widget.ImageView
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
+import coil.decode.VideoFrameDecoder
 import coil.load
+import coil.size.Precision
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -22,14 +24,14 @@ object BackgroundResolver {
     const val NOW_NIGHT = 4
 
 
-    const val IMAGEFILE_KEY_OBLONG_MORNING = "imageFile_key_oblong_morning"
-    const val IMAGEFILE_KEY_OBLONG_NOON = "imageFile_key_oblong_noon"
-    const val IMAGEFILE_KEY_OBLONG_EVENING = "imageFile_key_oblong_evening"
-    const val IMAGEFILE_KEY_OBLONG_NIGHT = "imageFile_key_oblong_night"
-    const val IMAGEFILE_KEY_LAND_MORNING = "imageFile_key_land_morning"
-    const val IMAGEFILE_KEY_LAND_NOON = "imageFile_key_land_noon"
-    const val IMAGEFILE_KEY_LAND_EVENING = "imageFile_key_land_evening"
-    const val IMAGEFILE_KEY_LAND_NIGHT = "imageFile_key_land_night"
+    val IMAGEFILE_KEY_OBLONG_MORNING = PrefsManager.IMAGEFILE_KEY_OBLONG_MORNING_KEY
+    val IMAGEFILE_KEY_OBLONG_NOON    = PrefsManager.IMAGEFILE_KEY_OBLONG_NOON_KEY
+    val IMAGEFILE_KEY_OBLONG_EVENING = PrefsManager.IMAGEFILE_KEY_OBLONG_EVENING_KEY
+    val IMAGEFILE_KEY_OBLONG_NIGHT   = PrefsManager.IMAGEFILE_KEY_OBLONG_NIGHT_KEY
+    val IMAGEFILE_KEY_LAND_MORNING   = PrefsManager.IMAGEFILE_KEY_LAND_MORNING_KEY
+    val IMAGEFILE_KEY_LAND_NOON      = PrefsManager.IMAGEFILE_KEY_LAND_NOON_KEY
+    val IMAGEFILE_KEY_LAND_EVENING   = PrefsManager.IMAGEFILE_KEY_LAND_EVENING_KEY
+    val IMAGEFILE_KEY_LAND_NIGHT     = PrefsManager.IMAGEFILE_KEY_LAND_NIGHT_KEY
 
 
     const val BACKGROUNDS_PATH = "backgrounds"
@@ -79,35 +81,11 @@ object BackgroundResolver {
 
     }
 
-    fun getPrefsKey(orientation: Int, partOfDay: Int, ): String {
-        val key = when (orientation) {
-            ORIENTATION_OBLONG -> { // oblong
-                when (partOfDay) {
-                    NOW_MORNING -> IMAGEFILE_KEY_OBLONG_MORNING
-                    NOW_NOON -> IMAGEFILE_KEY_OBLONG_NOON
-                    NOW_EVENING -> IMAGEFILE_KEY_OBLONG_EVENING
-                    NOW_NIGHT -> IMAGEFILE_KEY_OBLONG_NIGHT
-                    else -> IMAGEFILE_KEY_OBLONG_NIGHT // default
-                }
-            }
 
-            else -> { // land
-                when (partOfDay) {
-                    NOW_MORNING -> IMAGEFILE_KEY_LAND_MORNING
-                    NOW_NOON -> IMAGEFILE_KEY_LAND_NOON
-                    NOW_EVENING -> IMAGEFILE_KEY_LAND_EVENING
-                    NOW_NIGHT -> IMAGEFILE_KEY_LAND_NIGHT
-                    else -> IMAGEFILE_KEY_LAND_NIGHT // default
-                }
-            }
-        }
 
-        return key
-    }
+    suspend fun getImageFilePath_forBackground(context: Context , key: String): String? {
 
-    fun getImageFilePath_forBackground(preferences: SharedPreferences, key: String): String? {
-
-        return preferences.getString(key, null)
+        return PrefsManager.getImageFilePath(context, key)
     }
 
     fun getDrawableId_byPrefsKey(key: String): ImageSource {
@@ -130,17 +108,17 @@ object BackgroundResolver {
     }
 
 
-    fun loadBackgroundSource(context: Context, orientation: Int): ImageSource {
+    suspend fun loadBackgroundSource(context: Context, orientation: Int): ImageSource {
 
-        val prefs = PrefsManager.getSharedPreferences(context)
+
 
 
         val partOfDay = getPartOfDay(getNowHour_Int())
 
         Log.d("BackgroundResolver", "現在の時間帯：${partOfDay}、画像の向き：${orientation}")
-        val prefKey = getPrefsKey(orientation, partOfDay)
+        val prefKey = PrefsManager.getImageFileKey(orientation, partOfDay)
         Log.d("BackgroundResolver", "取得するPrefKey：${prefKey}")
-        val filePath = getImageFilePath_forBackground(prefs, prefKey)
+        val filePath = getImageFilePath_forBackground(context, prefKey)
         Log.d("BackgroundResolver", "取得した画像ファイルパス：${filePath}")
 
         loadFileIfExists(context, "$BACKGROUNDS_PATH/$filePath")?.let {
@@ -160,7 +138,7 @@ object BackgroundResolver {
 
 
 
-fun ImageView.load_forRoot(context: Context, orientation: Int): String {
+suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
 
 
 
@@ -173,7 +151,9 @@ fun ImageView.load_forRoot(context: Context, orientation: Int): String {
                 .components {
                     add(ImageDecoderDecoder.Factory()) // Android 9以降のWebP/GIF用
                     add(GifDecoder.Factory())          // Android 8以前のGIF用
+
                 }
+                .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
                 .build()
 
             this.load(source.file, imageLoader)

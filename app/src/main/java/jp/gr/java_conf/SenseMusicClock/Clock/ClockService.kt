@@ -1,4 +1,4 @@
-package jp.gr.java_conf.SenseMusicClock.Clock
+/*package jp.gr.java_conf.SenseMusicClock.Clock
 
 import android.app.*
 import android.content.Context
@@ -17,7 +17,7 @@ import jp.gr.java_conf.SenseMusicClock.getNotificationManagerCompat
 import jp.gr.java_conf.SenseMusicClock.vibrateOnceSafe
 
 
-class ClockService : Service() {
+//class ClockService : Service() {
 
     companion object {
         const val ACTION_START_TIMER = "jp.gr.java_conf.SenseMusicClock.ACTION_START_TIMER"
@@ -318,3 +318,5 @@ class ClockService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 }
+
+ */
