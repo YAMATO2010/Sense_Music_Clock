@@ -1,19 +1,20 @@
-package jp.gr.java_conf.SenseMusicClock.Music
+package jp.gr.java_conf.SenseMusicClock.ui
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-
+import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.SeekBar
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -24,6 +25,8 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import coil.load
+import coil.request.CachePolicy
+import coil.size.Precision
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
@@ -200,9 +203,11 @@ class StandardPlayerActivity : AppCompatActivity() {
         val controllerFuture = MediaController.Builder(this, token).buildAsync()
 
 
+
         controllerFuture.addListener({
             mediaController = controllerFuture.get()
             mediaController?.let {
+
 
 
                 runOnUiThread {
@@ -216,12 +221,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                         binding.tvAlbumName.text = album
 
 
-                        binding.ivAlbumArt.load(it.mediaMetadata.artworkUri) {
-                            placeholder(R.drawable.default_album_art)
-                            error(R.drawable.default_album_art)
-                            crossfade(true)
-                                .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
-                        }
+                        binding.ivAlbumArt.load_albumArt(it.mediaMetadata.artworkUri)
 
                         startProgressUpdates()
 
@@ -256,12 +256,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                                 binding.tvAlbumName.text = album
 
 
-                                binding.ivAlbumArt.load(mediaItem?.mediaMetadata?.artworkUri) {
-                                    placeholder(R.drawable.default_album_art)
-                                    error(R.drawable.default_album_art)
-                                    crossfade(true)
-                                        .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
-                                }
+                                binding.ivAlbumArt.load_albumArt(mediaItem?.mediaMetadata?.artworkUri)
 
 
                                 val durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L
@@ -337,7 +332,8 @@ class StandardPlayerActivity : AppCompatActivity() {
         }
         binding.btnRepeat.setOnClickListener {
             lifecycleScope.launch {
-                val iscurrentRepeatMode_oneLoop = PrefsManager.getPlayModeLoop(this@StandardPlayerActivity)
+                val iscurrentRepeatMode_oneLoop =
+                    PrefsManager.getPlayModeLoop(this@StandardPlayerActivity)
 
                 val isNewRepeatMode_oneLoop = !iscurrentRepeatMode_oneLoop
                 PrefsManager.setPlayModeLoop(this@StandardPlayerActivity, isNewRepeatMode_oneLoop)
@@ -431,7 +427,10 @@ class StandardPlayerActivity : AppCompatActivity() {
         lifecycleScope.launch {
 
             lastSourceBackGround =
-                binding.bgImageView.load_forRoot(this@StandardPlayerActivity, resources.configuration.orientation)
+                binding.bgImageView.load_forRoot(
+                    this@StandardPlayerActivity,
+                    resources.configuration.orientation
+                )
         }
         registerReceiver(timeTickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
 
@@ -445,12 +444,25 @@ class StandardPlayerActivity : AppCompatActivity() {
 
         try {
 
-        unregisterReceiver(timeTickReceiver)
-        }catch (e: Exception) {
+            unregisterReceiver(timeTickReceiver)
+        } catch (e: Exception) {
             Log.w("StandardPlayerActivity", "unregisterReceiver failed", e)
         }
         mediaController?.release()
 
         mediaController = null
+    }
+
+    fun ImageView.load_albumArt(uri: Uri?) {
+        this.load(uri) {
+            bitmapConfig(Bitmap.Config.ARGB_8888)
+            placeholder(R.drawable.default_album_art)
+            error(R.drawable.default_album_art)
+            precision(Precision.EXACT)
+            allowHardware(true)
+            memoryCachePolicy(CachePolicy.DISABLED)
+            crossfade(true)
+                .memoryCachePolicy(CachePolicy.DISABLED)
+        }
     }
 }

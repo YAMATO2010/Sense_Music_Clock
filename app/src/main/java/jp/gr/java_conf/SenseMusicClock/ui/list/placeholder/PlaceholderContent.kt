@@ -1,4 +1,4 @@
-package jp.gr.java_conf.SenseMusicClock.Music.list.placeholder
+package jp.gr.java_conf.SenseMusicClock.ui.list.placeholder
 
 import java.util.ArrayList
 import java.util.HashMap

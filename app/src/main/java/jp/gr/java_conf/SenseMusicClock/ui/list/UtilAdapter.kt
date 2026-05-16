@@ -1,4 +1,4 @@
-package jp.gr.java_conf.SenseMusicClock.Music.list
+package jp.gr.java_conf.SenseMusicClock.ui.list
 
 import android.util.Log
 import android.view.LayoutInflater

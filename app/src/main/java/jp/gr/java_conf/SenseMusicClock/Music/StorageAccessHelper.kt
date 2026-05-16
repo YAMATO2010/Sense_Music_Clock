@@ -12,6 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class StorageAccessHelper(
@@ -21,6 +23,13 @@ class StorageAccessHelper(
     private val onPermissionDenied: () -> Unit = {}
 
 ) {
+
+
+    private val _isGrantedFlow : MutableStateFlow<Boolean> = MutableStateFlow(false)
+
+    val isGrantedFlow = _isGrantedFlow.asStateFlow()
+
+
 
 
     private val perm: String =
@@ -49,12 +58,24 @@ class StorageAccessHelper(
             }
         }
 
+    private val pickM3ULauncher =
+        activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                onDirectoryPicked(null, uri)
+            } else {
+                onDirectoryPicked(null, null)
+            }
+        }
     private val requestPermissionLauncher =
         activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            _isGrantedFlow.value = granted
             if (granted) {
+
                 onPermissionGranted()
             } else {
+
                 onPermissionDenied()
+
             }
         }
 
@@ -62,11 +83,8 @@ class StorageAccessHelper(
     fun ensureReadAudioPermission() {
 
 
-        if (ContextCompat.checkSelfPermission(
-                activity,
-                perm
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
+        if (hasReadAudioPermission()) {
+            _isGrantedFlow.value = true
             onPermissionGranted()
             return
         }

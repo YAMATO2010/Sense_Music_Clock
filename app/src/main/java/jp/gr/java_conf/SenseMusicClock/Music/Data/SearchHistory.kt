@@ -16,8 +16,15 @@ import java.util.Date
 data class SearchHistory(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timestamp: Date = Date(),
-    val keyword: String
-)
+    val itemID: Long,
+    val itemType: String
+){
+    companion object{
+        const val TYPE_ARTIST = "artist"
+        const val TYPE_ALBUM = "album"
+        const val TYPE_SONG = "song"
+    }
+}
 
 @Dao
 interface SearchHistoryDao {
@@ -28,14 +35,25 @@ interface SearchHistoryDao {
     @Query("SELECT * FROM SearchHistory ORDER BY timestamp DESC LIMIT :limit;")
     suspend fun loadSearchHistory(limit : Int): List<SearchHistory>
 
-    @Query("DELETE FROM SearchHistory WHERE timestamp < :beforeDate")
-    suspend fun deleteOldSearchHistory(beforeDate: Date)
+    @Query("SELECT * FROM SearchHistory ORDER BY timestamp DESC LIMIT :count OFFSET :startIndex")
+    suspend fun loadSearchHistoryInRange(startIndex: Int, count: Int): List<SearchHistory>
+
+
+    @Query("DELETE FROM SearchHistory WHERE timestamp < :Date")
+    suspend fun deleteOldSearchHistory(Date: Date)
+
+    @Query("DELETE FROM SearchHistory ")
+    suspend fun deleteAllSearchHistory(): Int
 
     @Upsert
     suspend fun insertSearchHistory(searchHistory: SearchHistory)
 
     @Delete
     suspend fun deleteSearchHistory(searchHistory: SearchHistory)
+
+
+
+
 
 
 

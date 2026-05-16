@@ -9,10 +9,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Build
+import android.os.Bundle
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaMetadata
@@ -20,20 +22,44 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
+import androidx.media3.session.SessionResult
+import androidx.work.impl.utils.PREFERENCE_FILE_KEY
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import jp.gr.java_conf.SenseMusicClock.Music.BitmapLoaderForSession
+import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
+import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
+import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.toMediaItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
+import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
+import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
 import kotlinx.coroutines.withContext
 
 
 class MusicService : MediaLibraryService() {
+
+    companion object {
+
+
+        const val CUSTOM_ACTION_LOAD_ALBUM_BY_ID =
+            "jp.gr.java_conf.SenseMusicClock.action.LOAD_ALBUM_BY_ID"
+        const val CUSTOM_ACTION_LOAD_ARTIST_BY_ID =
+            "jp.gr.java_conf.SenseMusicClock.action.LOAD_ARTIST_BY_ID"
+        const val CUSTOM_ACTION_LOAD_ONE_MUSIC_BY_ID =
+            "jp.gr.java_conf.SenseMusicClock.action.LOAD_ONE_MUSIC_BY_ID"
+        const val ALBUM_ID = "jp.gr.java_conf.SenseMusicClock.action.LOAD_ONE_MUSIC_BY_ID"
+        const val MUSIC_ID = "music_id"
+        const val ARTIST_ID = "jp.gr.java_conf.SenseMusicClock.action.LOAD_ONE_MUSIC_BY_ID"
+
+    }
 
 
     private lateinit var player: ExoPlayer
@@ -61,6 +87,77 @@ class MusicService : MediaLibraryService() {
 
     val callback = object : MediaLibrarySession.Callback {
         // ① 本棚の入り口IDを定義
+        @OptIn(UnstableApi::class)
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+
+            Log.d(
+                "MusicService",
+                "onCustomCommand received: action=${customCommand.customAction} from controller=${controller.packageName}"
+            )
+            when (customCommand.customAction) {
+                CUSTOM_ACTION_LOAD_ALBUM_BY_ID -> {
+                    val albumId = args.getLong(ALBUM_ID, -1L)
+                    if (albumId == -1L) {
+                        Log.w("MusicService", "Invalid album ID received: $albumId")
+                    } else {
+                        Log.d("MusicService", "Received command to load album with ID: $albumId")
+                        scope.launch {
+
+                            LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap_albumId(
+                                this@MusicService,
+                                albumId
+                            )
+
+                        }
+                    }
+
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+
+                CUSTOM_ACTION_LOAD_ARTIST_BY_ID -> {
+                    val artistId = args.getLong(ARTIST_ID, -1L)
+                    Log.d("MusicService", "Received command to load artist with ID: $artistId")
+                    if (artistId == -1L) {
+                        Log.w("MusicService", "Invalid artist ID received: $artistId")
+                    } else {
+                        scope.launch {
+
+                            LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap_artistId(
+                                this@MusicService,
+                                artistId
+                            )
+                        }
+                    }
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+
+                CUSTOM_ACTION_LOAD_ONE_MUSIC_BY_ID -> {
+                    val musicId = args.getLong(MUSIC_ID, -1L)
+                    Log.d("MusicService", "Received command to load music with ID: $musicId")
+                    if (musicId == -1L) {
+                        Log.w("MusicService", "Invalid music ID received: $musicId")
+                    } else {
+                        scope.launch {
+
+                            LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap_Id(
+                                this@MusicService,
+                                musicId
+                            )
+                        }
+                    }
+                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            }
+
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
+
+        }
+
         override fun onGetLibraryRoot(
             session: MediaLibrarySession,
             browser: MediaSession.ControllerInfo,
@@ -112,7 +209,30 @@ class MusicService : MediaLibraryService() {
             controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
             Log.d("MusicService", "onConnect called controller=${controller.packageName}")
-            return super.onConnect(session, controller)
+
+            val connectionResult = super.onConnect(session, controller)
+            val availableSessionCommands = connectionResult.availableSessionCommands.buildUpon()
+
+            // ここでカスタムコマンドを明示的に追加する
+            // 第2引数のBundleは空でOK
+            availableSessionCommands.add(
+                SessionCommand(CUSTOM_ACTION_LOAD_ARTIST_BY_ID, Bundle.EMPTY)
+
+            )
+            availableSessionCommands.add(
+                SessionCommand(CUSTOM_ACTION_LOAD_ALBUM_BY_ID, Bundle.EMPTY)
+
+            )
+            availableSessionCommands.add(
+                SessionCommand(CUSTOM_ACTION_LOAD_ONE_MUSIC_BY_ID, Bundle.EMPTY)
+
+            )
+
+            return MediaSession.ConnectionResult.accept(
+                availableSessionCommands.build(),
+                connectionResult.availablePlayerCommands
+            )
+
         }
 
     }
@@ -164,6 +284,33 @@ class MusicService : MediaLibraryService() {
             registerReceiver(becomingNoisyReceiver, filter)
             scope.launch {
 
+                launch {
+                    PrefsManager.getIsShuffleFlow(this@MusicService).collect { value ->
+                        LocalMusicRepository.setShuffle(value, this@MusicService::class.simpleName)
+                        repoLoadMusicAndCreateMap()
+                    }
+                }
+                launch {
+                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).collect { value ->
+                        Log.d("LIST_/MusicService/loadBlocklistItem", "collect blocklistId=$value")
+                        val blocklistItems = DBManager.loadBlocklistItem(this@MusicService, value)
+                        Log.d(
+                            "LIST_/MusicService/loadBlocklistItem",
+                            "loaded blocklist items=${blocklistItems.size} for id=$value"
+                        )
+                        LocalMusicRepository.setBlockItems(blocklistItems)
+                        repoLoadMusicAndCreateMap()
+                    }
+                }
+
+
+                launch {
+
+                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).collect { value ->
+                        repoLoadMusicAndCreateMap(value)
+                    }
+
+                }
 
                 // 音量設定の監視
                 launch {
@@ -178,7 +325,8 @@ class MusicService : MediaLibraryService() {
                 launch {
 
                     PrefsManager.getPlayModeLoopFlow(this@MusicService).collect { value ->
-                        player.repeatMode = if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
+                        player.repeatMode =
+                            if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
                         Log.d(
                             "MusicService",
                             "Playmode loop set to $value -> repeatMode=${player.repeatMode}"
@@ -192,12 +340,13 @@ class MusicService : MediaLibraryService() {
                 launch {
 
                     PrefsManager.getMusicDirRelativePathFlow(this@MusicService).collect { value ->
-                        val UserRelativePaths =
-                            TargetDirectoryPrefJSONManager(this@MusicService).getAll()
-                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                            this@MusicService,
-                            UserRelativePaths
-                        )
+                        if (PrefsManager.getCurrentPlaylistId(this@MusicService) < 0) {
+                            Log.d(
+                                "MusicService",
+                                "Music directory changed, reloading music. new dirs: $value"
+                            )
+                            repoLoadMusicAndCreateMap()
+                        }
                     }
                 }
 
@@ -208,31 +357,36 @@ class MusicService : MediaLibraryService() {
                             "MusicService",
                             "reload music directory requested  "
                         )
-                        val UserRelativePaths =
-                            TargetDirectoryPrefJSONManager(this@MusicService).getAll()
-                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                            this@MusicService,
-                            UserRelativePaths
-                        )
+                        repoLoadMusicAndCreateMap()
 
                     }
                 }
 
                 launch {
                     LocalMusicRepository.tracksFlow.collect { value ->
-                        withContext(Dispatchers.Main) {
-                            player.setMediaItems(value)
-                        }
+                        player.setSafeMediaItems(value)
                     }
                 }
                 try {
                     if (LocalMusicRepository.getTracks().isEmpty()) {
-                        val UserRelativePaths =
-                            TargetDirectoryPrefJSONManager(this@MusicService).getAll()
-                        LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(
-                            this@MusicService,
-                            UserRelativePaths
+                        val blockListID = PrefsManager.getCurrentBlocklistId(this@MusicService)
+                        if (blockListID >= 0) {
+                            Log.d(
+                                "LIST_/MusicService/loadBlocklistItem_sync",
+                                "loading blocklist synchronously id=$blockListID"
+                            )
+                            val items = DBManager.loadBlocklistItem(this@MusicService, blockListID)
+                            Log.d(
+                                "LIST_/MusicService/loadBlocklistItem_sync",
+                                "loaded blocklist items=${items.size} for id=$blockListID"
+                            )
+                            LocalMusicRepository.setBlockItems(items)
+                        }
+                        LocalMusicRepository.setShuffle(
+                            PrefsManager.getIsShuffle(this@MusicService),
+                            this@MusicService::class.simpleName
                         )
+                        repoLoadMusicAndCreateMap()
                     }
                 } catch (e: Exception) {
                     Log.w("MusicService", "failed to load local tracks", e)
@@ -283,77 +437,67 @@ class MusicService : MediaLibraryService() {
         Log.d("MusicService", "onDestroy end")
     }
 
-
-    fun play() {
-
-        if (player.mediaItemCount == 0) {
-            Log.d(
-                "MusicService",
-                "play: setting queue before play./currentIndex=${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
-            )
-
-        }
-
-        Log.d(
-            "player_beforePlay",
-            " playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
-        )
-
-        player.play()
-        Log.d(
-            "player",
-            " playerCurrentIndex: ${player.currentMediaItemIndex}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
-        )
-    }
-
-    fun pause() {
-        player.pause()
-    }
-
-
-    fun skipToNext() {
-
-        if (player.hasNextMediaItem()) {
-
-            player.seekToNext()
-
-
-        }
-    }
-
-    fun skipToPrevious() {
-
-        if (player.hasPreviousMediaItem() && player.currentPosition < 7000) {
-            player.seekToPrevious()
-
+    suspend fun repoLoadMusicAndCreateMap(playID: Long? = null) {
+        val id = playID ?: PrefsManager.getCurrentPlaylistId(this)
+        if (DUMMY_PLAYLIST_REMOVAL_ID == id || id < 0) {
+            val UserRelativePaths =
+                TargetDirectoryPrefJSONManager(this@MusicService).getAll()
+            LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap(this, UserRelativePaths)
 
         } else {
-            player.seekTo(0)
+            Log.d(
+                "LIST_/MusicService/loadPlaylistItem",
+                "loading playlist items for playlistId=$id"
+            )
+            val playlistItem = DBManager.loadPlaylistItem(this, id)
+            Log.d(
+                "LIST_/MusicService/loadPlaylistItem",
+                "loaded playlist items=${playlistItem.size} for playlistId=$id"
+            )
+            LocalMusicRepository.loadLocalMusicAndSetTracksAndCreateMap_playlist(
+                this,
+                playlistItem
+            )
         }
-    }
-
-
-    // 必要ならフォアグラウンド化（起動直後に呼ばれる）
-
-
-    private fun createNotificationChannel() {
-
 
     }
 
+    suspend fun Player.setSafeMediaItems(List: List<MediaItem>) {
 
-    companion object {
+        withContext(Dispatchers.Main) {
+            this@setSafeMediaItems.clearMediaItems()
+        }
+        withContext(Dispatchers.Default) {
+            val listSize = List.size
+            Log.d("MusicService", "Setting media items to player, count=${listSize}")
+            val pageSize = 900
 
-        const val ACTION_PLAY = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY"
-        const val ACTION_PAUSE = "jp.gr.java_conf.SenseMusicClock.ACTION_PAUSE"
-        const val ACTION_NEXT = "jp.gr.java_conf.SenseMusicClock.ACTION_NEXT"
-        const val ACTION_PREV = "jp.gr.java_conf.SenseMusicClock.ACTION_PREV"
-        const val ACTION_PLAY_INDEX = "jp.gr.java_conf.SenseMusicClock.ACTION_PLAY_INDEX"
-
-        const val EXTRA_INDEX = "jp.gr.java_conf.SenseMusicClock.EXTRA_INDEX"
+            val page = (listSize + pageSize - 1) / pageSize // 切り上げでページ数を計算
+            Log.d("MusicService", "Calculated pages: $page for pageSize=$pageSize")
+            for (i in 0 until page) {
+                val fromIndex = i * pageSize
+                val toIndex = minOf(fromIndex + pageSize, listSize)
+                val sublist = List.subList(fromIndex, toIndex)
+                Log.d(
+                    "MusicService",
+                    "Adding media items to player: page=${i + 1}/$page, items=${sublist.size}"
+                )
+                withContext(Dispatchers.Main) {
+                    addMediaItems(sublist)
+                }
+            }
+        }
+        withContext(Dispatchers.Main) {
+            this@setSafeMediaItems.prepare()
+            this@setSafeMediaItems.play()
+            this@setSafeMediaItems.pause()
+        }
 
 
     }
-
 
 }
+
+
+
+

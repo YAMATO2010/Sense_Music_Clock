@@ -15,7 +15,12 @@ class MainViewModel : ViewModel() {
     /** If true, activity should perform an instant (no-animation) scroll to current track once adapter is ready. */
     var pendingInstantScroll: Boolean = false
 
-    private  val _tracks  =  MutableLiveData<MutableList<MediaItem>>(mutableListOf())
+    private val _isHHmm = MutableLiveData<Boolean>(false)
+
+    val isHHmm: LiveData<Boolean>
+        get() = _isHHmm
+
+    private val _tracks = MutableLiveData<MutableList<MediaItem>>(mutableListOf())
 
     val tracks: LiveData<MutableList<MediaItem>>
         get() = _tracks
@@ -29,6 +34,10 @@ class MainViewModel : ViewModel() {
 
         _tracks.value = emptyList<MediaItem>().toMutableList()
 
+    }
+
+    fun reverseIsHHmm() {
+        _isHHmm.value = !(_isHHmm.value ?: false)
     }
 
 }

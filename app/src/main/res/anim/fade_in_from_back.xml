@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fillAfter="false"
+    android:interpolator="@android:interpolator/decelerate_cubic">
+
+    <!-- 小さめに縮めておいて、中央に向かってスケールアップ -->
+    <scale
+        android:fromXScale="0.95"
+        android:toXScale="1.0"
+        android:fromYScale="0.95"
+        android:toYScale="1.0"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:duration="320" />
+
+    <!-- 下から（奥から）手前に浮かび上がるように少しだけ移動 -->
+    <translate
+        android:fromYDelta="20dp"
+        android:toYDelta="0dp"
+        android:duration="320" />
+
+    <!-- 徐々にフェードイン -->
+    <alpha
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0"
+        android:duration="280" />
+
+</set>
+

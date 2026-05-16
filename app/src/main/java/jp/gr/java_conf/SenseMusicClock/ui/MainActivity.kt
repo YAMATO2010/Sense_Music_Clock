@@ -1,6 +1,4 @@
-// kotlin
-package jp.gr.java_conf.SenseMusicClock
-
+package jp.gr.java_conf.SenseMusicClock.ui
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -8,41 +6,60 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.Rect
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
-import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.lifecycle.lifecycleScope
-import android.graphics.Rect
 import android.view.View
 import android.widget.TextView
-import kotlinx.coroutines.launch
-import android.graphics.Color
-import androidx.activity.enableEdgeToEdge
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.content.ContextCompat.getMainExecutor
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.getInstance
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
-import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
-import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.IDENTIFIER_INITIAL_INDEX_PROBLEM
+import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
+import jp.gr.java_conf.SenseMusicClock.MainViewModel
+import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
+import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
-import jp.gr.java_conf.SenseMusicClock.Music.StandardPlayerActivity
+import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
+import jp.gr.java_conf.SenseMusicClock.MusicService
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
+import jp.gr.java_conf.SenseMusicClock.R
+import jp.gr.java_conf.SenseMusicClock.app_dir
+import jp.gr.java_conf.SenseMusicClock.calculateScrollSpeed
+import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
+import jp.gr.java_conf.SenseMusicClock.dpToPx
+
+import jp.gr.java_conf.SenseMusicClock.load_forRoot
+import jp.gr.java_conf.SenseMusicClock.scrollToPositionCentered
+import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
+import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
+import jp.gr.java_conf.SenseMusicClock.smoothScrollToPositionWithSkipAnimationCheck
+import jp.gr.java_conf.SenseMusicClock.toBlocklistItem
+import jp.gr.java_conf.SenseMusicClock.toFileItem
+import jp.gr.java_conf.SenseMusicClock.ui.search.SearchActivity
+import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -54,7 +71,7 @@ class MainActivity : AppCompatActivity() {
     var storageAccessHelper: StorageAccessHelper? = null
 
     // 追加: アダプタをクラスプロパティ化
-    private lateinit var jacketAdapter: JacketAdapter
+    private var jacketAdapter: JacketAdapter? = null
 
     private lateinit var token: SessionToken
 
@@ -116,12 +133,21 @@ class MainActivity : AppCompatActivity() {
             // これにより、他のビューに同じインセットが適用されるのを防ぐ
             insets
         }
+        setContentView(binding.root)
 
 
-        ViewModelProvider(this, getInstance(application))
+        ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.Companion.getInstance(application)
+        )
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         orientation = resources.configuration.orientation
         tracks = mainViewModel.tracks
+
+        binding.textClock.setOnClickListener {
+            mainViewModel.reverseIsHHmm()
+
+        }
 
 
 
@@ -133,205 +159,312 @@ class MainActivity : AppCompatActivity() {
             onDirectoryPicked = { _, _ -> },
             onPermissionGranted = { read_music_Granted_foronCreate() },
             onPermissionDenied = {
+                allView_onParmissionInvalid()
                 //TODO 権限拒否時の処理
                 Log.w("MainActivity", "音楽読み取り権限が拒否されました。")
             }
 
-        )
-        val profilesDir = File(filesDir, "profiles")
-        if (!profilesDir.exists()) {
-            profilesDir.mkdir()
+        ).also {
+            it.ensureReadAudioPermission()
+            lifecycleScope.launch {
+
+                it.isGrantedFlow.collect { value ->
+                    if (value) {
+                        read_music_Granted_foronCreate()
+                    } else {
+                        allView_onParmissionInvalid()
+                    }
+                }
+            }
         }
-
-        read_music_Granted_foronCreate()
-
-        binding.textClock.setOnClickListener {
-            val textClock = binding.textClock
-            if (textClock.format24Hour == "HH:mm") {
-                textClock.format24Hour = "HH:mm:ss"
+        mainViewModel.isHHmm.observe(this){ value ->
+            if (value) {
+                binding.textClock.format24Hour = "HH:mm"
+                binding.textClock.format12Hour = "hh:mm"
             } else {
-                textClock.format24Hour = "HH:mm"
-
+                binding.textClock.format24Hour = "HH:mm:ss"
+                binding.textClock.format12Hour = "HH:mm:ss"
             }
 
         }
 
 
-        // RecyclerView のレイアウトは configureRecyclerForOrientation にまとめる
-
-        configureRecyclerForOrientation(orientation)
-        // 初期向きを ViewModel に記録
-        if (mainViewModel.lastOrientation == null) mainViewModel.lastOrientation = orientation
-
-
-
-        binding.Settingsbutton.setOnClickListener {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-        }
-
-        binding.recyclerJackets.setHasFixedSize(false)
-
-
-        // RecyclerView のアイテム間隔をレイアウトに応じて設定する ItemDecoration を追加
-        try {
-            val spacing = this.dpToPx(4)
-            // 既存のデコレーションはクリア
-            while (binding.recyclerJackets.itemDecorationCount > 0) {
-                binding.recyclerJackets.removeItemDecorationAt(0)
-            }
-
-            val lm = binding.recyclerJackets.layoutManager
-            if (lm is GridLayoutManager) {
-                val spanCount = lm.spanCount
-                binding.recyclerJackets.addItemDecoration(object : RecyclerView.ItemDecoration() {
-                    override fun getItemOffsets(
-                        outRect: Rect,
-                        view: View,
-                        parent: RecyclerView,
-                        state: RecyclerView.State
-                    ) {
-                        val position = parent.getChildAdapterPosition(view)
-                        if (position == RecyclerView.NO_POSITION) return
-                        val column = position % spanCount
-                        outRect.left = spacing - column * spacing / spanCount
-                        outRect.right = (column + 1) * spacing / spanCount
-                        outRect.top = spacing
-                        outRect.bottom = spacing
-                    }
-                })
-            } else if (lm is LinearLayoutManager && lm.orientation == LinearLayoutManager.HORIZONTAL) {
-                // 横スクロール用の間隔（左右に small gap、上下は少し）
-                binding.recyclerJackets.addItemDecoration(object : RecyclerView.ItemDecoration() {
-                    override fun getItemOffsets(
-                        outRect: Rect,
-                        view: View,
-                        parent: RecyclerView,
-                        state: RecyclerView.State
-                    ) {
-                        val position = parent.getChildAdapterPosition(view)
-                        if (position == RecyclerView.NO_POSITION) return
-                        // 左右とも spacing / 2 を入れて均等に見せる。先頭と末尾に余白を多めにする。
-                        outRect.top = spacing / 2
-                        outRect.bottom = spacing / 2
-                        outRect.left = if (position == 0) spacing else spacing / 2
-                        outRect.right = spacing / 2
-                        // 最後尾には右マージンを与える
-                        if (position == parent.adapter?.itemCount?.minus(1)) {
-                            outRect.right = spacing
-                        }
-                    }
-                })
-            }
-        } catch (e: Exception) {
-            Log.w("MainActivity", "addItemDecoration failed", e)
-        }
-
-        binding.currentAlbumArt.setOnClickListener {
-            scrollToTrack()
-        }
-
-
-
-        binding.GotoStandardPlayerButton.setOnClickListener {
-            val intent = Intent(this, StandardPlayerActivity::class.java)
-            startActivity(intent)
-        }
-        setContentView(binding.root)
-
-        // Initialize ClockUiController to handle Timer/Alarm/Stopwatch UI independently
-        clockUiController = ClockUiController(this, binding)
-        clockUiController?.init()
-
-        // Debug: ensure nowLoading views exist and tint is applied early; use unified setter so parent overlay is shown
-        try {
-            binding.nowLoadingBar.indeterminateDrawable?.setTint(Color.WHITE)
-
-        } catch (e: Exception) {
-            Log.w("MainActivity", "failed to initialize nowLoading views", e)
-        }
     }
 
 
     override fun onStart() {
         super.onStart()
 
-        read_music_Granted()
+        if (storageAccessHelper?.isGrantedFlow?.value == true) {
+            jacketAdapterInitialize()
+            read_music_Granted()
+        } else {
+            allView_onParmissionInvalid()
+        }
 
+        if (mainViewModel.isHHmm.value ?: false){
+            binding.textClock.format24Hour = "HH:mm"
+            binding.textClock.format12Hour = "hh:mm"
+        } else {
+            binding.textClock.format24Hour = "HH:mm:ss"
+            binding.textClock.format12Hour = "HH:mm:ss"
+        }
 
-    }
+        lifecycleScope.launch {
 
-    fun jacketAdapterInitialized(): Boolean {
-        jacketAdapter =
-            JacketAdapter(
-                emptyList(),
-                R.drawable.default_album_art,
-                this,
-                onItemClick = { clickedTrack -> jacketAdapter_onItemClick(clickedTrack) },
-                onItemLongClick = { clickedTrack, view ->
-                    jacketAdapter_onItemLongClick(
-                        clickedTrack,
-                        view
-                    )
-                })
-
-        return ::jacketAdapter.isInitialized
-    }
-
-    private fun jacketAdapter_onItemLongClick(clickedTrack: MediaItem, view: View) {
-
-        val popup = PopupMenu(this, view)
-
-        popup.menuInflater.inflate(R.menu.block_or_play_list, popup.menu)
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.playlist -> {
-                    // プレイリストに追加する処理
-                    val newPlaylistItem = PlaylistItem(
-                        playlistId = 0, //showPlaylistSelectDialog()で選んだプレイリストIDに置き換えてくれるのでここは適当でおけ
-                        fileItem = clickedTrack.CreateFileItem() ?: FileItem("", ""),
-                        index =
-                            0 //showPlaylistSelectDialog()で呼んでるaddPlaylistItemが適切なインデックスに置き換えてくれるのでここも適当でおけ
-                    )
-                    if (newPlaylistItem.fileItem.relativePath == "") {
-                        Log.e(
-                            "jacketAdapter_onItemLongClick",
-                            "getExtra_MediaItem for relative path returned null for track ${clickedTrack.mediaMetadata.title}"
-                        )
-
-                        return@setOnMenuItemClickListener false
-                    }
-
-                    if (newPlaylistItem.fileItem.fileName == "") {
-                        Log.e(
-                            "jacketAdapter_onItemLongClick",
-                            "getExtra_MediaItem for display name returned null for track ${clickedTrack.mediaMetadata.title}"
-                        )
-                        return@setOnMenuItemClickListener false
-
-                    }
-                    lifecycleScope.launch {
-                        val playlists = loadPlaylist()
-                        showPlaylistSelectDialog(playlists, newPlaylistItem) { playlistId ->
-                            Log.d("MainActivity", "Selected playlist ID: $playlistId")
-
-                        }
-                    }
-                    Log.d("MainActivity", "Add to playlist: ${clickedTrack.mediaMetadata.title}")
-                    true
+            storageAccessHelper?.isGrantedFlow?.collect { value ->
+                if (value) {
+                    jacketAdapterInitialize()
+                    read_music_Granted()
+                } else {
+                    allView_onParmissionInvalid()
                 }
 
-                R.id.blocklist -> {
-                    // ブロックリストに追加する処理
-                    Log.d("MainActivity", "Add to blocklist: ${clickedTrack.mediaMetadata.title}")
-                    true
-                }
-
-                else -> false
             }
 
         }
 
+
+    }
+
+    private fun allView_onParmissionInvalid(isInvalid: Boolean = true) {
+        fun listener() {
+            if (isInvalid) {
+                Toast.makeText(
+                    this,
+                    "設定ボタンを押して、権限を追加してください",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        fun set(views: List<View>) {
+
+            views.forEach {
+
+                it.setOnClickListener {
+                    listener()
+
+                }
+                it.setOnLongClickListener {
+                    listener()
+                    true
+                }
+            }
+
+
+        }
+        if (isInvalid) {
+
+            binding.run {
+                set(
+                    listOf(
+                        alarmButton,
+                        recyclerJackets,
+                        textClock,
+                        TimerButton,
+                        stopWatchBtn,
+                        searchKeywordInput,
+                        TitleView,
+                        MusicEtcView,
+                        currentAlbumArt,
+                        GoSearchButton,
+                        GotoStandardPlayerButton
+                    )
+                )
+
+                binding.SettingsButton.setOnClickListener {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        // 自分のアプリのパッケージ名を指定して「このアプリの設定」を開く
+                        data = Uri.fromParts("package", packageName, null)
+                    }
+                    startActivity(intent)
+                }
+
+
+            }
+        }
+
+    }
+
+    fun jacketAdapterInitialize(): Boolean {
+        try {
+
+            if (jacketAdapter == null) {
+                jacketAdapter =
+                    JacketAdapter(
+                        emptyList(),
+                        R.drawable.default_album_art,
+                        this,
+                        onItemClick = { clickedTrack -> jacketAdapter_onItemClick(clickedTrack) },
+                        onItemLongClick = { clickedTrack, view ->
+                            jacketAdapter_onItemLongClick(
+                                clickedTrack,
+                                view
+                            )
+                        })
+            }
+                binding.recyclerJackets.adapter = jacketAdapter
+            return true
+        } catch (e: Exception) {
+            Log.w("MainActivity", "jacketAdapterInitialize failed", e)
+            jacketAdapter = null
+            return false
+        }
+
+
+    }
+
+    private fun popupMoves(view: View) {
+        val popupMenu = PopupMenu(this, view).also {
+            it.run {
+                menuInflater.inflate(R.menu.first_or_last, menu)
+                setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        R.id.first -> {
+
+                            lifecycleScope.launch {
+                                binding.recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
+                                    0,
+                                    10F
+
+                                )
+                            }
+
+                            true
+                        }
+
+                        R.id.last -> {
+
+                            lifecycleScope.launch {
+                                val position = (jacketAdapter?.itemCount ?: 1) - 1
+                                binding.recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
+                                    position,
+                                    10f
+                                )
+
+                            }
+
+
+
+                            true
+                        }
+
+                        else -> false
+                    }
+
+                }
+            }
+        }
+        popupMenu.show()
+    }
+
+    private fun jacketAdapter_onItemLongClick(clickedTrack: MediaItem, view: View) {
+
+        val popup = PopupMenu(this, view).also {
+            it.run {
+
+
+                menuInflater.inflate(R.menu.block_or_play_list, menu)
+                setOnMenuItemClickListener { item ->
+                    val newItem = clickedTrack.toFileItem()
+                    when (item.itemId) {
+                        R.id.playlist -> {
+                            // プレイリストに追加する処理
+
+                            if (newItem?.relativePath?.isBlank()
+                                    ?: return@setOnMenuItemClickListener false
+                            ) {
+                                Log.e(
+                                    "jacketAdapter_onItemLongClick",
+                                    "getExtra_MediaItem for relative path returned null for track ${clickedTrack.mediaMetadata.title}"
+                                )
+                                return@setOnMenuItemClickListener false
+                            }
+                            if (newItem.fileName.isBlank()) {
+                                Log.e(
+                                    "jacketAdapter_onItemLongClick",
+                                    "getExtra_MediaItem for display name returned null for track ${clickedTrack.mediaMetadata.title}"
+                                )
+                                return@setOnMenuItemClickListener false
+                            }
+
+
+
+
+
+
+                            lifecycleScope.launch {
+                                Log.d(
+                                    "LIST_/MainActivity/loadPlaylist",
+                                    "loading playlists for jacket long click"
+                                )
+                                val playlists = DBManager.loadPlaylist(this@MainActivity)
+                                showPlaylistSelectDialog(playlists, newItem) { playlistId ->
+                                    Log.d("MainActivity", "Selected playlist ID: $playlistId")
+                                    lifecycleScope.launch {
+
+                                        DBManager.addPlaylistItem(
+                                            this@MainActivity.applicationContext,
+                                            playlistId,
+                                            newItem
+                                        )
+                                    }
+
+
+                                }
+                            }
+                            Log.d(
+                                "MainActivity",
+                                "Add to playlist: ${clickedTrack.mediaMetadata.title}"
+                            )
+                            true
+                        }
+
+                        R.id.blocklist -> {
+
+
+                            if (newItem?.relativePath?.isBlank()
+                                    ?: return@setOnMenuItemClickListener false
+                            ) {
+                                return@setOnMenuItemClickListener false
+                            }
+                            if (newItem.fileName.isBlank()) {
+                                return@setOnMenuItemClickListener false
+                            }
+                            lifecycleScope.launch {
+                                val blockLists: List<BlockList> =
+                                    DBManager.loadBlocklist(this@MainActivity)
+
+                                showBlockSelectDialog(blockLists, newItem) { id ->
+                                    Log.d("MainActivity", "Selected block list ID: $it")
+                                    val newBlockItem = newItem.toBlocklistItem(id)
+                                    lifecycleScope.launch {
+                                        DBManager.upsertBlocklistItem(
+                                            this@MainActivity.applicationContext,
+                                            newBlockItem
+                                        )
+                                    }
+
+                                }
+                            }
+
+
+                            // ブロックリストに追加する処理
+                            Log.d(
+                                "MainActivity",
+                                "Add to blocklist: ${clickedTrack.mediaMetadata.title}"
+                            )
+                            true
+                        }
+
+                        else -> false
+                    }
+
+                }
+            }
+        }
+        popup.show()
 
     }
 
@@ -366,7 +499,7 @@ class MainActivity : AppCompatActivity() {
 
             // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
             if (!sent) {
-                val index = jacketAdapter.getItemPosition(clickedTrack) ?: -1
+                val index = jacketAdapter?.getItemPosition(clickedTrack) ?: -1
                 if (index >= 0) {
 
                     mediaBrowser?.seekTo(index, 0L)
@@ -450,6 +583,8 @@ class MainActivity : AppCompatActivity() {
 
         mediaBrowser?.release()
         mediaBrowser = null
+        binding.recyclerJackets.adapter = null
+        jacketAdapter = null
 
 
         // stop sliding animations when activity is not visible
@@ -473,6 +608,7 @@ class MainActivity : AppCompatActivity() {
             clockUiController = null
             storageAccessHelper = null
             musicSearcher = null
+
         } catch (e: Exception) {
             Log.w("MainActivity", "clockUiController destroy failed", e)
         }
@@ -545,16 +681,133 @@ class MainActivity : AppCompatActivity() {
             }
 
 
-        }, getMainExecutor(this))
+        }, ContextCompat.getMainExecutor(this))
 
 
     }
 
     private fun read_music_Granted_foronCreate() {
 
-        jacketAdapterInitialized()
+
+        val profilesDir = File(filesDir, "profiles")
+        if (!profilesDir.exists()) {
+            profilesDir.mkdir()
+        }
+
+        jacketAdapterInitialize()
         binding.recyclerJackets.adapter = jacketAdapter
 
+
+
+
+        // RecyclerView のレイアウトは configureRecyclerForOrientation にまとめる
+
+        configureRecyclerForOrientation(orientation)
+        // 初期向きを ViewModel に記録
+        if (mainViewModel.lastOrientation == null) mainViewModel.lastOrientation = orientation
+
+
+
+        binding.SettingsButton.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
+
+        binding.recyclerJackets.setHasFixedSize(false)
+
+
+        // RecyclerView のアイテム間隔をレイアウトに応じて設定する ItemDecoration を追加
+        try {
+            val spacing = this.dpToPx(4)
+            // 既存のデコレーションはクリア
+            while (binding.recyclerJackets.itemDecorationCount > 0) {
+                binding.recyclerJackets.removeItemDecorationAt(0)
+            }
+
+            val lm = binding.recyclerJackets.layoutManager
+            if (lm is GridLayoutManager) {
+                val spanCount = lm.spanCount
+                binding.recyclerJackets.addItemDecoration(object : RecyclerView.ItemDecoration() {
+                    override fun getItemOffsets(
+                        outRect: Rect,
+                        view: View,
+                        parent: RecyclerView,
+                        state: RecyclerView.State
+                    ) {
+                        val position = parent.getChildAdapterPosition(view)
+                        if (position == RecyclerView.NO_POSITION) return
+                        val column = position % spanCount
+                        outRect.left = spacing - column * spacing / spanCount
+                        outRect.right = (column + 1) * spacing / spanCount
+                        outRect.top = spacing
+                        outRect.bottom = spacing
+                    }
+                })
+            } else if (lm is LinearLayoutManager && lm.orientation == LinearLayoutManager.HORIZONTAL) {
+                // 横スクロール用の間隔（左右に small gap、上下は少し）
+                binding.recyclerJackets.addItemDecoration(object : RecyclerView.ItemDecoration() {
+                    override fun getItemOffsets(
+                        outRect: Rect,
+                        view: View,
+                        parent: RecyclerView,
+                        state: RecyclerView.State
+                    ) {
+                        val position = parent.getChildAdapterPosition(view)
+                        if (position == RecyclerView.NO_POSITION) return
+                        // 左右とも spacing / 2 を入れて均等に見せる。先頭と末尾に余白を多めにする。
+                        outRect.top = spacing / 2
+                        outRect.bottom = spacing / 2
+                        outRect.left = if (position == 0) spacing else spacing / 2
+                        outRect.right = spacing / 2
+                        // 最後尾には右マージンを与える
+                        if (position == parent.adapter?.itemCount?.minus(1)) {
+                            outRect.right = spacing
+                        }
+                    }
+                })
+            }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "addItemDecoration failed", e)
+        }
+
+        binding.currentAlbumArt.run {
+
+            setOnClickListener {
+                scrollToTrack()
+            }
+
+            setOnLongClickListener { view ->
+                popupMoves(view)
+                true
+            }
+
+        }
+
+
+        binding.GoSearchButton.setOnClickListener {
+            val intent = Intent(this, SearchActivity::class.java)
+            startActivity(intent)
+        }
+
+
+
+        binding.GotoStandardPlayerButton.setOnClickListener {
+            val intent = Intent(this, StandardPlayerActivity::class.java)
+            startActivity(intent)
+        }
+
+
+        // Initialize ClockUiController to handle Timer/Alarm/Stopwatch UI independently
+        clockUiController = ClockUiController(this, binding)
+        clockUiController?.init()
+
+        // Debug: ensure nowLoading views exist and tint is applied early; use unified setter so parent overlay is shown
+        try {
+            binding.nowLoadingBar.indeterminateDrawable?.setTint(Color.WHITE)
+
+        } catch (e: Exception) {
+            Log.w("MainActivity", "failed to initialize nowLoading views", e)
+        }
     }
 
     private fun loadAllMedias(list: MutableList<MediaItem>, browser: MediaBrowser, page: Int = 0) {
@@ -577,7 +830,7 @@ class MainActivity : AppCompatActivity() {
                 loadAllMediasComplete(list, browser)
 
             }
-        }, getMainExecutor(this))
+        }, ContextCompat.getMainExecutor(this))
     }
 
 
@@ -598,46 +851,49 @@ class MainActivity : AppCompatActivity() {
             val currentIndex = getIndexById(current)
 
             // adapter にリストを渡し、コミット後に現在トラックへスクロールする
-            jacketAdapter.setItems(tracks) {
-                // commit完了後に呼ばれる。adapter に要素が入っていればローディングを消す
-                val hasItems = jacketAdapter.getItems().isNotEmpty()
-                Log.d(
-                    "MainActivity",
-                    "commitCallback after setItems: hasItems=$hasItems, tracksSize=${tracks.size}"
-                )
-                val jacketAdaptertracks = jacketAdapter.getItems()
-                Log.d(
-                    "track viewmodel/adapter",
-                    "viewmodel : [${tracks[1].mediaMetadata.title} ,${tracks[2].mediaMetadata.title}, ${tracks[3].mediaMetadata.title}], adapter : [${jacketAdaptertracks[1].mediaMetadata.title} ,${jacketAdaptertracks[2].mediaMetadata.title} ,${jacketAdaptertracks[3].mediaMetadata.title} ]"
-                )
+            jacketAdapter?.let {
 
-                // commit 完了後に現在再生トラックがあればリスト上で追従してスクロールする
-                if (hasItems) {
-                    if (currentIndex != null) {
-                        // If orientation changed since last known by ViewModel, ensure instant scroll
-                        val curOrient = resources.configuration.orientation
-                        if (mainViewModel.lastOrientation != null && mainViewModel.lastOrientation != curOrient) {
-                            Log.d(
-                                "MainActivity",
-                                "commitCallback: orientation change detected (${mainViewModel.lastOrientation} -> $curOrient) -> instant scroll"
-                            )
-                            scrollToTrack()
-                            mainViewModel.pendingInstantScroll = false
-                            mainViewModel.lastOrientation = curOrient
-                        } else if (mainViewModel.pendingInstantScroll) {
-                            Log.d(
-                                "MainActivity",
-                                "commitCallback: performing pending instant scroll"
-                            )
-                            scrollToTrack()
-                            mainViewModel.pendingInstantScroll = false
-                        } else {
-                            scrollToTrack()
+
+                it.setItems(tracks) {
+                    // commit完了後に呼ばれる。adapter に要素が入っていればローディングを消す
+                    val hasItems = it.getItems().isNotEmpty()
+                    Log.d(
+                        "MainActivity",
+                        "commitCallback after setItems: hasItems=$hasItems, tracksSize=${tracks.size}"
+                    )
+                    val jacketAdaptertracks = it.getItems()
+                    Log.d(
+                        "track viewmodel/adapter",
+                        "viewmodel : [${tracks[1].mediaMetadata.title} ,${tracks[2].mediaMetadata.title}, ${tracks[3].mediaMetadata.title}], adapter : [${jacketAdaptertracks[1].mediaMetadata.title} ,${jacketAdaptertracks[2].mediaMetadata.title} ,${jacketAdaptertracks[3].mediaMetadata.title} ]"
+                    )
+
+                    // commit 完了後に現在再生トラックがあればリスト上で追従してスクロールする
+                    if (hasItems) {
+                        if (currentIndex != null) {
+                            // If orientation changed since last known by ViewModel, ensure instant scroll
+                            val curOrient = resources.configuration.orientation
+                            if (mainViewModel.lastOrientation != null && mainViewModel.lastOrientation != curOrient) {
+                                Log.d(
+                                    "MainActivity",
+                                    "commitCallback: orientation change detected (${mainViewModel.lastOrientation} -> $curOrient) -> instant scroll"
+                                )
+                                scrollToTrack()
+                                mainViewModel.pendingInstantScroll = false
+                                mainViewModel.lastOrientation = curOrient
+                            } else if (mainViewModel.pendingInstantScroll) {
+                                Log.d(
+                                    "MainActivity",
+                                    "commitCallback: performing pending instant scroll"
+                                )
+                                scrollToTrack()
+                                mainViewModel.pendingInstantScroll = false
+                            } else {
+                                scrollToTrack()
+                            }
                         }
                     }
                 }
             }
-
             // If a pending instant-scroll is still set after the initial adapter commit, start retry scheduler
             if (mainViewModel.pendingInstantScroll) {
                 Log.d(
@@ -652,7 +908,7 @@ class MainActivity : AppCompatActivity() {
 
 
                 PrefsManager.getTileTitleDisplayFlow(this@MainActivity).collect {
-                    jacketAdapter.notifyItemChanged(0, jacketAdapter.itemCount)
+                    jacketAdapter?.notifyItemChanged(0, jacketAdapter?.itemCount)
                 }
 
 
@@ -674,7 +930,6 @@ class MainActivity : AppCompatActivity() {
         musicSearcher = MusicSearcherByList(
             this@MainActivity,
             binding.SearchResultView,
-            tracks,
             binding.searchKeywordInput,
             binding.recyclerJackets
         )
@@ -874,7 +1129,7 @@ class MainActivity : AppCompatActivity() {
     // Instant scroll to current track without animation
     private fun scrollToTrackInstant(
         adapter: JacketAdapter? =
-            if (::jacketAdapter.isInitialized) jacketAdapter else (binding.recyclerJackets.adapter as? JacketAdapter),
+            if (jacketAdapter != null) jacketAdapter else (binding.recyclerJackets.adapter as? JacketAdapter),
         track: MediaItem? = mediaBrowser?.currentMediaItem
     ) {
 
@@ -972,10 +1227,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun attemptConsumePendingInstantScroll() {
         if (!mainViewModel.pendingInstantScroll) return
-        if (!::jacketAdapter.isInitialized) {
+        if (jacketAdapter == null) {
             Log.d("MainActivity", "attemptConsume: adapter not initialized yet")
         }
-        val hasItems = ::jacketAdapter.isInitialized && jacketAdapter.itemCount > 0
+        val hasItems = jacketAdapter != null && (jacketAdapter?.itemCount ?: 0) > 0
         val currentTrack = mediaBrowser?.currentMediaItem
         Log.d(
             "MainActivity",

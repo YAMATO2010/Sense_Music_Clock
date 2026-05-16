@@ -6,7 +6,9 @@
     <color name="white_glass_item_square">#80FFFFFF</color>
     <color name="grey">#4D4D4D4D</color>
     <color name="purple_200">#FFBB86FC</color>
+    <color name="light_purple_glass">#4DBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
+
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
@@ -14,6 +16,7 @@
     <color name="light_blue_900">#FF01579B</color>
     <color name="light_blue_A200">#FF40C4FF</color>
     <color name="light_blue_A400">#FF00B0FF</color>
+
     <color name="orange_glass">#80FFA500</color>
 
     <color name="Dark_orange_glass">#80FF4D00</color>

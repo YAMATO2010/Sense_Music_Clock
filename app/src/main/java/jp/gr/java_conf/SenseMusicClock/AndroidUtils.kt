@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
+import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

@@ -6,8 +6,6 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
@@ -55,6 +53,11 @@ interface BlocklistDao {
     @Query("SELECT * FROM blockLists WHERE blockListID = :blockListID")
     suspend fun loadBlocklistById(blockListID: Long): BlockList?
 
+    @Query("SELECT EXISTS(SELECT 1  FROM blockLists WHERE blockListName = :blockListName)")
+    suspend fun existsBlocklist(blockListName: String): Boolean
+
+    @Query("DELETE FROM blockLists WHERE blockListID = :blockListID")
+    suspend fun deleteBlocklist(blockListID: Long)
     @Delete
     suspend fun deleteBlockList(blockList: BlockList)
 
@@ -62,7 +65,7 @@ interface BlocklistDao {
     suspend fun updateBlockList(blockList: BlockList)
 
     @Upsert
-    suspend fun insertBlockList(blockList: BlockList)
+    suspend fun upsertBlockList(blockList: BlockList): Long
 }
 @Dao
 interface BlocklistItemDao {
@@ -71,6 +74,11 @@ interface BlocklistItemDao {
     @Query("SELECT * FROM blocklistItems WHERE blocklistId = :blocklistId")
     suspend fun loadItemsForBlocklist(blocklistId: Long): List<BlocklistItem>
 
+    @Query("DELETE FROM blocklistItems WHERE blocklistId = :blockListID")
+    suspend fun deleteItemsForBlocklist(blockListID: Long)
+
+
+
     @Delete
     suspend fun deleteBlocklistItem(blocklistItem: BlocklistItem)
 
@@ -78,5 +86,10 @@ interface BlocklistItemDao {
     suspend fun updateBlocklistItem(blocklistItem: BlocklistItem)
 
     @Upsert
-    suspend fun insertBlocklistItem(blocklistItem: BlocklistItem)
+    suspend fun upsertBlocklistItem(blocklistItem: BlocklistItem)
+
+    @Upsert
+    suspend fun upsertBlocklistItems(blocklistItems: List<BlocklistItem>)
+
+
 }

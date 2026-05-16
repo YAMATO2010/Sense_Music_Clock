@@ -3,7 +3,6 @@ package jp.gr.java_conf.SenseMusicClock.Clock
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -12,10 +11,11 @@ import android.widget.LinearLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import jp.gr.java_conf.SenseMusicClock.MainActivity
+import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.util.Locale.getDefault
@@ -112,6 +112,7 @@ class ClockUiController(
 
 
     private val timerConnection = object : android.content.ServiceConnection {
+        private var timerJob : Job? = null
         override fun onServiceConnected(
             name: android.content.ComponentName?,
             service: android.os.IBinder?
@@ -123,17 +124,18 @@ class ClockUiController(
             // Not used since we're using BroadcastReceiver for updates
             val binder = service as? TimerService.LocalBinder
             timerService = binder?.getService()
-            timerService?.let {
+            timerJob = timerService?.let {
 
 
                 activity.lifecycleScope.launch {
                     activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                         Log.d("ClockUiController", "Collecting remainingTime from TimerService")
+
                         it.remainingTime.collect { value ->
 
 
-                            if (binding.TimerButton.text != "タイマー" && value <= 0L) {
+                            if (binding.TimerButton.text != "Timer" && value <= 0L && it.isTimerFinished ) {
                                 binding.TimerButton.text = "完了！"
                             } else {
                                 binding.TimerButton.text = formatMillisToTime(value)
@@ -151,7 +153,9 @@ class ClockUiController(
         override fun onServiceDisconnected(name: android.content.ComponentName?) {
             Log.d("ClockUiController", "timerConnection.onServiceDisconnected: name=$name")
 
-            binding.TimerButton.text = "タイマー"
+            timerJob?.cancel()
+            timerJob = null
+            binding.TimerButton.text = "Timer"
             timerService = null
             // Not used
         }
@@ -175,7 +179,7 @@ class ClockUiController(
         override fun onServiceDisconnected(name: android.content.ComponentName?) {
             Log.d("ClockUiController", "stopWatchConnection.onServiceDisconnected: name=$name")
 
-            binding.stopWatchBtn.text = "ストップウォッチ"
+            binding.stopWatchBtn.text = "StopWatch"
             // Not used
             handler.removeCallbacks(timer_textOutput)
         }
@@ -200,7 +204,7 @@ class ClockUiController(
 
             }
 
-            //　なんか、0.01秒ごとに更新したいけど、それだと負荷が高すぎるので、0.01秒から0.1秒の間でランダムに遅延させることで少数第二位の表示を擬似的に実現する
+            //　なんか、0.01秒ごとに更新したいけど、それだと負荷が高すぎるので、0.01秒から0.07秒の間でランダムに遅延させることで少数第二位の表示を擬似的に実現する
             val delayMillis = (10..70).random().toLong()
 
             handler.postDelayed(this, delayMillis)
@@ -271,7 +275,7 @@ class ClockUiController(
         activity.lifecycleScope.launch {
             val alarmTime = PrefsManager.getSetAlarmTime(activity)
             binding.alarmButton.text = when {
-                alarmTime.isEmpty() || alarmTime.isBlank() -> activity.getString(R.string.alarm_button_label)
+                alarmTime.isBlank()|| alarmTime.isBlank() -> activity.getString(R.string.alarm_button_label)
                 else -> alarmTime
             }
         }
@@ -355,7 +359,10 @@ class ClockUiController(
                 Log.d("ClockUiController", "Selected time: $hourOfDay:$minute")
                 // persist hour/minute and scheduled epoch
                 // update button label with possible next-day marker
-                val text = "$hourOfDay:$minute"
+                //TODO add "翌日" marker if scheduled time is after today
+                val minuteText = if (minute < 10) "0$minute" else "$minute"
+                val hourText = if (hourOfDay < 10) "0$hourOfDay" else "$hourOfDay"
+                val text = "$hourText:$minuteText"
                 binding.alarmButton.text = text
                 activity.lifecycleScope.launch {
 

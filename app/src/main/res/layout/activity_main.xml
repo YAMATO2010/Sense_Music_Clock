@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
 
     android:layout_width="match_parent"
     android:layout_height="match_parent"
 
-    android:clipToPadding="true"
     android:clipChildren="true"
-    tools:context=".MainActivity">
+    android:clipToPadding="true"
+    tools:context=".ui.MainActivity">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline5"
@@ -48,12 +47,12 @@
         android:id="@+id/linearLayout2"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:minHeight="300dp"
-
         android:background="@drawable/gradient3"
+
+        android:minHeight="300dp"
         android:orientation="vertical"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/guideline5"
+        app:layout_constraintTop_toTopOf="parent"
         tools:layout_editor_absoluteX="1dp">
 
         <TextClock
@@ -84,24 +83,25 @@
                 android:id="@+id/TimerButton"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:autoSizeTextType="uniform"
                 android:layout_weight="1"
-                android:maxLines="1"
-
+                android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
 
-                android:text="Button"
+                android:maxLines="1"
+
+                android:text="タイマー"
                 app:backgroundTint="@null" />
+
             <Button
                 android:id="@+id/alarmButton"
                 android:layout_width="0dp"
-                android:autoSizeTextType="uniform"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:maxLines="1"
+                android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
+                android:maxLines="1"
 
-                android:text="Button"
+                android:text="アラーム"
                 app:backgroundTint="@null" />
 
 
@@ -109,19 +109,19 @@
                 android:id="@+id/stopWatchBtn"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:autoSizeTextType="uniform"
                 android:layout_weight="1"
-                android:maxLines="1"
+                android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
+                android:maxLines="1"
 
-                android:text="Button"
+                android:text="ストップウォッチ"
                 app:backgroundTint="@null" />
         </LinearLayout>
 
     </LinearLayout>
 
     <Button
-        android:id="@+id/Settingsbutton"
+        android:id="@+id/SettingsButton"
         android:layout_width="55dp"
         android:layout_height="60dp"
         android:layout_marginStart="16dp"
@@ -137,20 +137,19 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/linearLayout5"
-        app:layout_constraintWidth_percent="0.55"
         android:layout_width="0dp"
-
-
         android:layout_height="wrap_content"
+
+
         android:background="@drawable/gradient1"
         android:clipChildren="true"
         android:clipToPadding="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
 
 
-
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
+        app:layout_constraintWidth_percent="0.55">
 
         <FrameLayout
             android:id="@+id/titleContainer"
@@ -227,22 +226,22 @@
         android:id="@+id/loadingOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="gone"
         android:background="@android:color/transparent"
+        android:clickable="true"
         android:elevation="32dp"
-        android:translationZ="32dp">
+        android:focusable="true"
+        android:translationZ="32dp"
+        android:visibility="gone">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:orientation="vertical"
+            android:background="@android:color/transparent"
             android:gravity="center_horizontal"
-            android:padding="8dp"
+            android:orientation="vertical"
 
-            android:background="@android:color/transparent">
+            android:padding="8dp">
 
             <ProgressBar
                 android:id="@+id/nowLoadingBar"
@@ -257,40 +256,53 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textColor="@color/white"
-                android:textSize="14sp"
                 android:background="@color/black_overlay"
                 android:paddingLeft="10dp"
-                android:paddingRight="10dp"
                 android:paddingTop="6dp"
+                android:paddingRight="10dp"
                 android:paddingBottom="6dp"
-                android:text="読み込み中" />
+                android:text="読み込み中"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
 
         </LinearLayout>
     </FrameLayout>
 
     <LinearLayout
+        android:id="@+id/linearLayout9"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="@+id/Settingsbutton"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginHorizontal="8dp"
         android:background="@drawable/gradient1"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="@+id/SettingsButton"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/recyclerJackets"
-        app:layout_constraintTop_toTopOf="@+id/Settingsbutton"
-        android:layout_marginHorizontal="8dp">
+        app:layout_constraintTop_toTopOf="@+id/SettingsButton">
 
         <ImageButton
             android:id="@+id/currentAlbumArt"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:padding="8dp"
-            app:layout_constraintDimensionRatio="1:1"
-            android:scaleType="fitCenter"
+
             android:background="@null"
+
+
+            android:layout_weight="1"
+
+            android:padding="4dp"
+            android:scaleType="fitCenter"
             android:src="@drawable/default_album_art" />
+        <ImageButton
+            android:id="@+id/GoSearchButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@null"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/outline_manage_search_24" />
+
 
         <ImageButton
             android:id="@+id/GotoStandardPlayerButton"
@@ -345,7 +357,6 @@
             tools:layout_editor_absoluteX="201dp"
             tools:layout_editor_absoluteY="257dp" />
     </LinearLayout>
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

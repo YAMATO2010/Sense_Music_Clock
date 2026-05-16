@@ -50,6 +50,8 @@ object PrefsManager {
     private val CURRENT_BLOCKLIST_ID_KEY = longPreferencesKey("current_blocklist_id")
     private val SET_ALARM_TIME_KEY = stringPreferencesKey("set_alarm_time")
 
+    private val IS_SHUFFLE_KEY = booleanPreferencesKey("is_shuffle")
+
     const val IMAGEFILE_KEY_OBLONG_MORNING_KEY= "imageFile_key_oblong_morning"
     const val IMAGEFILE_KEY_OBLONG_NOON_KEY  = "imageFile_key_oblong_noon"
     const val IMAGEFILE_KEY_OBLONG_EVENING_KEY = "imageFile_key_oblong_evening"
@@ -163,8 +165,32 @@ object PrefsManager {
 
 
     // 現在のプレイリストID
-    suspend fun getCurrentPlaylistIdFlow(context: Context, default: Long = -1): Flow<Long> {
+    fun getCurrentPlaylistIdFlow(context: Context, default: Long = -1): Flow<Long> {
         return context.getPrefsFlow(CURRENT_PLAYLIST_ID_KEY, default)
+    }
+    suspend fun getCurrentPlaylistId(context: Context, default: Long = -1): Long {
+        return context.getPrefsValue(CURRENT_PLAYLIST_ID_KEY, default)
+    }
+    suspend fun setCurrentPlaylistId(context: Context, value: Long) {
+        Log.d("LIST_/PrefsManager", "setCurrentPlaylistId() -> $value")
+        context.setPrefsValue(CURRENT_PLAYLIST_ID_KEY, value)
+    }
+    suspend fun clearCurrentPlaylistId(context: Context) {
+        context.clearPrefsValue(CURRENT_PLAYLIST_ID_KEY)
+    }
+
+    // 現在のブロックリストID
+    fun getCurrentBlocklistIdFlow(context: Context, default: Long = -1): Flow<Long> {
+        return context.getPrefsFlow(CURRENT_BLOCKLIST_ID_KEY, default)
+    }
+    suspend fun getCurrentBlocklistId(context: Context, default: Long = -1): Long {
+        return context.getPrefsValue(CURRENT_BLOCKLIST_ID_KEY, default)
+    }
+    suspend fun setCurrentBlocklistId(context: Context, value: Long) {
+        context.setPrefsValue(CURRENT_BLOCKLIST_ID_KEY, value)
+    }
+    suspend fun clearCurrentBlocklistId(context: Context) {
+        context.clearPrefsValue(CURRENT_BLOCKLIST_ID_KEY)
     }
 
 
@@ -281,6 +307,22 @@ object PrefsManager {
         context.setPrefsValue(PLAYMODE_LOOP_KEY, value)
     }
 
+    // シャッフルするかしないか
+    fun getIsShuffleFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+
+        return context.getPrefsFlow(IS_SHUFFLE_KEY, default)
+    }
+
+    suspend fun getIsShuffle(context: Context, default: Boolean = false): Boolean {
+
+
+        return context.getPrefsValue(IS_SHUFFLE_KEY, default)
+    }
+
+    suspend fun setIsShuffle(context: Context, value: Boolean) {
+        context.setPrefsValue(IS_SHUFFLE_KEY, value)
+    }
+
 
 
 
@@ -333,6 +375,7 @@ object PrefsManager {
         }.distinctUntilChanged()
 
     }
+
     private suspend fun<T> Context.getPrefsValue(
         key: Preferences.Key<T>,
         default: T
@@ -350,6 +393,13 @@ object PrefsManager {
     private suspend fun <T> Context.setPrefsValue(key: Preferences.Key<T>, value: T) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
+                // ログ出力：どのキーをどの値で変更したか
+                try {
+                    Log.d("PrefsManager", "setPrefsValue: key=${key.name}, value=${value}")
+                } catch (e: Exception) {
+                    // 値の toString() で例外が発生する可能性は低いが念のため
+                    Log.d("PrefsManager", "setPrefsValue: key=${key.name}, value=<unprintable>")
+                }
                 dataStore.edit { prefs ->
                     prefs[key] = value
                 }
@@ -362,6 +412,7 @@ object PrefsManager {
     private suspend fun <T> Context.clearPrefsValue(key: Preferences.Key<T> ) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
+                Log.d("PrefsManager", "clearPrefsValue: key=${key.name}")
                 dataStore.edit { prefs ->
                     prefs.remove(key)
                 }

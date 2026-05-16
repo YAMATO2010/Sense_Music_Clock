@@ -8,6 +8,7 @@ import android.os.Binder
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import jp.gr.java_conf.SenseMusicClock.R
@@ -47,6 +48,8 @@ class TimerService : Service() {
     private val _remainingTime = MutableStateFlow(0L)
     // 2. 外部（Activity）公開用の読み取り専用Flow
     val remainingTime = _remainingTime.asStateFlow()
+
+    var isTimerFinished: Boolean = false
 
     private var foregroundStarted = false
 
@@ -120,7 +123,7 @@ class TimerService : Service() {
         Log.d("TimerService", "startTimer called with duration=$duration")
         stopTimer()
         val random = (1..4).random().toLong()
-        timer = object : CountDownTimer(duration, 10 + random) { // 10msごとに更新
+        timer = object : CountDownTimer(duration, random * 100) { // 10msごとに更新
             override fun onTick(millisUntilFinished: Long) {
                 _remainingTime.value = millisUntilFinished // Flowの値を更新
             }
@@ -131,9 +134,10 @@ class TimerService : Service() {
                 vibrateOnceSafe()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 foregroundStarted = false
+                isTimerFinished = true
             }
         }.start()
-        val endTime = SystemClock.elapsedRealtime() +
+        val endTime = System.currentTimeMillis() +
                 duration
         showNotification(endTime)
     }
@@ -142,6 +146,7 @@ class TimerService : Service() {
         Log.d("TimerService", "stopTimer called")
         timer?.cancel()
         timer = null
+        isTimerFinished = false
         _remainingTime.value = 0L
         try {
             stopForeground(STOP_FOREGROUND_REMOVE)

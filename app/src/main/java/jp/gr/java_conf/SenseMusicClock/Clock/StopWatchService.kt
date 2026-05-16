@@ -124,7 +124,7 @@ class StopWatchService : Service() {
             .setOngoing(true)                // ユーザーが消せないようにする
             .setOnlyAlertOnce(true)          // 更新時に音を鳴らさない
             .setUsesChronometer(true)        // ★OSが勝手に時間を進めてくれる
-            .setWhen(SystemClock.elapsedRealtime() - baseTime)                // ★基準時間をセット
+            .setWhen(System.currentTimeMillis() - baseTime)                // ★基準時間をセット
             // カウントダウンなら true、ストップウォッチなら false
             .setChronometerCountDown(false)
 
@@ -147,7 +147,7 @@ class StopWatchService : Service() {
 
     fun getElapsedTime_Millis(): Long {
 
-        val now = SystemClock.elapsedRealtime() // ミリ秒
+        val now = System.currentTimeMillis() // ミリ秒
 
         return if(!isSWRunning){
             stoppedTime  - baseTime
@@ -167,11 +167,11 @@ class StopWatchService : Service() {
             stopWatch.start()
             isSWRunning = true
             if (!isSWFirstRunning) {
-                baseTime = SystemClock.elapsedRealtime()
-                firstStartedTime = SystemClock.elapsedRealtime()
+                baseTime = System.currentTimeMillis()
+                firstStartedTime = System.currentTimeMillis()
 
             } else {
-                baseTime = SystemClock.elapsedRealtime() -( stoppedTime - baseTime)
+                baseTime = System.currentTimeMillis() -( stoppedTime - baseTime)
             }
             showNotification_Start()
             isSWFirstRunning = true
@@ -184,7 +184,7 @@ class StopWatchService : Service() {
 
             stopWatch.stop()
             isSWRunning = false
-            stoppedTime = SystemClock.elapsedRealtime()
+            stoppedTime = System.currentTimeMillis()
             showNotification_Stop()
         }
 

@@ -5,7 +5,9 @@
     android:id="@+id/listItemContainer_display"
     android:layout_width="match_parent"
     android:clickable="true"
-    android:layout_height="80dp">
+    android:background="@drawable/gradient4"
+    android:layout_marginVertical="4dp"
+    android:layout_height="70dp">
 
 
     <androidx.constraintlayout.widget.Guideline
@@ -35,7 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.65"/>
+        app:layout_constraintGuide_percent="0.6"/>
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline13"
         android:layout_width="wrap_content"
@@ -59,6 +61,7 @@
         android:layout_height="0dp"
         android:textSize="16sp"
         android:text="Title"
+        android:textColor="@color/white"
         android:autoSizeTextType="uniform"
         android:autoSizeMaxTextSize="20dp"
         android:maxLines="1"
@@ -71,9 +74,10 @@
         android:id="@+id/ItemArtistView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:textColor="@color/grey"
+        android:textColor="@color/white_glass_item_square"
         android:gravity="center_vertical"
         android:maxLines="1"
+
         android:text="Artist"
         app:layout_constraintBottom_toBottomOf="@id/guideline13"
         app:layout_constraintRight_toRightOf="@id/guideline10"

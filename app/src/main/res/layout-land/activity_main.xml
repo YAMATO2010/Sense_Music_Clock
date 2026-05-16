@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-
+    android:windowSoftInputMode="adjustNothing"
 
 
     android:layout_width="match_parent"
@@ -252,6 +252,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
 
+
                 android:alpha="0.95"
                 android:background="#FFFFFF"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -350,31 +351,41 @@
         android:layout_height="0dp"
         android:orientation="vertical"
         android:layout_margin="10dp"
+        android:background="@drawable/gradient3"
         app:layout_constraintBottom_toTopOf="@+id/guideline3"
         app:layout_constraintEnd_toStartOf="@+id/guideline4"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" >
 
 
-    <Button
-        android:id="@+id/Settingsbutton"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:backgroundTint="@color/black_overlay"
-        app:icon="@drawable/baseline_settings_24"
-        app:iconGravity="textEnd"
-        app:iconPadding="0dp"
-        android:layout_margin="5dp"
-        app:iconSize="0dp"
-        app:iconTintMode="src_in"
-        app:layout_constraintDimensionRatio="1:1"
- />
+        <Button
+            android:id="@+id/SettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_margin="5dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/black_overlay"
+            app:icon="@drawable/baseline_settings_24"
+            app:iconGravity="textEnd"
+            app:iconPadding="0dp"
+            app:iconSize="0dp"
+            app:iconTintMode="src_in"
+            app:layout_constraintDimensionRatio="1:1" />
+
+        <ImageButton
+            android:id="@+id/GoSearchButton"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/outline_manage_search_24" />
 
 
-    <ImageButton
+        <ImageButton
         android:id="@+id/GotoStandardPlayerButton"
 
 

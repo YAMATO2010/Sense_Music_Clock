@@ -13,23 +13,14 @@
     <!-- Sync Preferences -->
     <string name="sync_title">Sync email periodically</string>
     <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails</string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <string name="artwork">Album artwork</string>
     <string name="VOLUME_ADJUSTMENT">volume_adjustment</string>
     <string name="SHAREDPREFERENCES_NAME">smc_prefs</string>
-    <string name="MUSIC_DIR_RELATIVE_PATHS_KEY">music_dir_relative_paths</string>
     <string name="title_activity_standard_player">StandardPlayerActivity</string>
-    <string name="RELOAD_TRACKS_KEY">reLoad_Tracks</string>
-    <string name="CURRENT_PLAYLIST_ID_KEY">current_playlist_id</string>
-    <string name="CURRENT_BLOCKLIST_ID_KEY">current_blocklist_id</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
-    <string name="TILE_TITLE_DISPLAY">tile_title_display</string>
-    <string name="album_art">album art</string>
-    <string name="PLAYMODE_LOOP_KEY">playMode_loop</string>
-    <string name="SET_ALARM_TIME_KEY">set_alarm_time</string>
+
+    <string name="track_count">%1$d曲</string>
     <string name="timer_button_label">タイマー</string>
     <string name="alarm_button_label">アラーム</string>
     <string name="timer_done_label">完了</string>
@@ -37,6 +28,20 @@
     <string name="addPlaylist">プレイリストに追加</string>
     <string name="blocklist_itemadd">ブロックリストに追加</string>
     <string name="smc_music_label">SMC_Music</string>
-<!-- TODO: Remove or change this placeholder text -->
+    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="Edit">編集</string>
+    <string name="Add">追加</string>
+    <string name="Delete">削除</string>
+    <string name="copy_Item">中身をコピー</string>
+    <string name="copy_list">コピー</string>
+    <string name="name_change">名前変更</string>
+    <string name="use">使用する</string>
+    <string name="display">表示</string>
+    <string name="AddAndSave">保存(追加)</string>
+    <string name="back">戻る</string>
+    <string name="move_last">最後に移動</string>
+    <string name="move_first">最初に移動</string>
+    <string name="addList">リストに追加</string>
+    <string name="play">再生</string>
 </resources>

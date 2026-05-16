@@ -18,18 +18,18 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.Index
-import androidx.room.withTransaction
 import jp.gr.java_conf.SenseMusicClock.Music.Data.AppDataBase
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.ui.list.ListEditAdapter
+import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.checkerframework.checker.index.qual.Positive
 import java.io.File
 
 
@@ -40,7 +40,7 @@ val app_dir = ContentValues().apply {
     put(MediaStore.Audio.Media.MIME_TYPE, "Audio/mpeg") // ファイルタイプ
 }
 
-const val dummyListId = -1236457810114514L
+const val DUMMY_PLAYLIST_REMOVAL_ID = -1236457810114514L
 
 
 const val IDENTIFIER_INITIAL_INDEX_PROBLEM = "  ///IDENTIFIER_INITIAL_INDEX_PROBLEM"
@@ -52,7 +52,6 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     produceMigrations = { context ->
         listOf(SharedPreferencesMigration(context, PrefsManager.PREFS_NAME))
     })
-
 
 
 fun keysForTrackTopLevel(t: MediaItem): List<String> {
@@ -114,13 +113,15 @@ fun List<PlaylistItem>.moveDuplicatesToBack(): List<PlaylistItem> {
 fun List<MediaItem>.sortedByPlaylistItems(playlistItemList: List<PlaylistItem>): List<MediaItem> {
 
     val playlistItems = playlistItemList.moveDuplicatesToBack().sortedBy { it.index }
+    val Items = this.toMutableList()
     val sortedList = mutableListOf<MediaItem>()
     for (path in playlistItems) {
         val fileItem = path.fileItem
         val mediaItem =
-            this.find { it.getRelativePath() == fileItem.relativePath && it.getDisplayName() == fileItem.fileName }
+            Items.find { it.isSamePath(fileItem) }
         if (mediaItem != null) {
             sortedList.add(mediaItem)
+            Items.remove(mediaItem)
         } else {
             Log.w("sortedByPlaylistItems", "MediaItem not found for path: $path")
         }
@@ -224,6 +225,12 @@ fun AppCompatActivity.launchSelectBackgroundImageDialog(
 
 }
 
+fun MediaItem.toFileItem(): FileItem? {
+    val relativePath = this.getRelativePath() ?: return null
+    val fileName = this.getDisplayName() ?: return null
+    return FileItem(relativePath = relativePath, fileName = fileName)
+}
+
 fun AppCompatActivity.launchClearBackgroundImageFileDialog(
     originFileList: List<File> = getAllFile_inInternalStorage(
         BackgroundResolver.BACKGROUNDS_PATH
@@ -320,26 +327,36 @@ fun MediaItem.getArtistId(): Long? {
     return this.mediaMetadata.getArtistId()
 }
 
+
 fun List<MediaItem>.filterByBlocklist(blocklistItems: List<BlocklistItem>): List<MediaItem> {
     return this.filter { mediaItem ->
-        val relativePath = mediaItem.getRelativePath()
-        val displayName = mediaItem.getDisplayName()
-        !blocklistItems.any { it.fileItem.relativePath == relativePath && it.fileItem.fileName == displayName }
+
+        !blocklistItems.any { mediaItem.isSamePath(it.fileItem) }
     }
 }
 
-fun List<FileItem>.toPlaylistItems(playlistId: Long): List<PlaylistItem> {
-    return this.mapIndexed { index, fileItem ->
+
+@JvmName("toPlaylistItemsFromMediaItems")
+fun List<MediaItem>.toPlaylistItems(playlistId: Long): List<PlaylistItem> {
+    return this.mapIndexedNotNull { index, mediaItem ->
+        val relativePath = mediaItem.getRelativePath() ?: return@mapIndexedNotNull null
+        val fileName = mediaItem.getDisplayName() ?: return@mapIndexedNotNull null
+        val fileItem = FileItem(relativePath = relativePath, fileName = fileName)
         PlaylistItem(
             playlistId = playlistId,
             fileItem = fileItem,
             index = index
         )
     }
+
 }
 
-fun List<FileItem>.toBlocklistItems(blocklistId: Long): List<BlocklistItem> {
-    return this.map { fileItem ->
+@JvmName("toBlockListItemsFromMediaItems")
+fun List<MediaItem>.toBlockListItems(blocklistId: Long): List<BlocklistItem> {
+    return this.mapNotNull { mediaItem ->
+        val relativePath = mediaItem.getRelativePath() ?: return@mapNotNull null
+        val fileName = mediaItem.getDisplayName() ?: return@mapNotNull null
+        val fileItem = FileItem(relativePath = relativePath, fileName = fileName)
         BlocklistItem(
             blocklistId = blocklistId,
             fileItem = fileItem,
@@ -347,86 +364,33 @@ fun List<FileItem>.toBlocklistItems(blocklistId: Long): List<BlocklistItem> {
     }
 }
 
-suspend fun Context.loadPlaylist(): List<PlayList> {
-
-    val db = AppDataBase.getInstance(this)
-    val playlistDao = db.playListDao()
-
-    return playlistDao.loadAllPlaylists()
-
-
-}
-
-suspend fun Context.loadPlaylistItem(playlistId: Long): List<PlaylistItem> {
-
-    val db = AppDataBase.getInstance(this)
-    val playlistItemDao = db.playListItemDao()
-
-    return playlistItemDao.loadItemsForPlaylist(playlistId)
-
-}
-
-suspend fun Context.loadBlocklist(): List<BlockList> {
-
-    val db = AppDataBase.getInstance(this)
-    val blocklistDao = db.blockListDao()
-
-    return blocklistDao.loadAllBlocklists()
-
-
-}
-
-suspend fun Context.loadBlocklistItem(blocklistId: Long): List<BlocklistItem> {
-
-    val db = AppDataBase.getInstance(this)
-    val blocklistItemDao = db.blockListItemDao()
-
-    return blocklistItemDao.loadItemsForBlocklist(blocklistId)
-
-}
-
-suspend fun Context.addPlaylistItem(
-    playlistId: Long,
-    fileItem: FileItem,
-    index: Int? = null,
-    DoToast: Boolean = true
-) {
-    withContext(Dispatchers.IO) {
-
-
-        val db = AppDataBase.getInstance(this@addPlaylistItem)
-        val isSuccess: Boolean = db.withTransaction {
-            val playlistItemDao = db.playListItemDao()
-            val newIndex =
-                index ?: ((playlistItemDao.getMaxIndexForPlaylist(playlistId))?.plus(1)
-                    ?: 0) // 現在の最大インデックスに1を加算、プレイリストが空の場合は0から開始
-            val newPlaylistItem =
-                PlaylistItem(playlistId = playlistId, fileItem = fileItem, index = newIndex)
-            playlistItemDao.insertPlaylistItem(newPlaylistItem)
-            return@withTransaction true
-
-
-        }
-        withContext(Dispatchers.Main) {
-
-            if (isSuccess && DoToast) {
-                Toast.makeText(
-                    this@addPlaylistItem,
-                    "プレイリストに追加しました ",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else if (DoToast) {
-                Toast.makeText(
-                    this@addPlaylistItem,
-                    "プレイリストへの追加に失敗しました ",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+fun List<FileItem>.toPlaylistItems(playlistId: Long): List<PlaylistItem> {
+    return this.mapIndexed { index, fileItem ->
+        fileItem.toPlaylistItem(playlistId, index)
     }
-
-
 }
+
+fun FileItem.toPlaylistItem(playlistId: Long = 0, index: Int = 0): PlaylistItem {
+    return PlaylistItem(
+        playlistId = playlistId,
+        fileItem = this,
+        index = index
+    )
+}
+
+fun List<FileItem>.toBlocklistItems(blocklistId: Long): List<BlocklistItem> {
+    return this.map { fileItem ->
+        fileItem.toBlocklistItem(blocklistId)
+    }
+}
+
+fun FileItem.toBlocklistItem(blocklistId: Long = 0): BlocklistItem {
+    return BlocklistItem(
+        blocklistId = blocklistId,
+        fileItem = this,
+    )
+}
+
 
 fun getExtra_MediaItem(mediaItem: MediaItem, key: String): String? {
     return mediaItem.mediaMetadata.extras?.getString(key)
@@ -452,9 +416,8 @@ fun AppCompatActivity.showEditTextDialog(
     onTextConfirmed: (String) -> Unit
 ) {
 
-
-    val view = layoutInflater.inflate(R.layout.edittext_only, null)
-    val editText = view.findViewById<EditText>(R.id.edit_text_input)
+    val editText = EditText(this)
+    editText.setPadding(10, 0, 10, 0)
 
 
     AlertDialog.Builder(this)
@@ -483,7 +446,7 @@ nullの場合、というのはプレイリストを選択し、listActivityな�
 
 fun AppCompatActivity.showPlaylistSelectDialog(
     playlists: List<PlayList>,
-    item: PlaylistItem? = null,
+    item: FileItem? = null,
     onPlaylistSelected: (Long) -> Unit,
 
     ) {
@@ -494,11 +457,22 @@ fun AppCompatActivity.showPlaylistSelectDialog(
             if (item == null) {
                 onPlaylistSelected(playlists[which].playlistId)
             } else {
-                lifecycleScope.launch {
 
-                    addPlaylistItem(
+                // Log which playlist was selected for adding item
+                Log.d(
+                    "LIST_/ShowPlaylistSelectDialog/add",
+                    "selected playlistId=${playlists[which].playlistId} to add item file=${item.fileName}"
+                )
+
+                lifecycleScope.launch {
+                    DBManager.addPlaylistItem(
+                        this@showPlaylistSelectDialog,
                         playlistId = playlists[which].playlistId,
-                        fileItem = item.fileItem
+                        fileItem = item
+                    )
+                    Log.d(
+                        "LIST_/ShowPlaylistSelectDialog/addResult",
+                        "added item to playlistId=${playlists[which].playlistId}"
                     )
                 }
             }
@@ -511,29 +485,40 @@ fun AppCompatActivity.showPlaylistSelectDialog(
 
                 onTextConfirmed = { playlistName ->
                     if (playlistName.isNotBlank()) {
-                        // プレイリストの作成処理をここに追加
-                        val db = AppDataBase.getInstance(this)
-                        val playlistDao = db.playListDao()
+
 
                         val newPlaylist = PlayList(playlistName = playlistName)
                         // データベースに新しいプレイリストを挿入
                         lifecycleScope.launch {
-                            withContext(Dispatchers.IO) {
-                                playlistDao.insertPlaylist(newPlaylist).let {
-                                    if (item != null) {
-                                        addPlaylistItem(
-                                            playlistId = it,
-                                            fileItem = item.fileItem,
-                                            DoToast = false
-                                        )
-                                    }
-                                }
+                            Log.d(
+                                "LIST_/ShowPlaylistSelectDialog/create",
+                                "creating playlist name=$playlistName"
+                            )
+                            if (item == null) {
+                                val newId =
+                                    DBManager.upsertPlaylist(
+                                        this@showPlaylistSelectDialog.applicationContext,
+                                        newPlaylist
+                                    )
+                                Log.d(
+                                    "LIST_/ShowPlaylistSelectDialog/createResult",
+                                    "created playlist id=$newId name=$playlistName"
+                                )
+                                Toast.makeText(
+                                    this@showPlaylistSelectDialog,
+                                    "プレイリスト「$playlistName」を作成しました",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+
+                                DBManager.addPlaylistAndItem(
+                                    this@showPlaylistSelectDialog.applicationContext,
+                                    playlistName,
+                                    item
+                                )
                             }
-                            Toast.makeText(
-                                this@showPlaylistSelectDialog,
-                                "プレイリスト「$playlistName」を作成しました",
-                                Toast.LENGTH_SHORT
-                            ).show()
+
+
                             dialog.dismiss() // ダイアログを閉じる
                         }
                     } else {
@@ -557,6 +542,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
 
 fun AppCompatActivity.showBlockSelectDialog(
     blockList: List<BlockList>,
+    item: FileItem? = null,
     onBlockSelected: (Long) -> Unit
 ) {
     val dialog = AlertDialog.Builder(this)
@@ -573,20 +559,39 @@ fun AppCompatActivity.showBlockSelectDialog(
                     if (blockListName.isNotBlank()) {
                         // ブロックリストの作成処理をここに追加
 
-                        val db = AppDataBase.getInstance(this)
-                        val blocklistDao = db.blockListDao()
 
                         val newBlockList = BlockList(blockListName = blockListName)
                         // データベースに新しいブロックリストを挿入
                         lifecycleScope.launch {
-                            withContext(Dispatchers.IO) {
-                                blocklistDao.insertBlockList(newBlockList)
+                            if (item == null) {
+                                Log.d(
+                                    "LIST_/ShowBlockSelectDialog/create",
+                                    "creating blocklist name=$blockListName"
+                                )
+                                val newId =
+                                    DBManager.upsertBlocklist(
+                                        this@showBlockSelectDialog,
+                                        newBlockList
+                                    )
+                                Log.d(
+                                    "LIST_/ShowBlockSelectDialog/createResult",
+                                    "created blocklist id=$newId name=$blockListName"
+                                )
+                                Toast.makeText(
+                                    this@showBlockSelectDialog,
+                                    "ブロックリスト「$blockListName」を作成しました",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                DBManager.addBlocklistAndItem(
+                                    this@showBlockSelectDialog.applicationContext,
+                                    blockListName,
+                                    item
+                                )
+
                             }
-                            Toast.makeText(
-                                this@showBlockSelectDialog,
-                                "ブロックリスト「$blockListName」を作成しました",
-                                Toast.LENGTH_SHORT
-                            ).show()
+
+
                             dialog.dismiss() // ダイアログを閉じる
                         }
                     } else {
@@ -604,6 +609,66 @@ fun AppCompatActivity.showBlockSelectDialog(
     dialog.show()
 
 
+}
+
+fun AppCompatActivity.showListSelectDialog(
+    lists: List<DBManager.ListInfo>,
+    onListSelected: (DBManager.ListInfo) -> Unit
+) {
+
+    val dialog = AlertDialog.Builder(this)
+        .setTitle("リストを選択")
+        .setItems(lists.map { it.name }.toTypedArray(), { dialog, which ->
+            onListSelected(lists[which])
+        })
+        .setNegativeButton("キャンセル", { dialog, _ ->
+            dialog.dismiss()
+        })
+        .create()
+    dialog.show()
+}
+
+fun BlockList.toListInfo(): DBManager.ListInfo {
+    return DBManager.ListInfo(
+        id = this.blockListID,
+        name = this.blockListName,
+        type = ListsActivity.ListType.BLOCKLIST
+    )
+
+}
+
+fun PlayList.toListInfo(): DBManager.ListInfo {
+    return DBManager.ListInfo(
+        id = this.playlistId,
+        name = this.playlistName,
+        type = ListsActivity.ListType.PLAYLIST
+    )
+}
+
+fun playListAndBlockListToListInfo(
+    playLists: List<PlayList>,
+    blockLists: List<BlockList>
+): List<DBManager.ListInfo> {
+    val listInfo = mutableListOf<DBManager.ListInfo>()
+    playLists.forEach { listInfo.add(it.toListInfo()) }
+    blockLists.forEach { listInfo.add(it.toListInfo()) }
+    return listInfo
+}
+
+fun MediaItem.isSamePath(MediaItem2: MediaItem): Boolean {
+    val path1 = this.getRelativePath()
+    val path2 = MediaItem2.getRelativePath()
+    val name1 = this.getDisplayName()
+    val name2 = MediaItem2.getDisplayName()
+    return path1 == path2 && name1 == name2
+}
+
+fun MediaItem.isSamePath(Item2: FileItem): Boolean {
+    val path1 = this.getRelativePath()
+    val path2 = Item2.relativePath
+    val name1 = this.getDisplayName()
+    val name2 = Item2.fileName
+    return path1 == path2 && name1 == name2
 }
 
 

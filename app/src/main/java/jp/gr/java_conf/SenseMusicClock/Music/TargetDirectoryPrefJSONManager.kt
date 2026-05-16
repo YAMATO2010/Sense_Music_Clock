@@ -71,7 +71,7 @@ class TargetDirectoryPrefJSONManager(
         mutex.withLock {
 
             val p = path.trim()
-            if (p.isEmpty()) return false
+            if (p.isBlank()) return false
             val current = getAll().toMutableList()
             if (current.contains(p)) return false
             current.add(p)
@@ -89,7 +89,7 @@ class TargetDirectoryPrefJSONManager(
 
 
         val p = path.trim()
-        if (p.isEmpty()) return false
+        if (p.isBlank()) return false
         val current = getAll().toMutableList()
         val removed = current.removeAll { it == p }
         if (removed) saveAll(current)

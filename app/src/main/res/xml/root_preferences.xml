@@ -4,12 +4,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".SettingsFragment">
 
-    <PreferenceCategory app:title="local Music Settings">
 
-        <Preference
-            android:key="action_selectDirectory"
-            android:title="Select Music Directory"
-            android:selectable="true" />
+
+    <PreferenceCategory app:title="音楽(全般)">
+
+
 
         <Preference
             android:key="reLoad_Tracks"
@@ -31,8 +30,12 @@
         android:title="タイルのタイトル表示" />
     <SwitchPreference
         android:defaultValue="false"
-        android:key="@string/PLAYMODE_LOOP_KEY"
+        android:key="playMode_loop"
         android:title="一曲ループ" />
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="is_shuffle"
+        android:title="シャッフルする" />
 
     <PreferenceCategory app:title="背景設定">
 
@@ -51,12 +54,23 @@
             android:title="背景画像の選択（削除）"
             android:selectable="true" />
     </PreferenceCategory>
+    <PreferenceCategory android:title="通常再生">
+        <Preference
+            android:key="action_selectDirectory"
+            android:title="再生するディレクトリの選択"
+            android:selectable="true" />
+
+    </PreferenceCategory>
 
     <PreferenceCategory app:title="プレイリスト・ブロックリスト">
 
         <Preference
             android:key="action_playList"
             android:title="プレイリスト"
+            android:selectable="true" />
+        <Preference
+            android:key="action_listeningHistory"
+            android:title="鑑賞履歴"
             android:selectable="true" />
 
         <Preference

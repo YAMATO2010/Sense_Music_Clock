@@ -153,7 +153,13 @@ suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
                     add(GifDecoder.Factory())          // Android 8以前のGIF用
 
                 }
-                .memoryCachePolicy(coil.request.CachePolicy.DISABLED)
+                .memoryCache {
+                    coil.memory.MemoryCache.Builder(context)
+                        .maxSizePercent(0.01) // メモリの25%までキャッシュを使用
+                        .strongReferencesEnabled(false)
+                        .weakReferencesEnabled(true)
+                        .build()
+                }
                 .build()
 
             this.load(source.file, imageLoader)

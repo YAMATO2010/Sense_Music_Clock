@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/addPlay"
+        android:title="@string/addPlaylist" />
+
+    <item android:id="@+id/addBlock"
+        android:title="@string/blocklist_itemadd" />
+    <item android:id="@+id/play"
+        android:title="@string/play" />
+
+</menu>

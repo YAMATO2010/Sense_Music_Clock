@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.buildPositionMapFromIndexedTopLevel
 
@@ -39,7 +40,6 @@ import kotlinx.coroutines.launch
 class MusicSearcherByList(
     private val activity: AppCompatActivity,
     private val recyclerView: RecyclerView,
-    private val initialTracks: List<MediaItem> = emptyList(),
     private val editText: EditText,
     private val recyclerJackets: RecyclerView? = null
 
@@ -52,7 +52,7 @@ class MusicSearcherByList(
     private var searchJob: Job? = null
 
     fun ini() {
-        Log.d("MusicSearcher", "ini: initialTracks=${initialTracks.size}")
+
         // Ensure recyclerView is ready to show a vertical list
         try {
             if (recyclerView.layoutManager == null) {
@@ -73,13 +73,13 @@ class MusicSearcherByList(
 
                 val keyword = editText.text.toString().trim()
                 Log.d("MusicSearcher", "applySearch: keyword='${keyword}'")
-                if (keyword.isEmpty()) {
+                if (keyword.isBlank()) {
                     // 空キーワードなら何も表示しない
                     targetTracks = emptyList()
                     val indexedAll = emptyList<IndexedValue<MediaItem>>()
                     targetTrackPositions = buildPositionMapFromIndexedTopLevel(indexedAll)
                 } else {
-                    val results = initialTracks.withIndex()
+                    val results = LocalMusicRepository.tracksFlow.value.withIndex()
                         .filter { (_, track) ->
                             val metadata = track.mediaMetadata
                             metadata.title?.contains(keyword, ignoreCase = true) ?: false              ||
@@ -217,7 +217,7 @@ class MusicSearcherByList(
                                         )
                                         // fallback: try metadata key
                                         val fallbackIndex =
-                                            initialTracks.indexOfFirst {
+                                            LocalMusicRepository.tracksFlow.value.indexOfFirst {
 
                                                 val metadata_iniList = it.mediaMetadata
                                                 val metadata_clicked = track.mediaMetadata

@@ -10,12 +10,16 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import android.content.Context
+import android.graphics.Bitmap
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.LinearLayoutManager
+import coil.ImageLoader
+import coil.memory.MemoryCache
+import coil.size.ViewSizeResolver
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import kotlinx.coroutines.launch
@@ -108,12 +112,26 @@ class JacketAdapter(
         holder.container.setOnClickListener(null)
         holder.artwork.contentDescription = ""
 
-        holder.artwork.load(track.mediaMetadata.artworkUri) {
-            crossfade(true)
-            memoryCachePolicy(coil.request.CachePolicy.DISABLED)
-            diskCachePolicy(coil.request.CachePolicy.ENABLED)
-            placeholder(R.drawable.default_album_art)
-            error(R.drawable.default_album_art)
+        val imageLoader: ImageLoader = ImageLoader.Builder(activity)
+            .crossfade(true)
+            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+            .bitmapConfig(Bitmap.Config.RGB_565)
+            .allowHardware(true)
+            .precision(coil.size.Precision.EXACT)
+            .placeholder(R.drawable.default_album_art)
+            .error(R.drawable.default_album_art)
+            .memoryCache {
+                MemoryCache.Builder(activity)
+                    .maxSizePercent(0.01)
+                    .strongReferencesEnabled(false)
+                    .weakReferencesEnabled(true)
+                    .build()
+            }
+            .build()
+
+        holder.artwork.load(track.mediaMetadata.artworkUri,imageLoader) {
+
+            size(ViewSizeResolver(holder.artwork))
 
 
         }
@@ -150,7 +168,6 @@ class JacketAdapter(
     override fun getItemViewType(position: Int): Int {
 
         //TODO レイアウト切り替え対応
-
 
 
         val layout_type = if (isTextPlus) {

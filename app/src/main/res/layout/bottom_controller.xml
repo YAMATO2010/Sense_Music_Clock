@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottomControllerContainer"
+    android:layout_width="match_parent"
+    android:layout_height="?attr/actionBarSize"
+    android:clickable="true"
+    android:background="@drawable/gradient4"
+    >
+
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline999"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.2" />
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline998"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.1" />
+
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline9914"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.6"/>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline9915"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.72"/>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline9916"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.88"/>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline9911"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.2"/>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline9912"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.6"/>
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline9913"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.9"/>
+    <ImageView
+        android:id="@+id/nowItemartwork"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/guideline999"
+        app:layout_constraintTop_toBottomOf="@id/guideline998"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:scaleType="fitCenter"
+        />
+
+    <TextView
+        android:id="@+id/nowItemTitleView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+
+        android:autoSizeMaxTextSize="16sp"
+        android:autoSizeTextType="uniform"
+        android:gravity="center_vertical"
+        android:maxLines="1"
+        android:text="Title"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/guideline9912"
+        app:layout_constraintLeft_toLeftOf="@id/guideline999"
+        app:layout_constraintRight_toRightOf="@id/guideline9914"
+        app:layout_constraintTop_toTopOf="@+id/guideline9911" />
+
+    <TextView
+        android:id="@+id/nowItemArtistView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:autoSizeMaxTextSize="14sp"
+        android:autoSizeTextType="uniform"
+        android:gravity="center_vertical"
+        android:maxLines="1"
+        android:text="Artist"
+
+        android:textColor="@color/white_glass_item_square"
+        app:layout_constraintBottom_toBottomOf="@id/guideline9913"
+        app:layout_constraintLeft_toLeftOf="@id/guideline999"
+        app:layout_constraintRight_toRightOf="@id/guideline9914"
+        app:layout_constraintTop_toTopOf="@id/guideline9912" />
+    <ImageButton
+        android:id="@+id/bcBtnPrev"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+
+
+        android:scaleType="fitCenter"
+
+        android:backgroundTint="@null"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="@id/guideline9915"
+        app:layout_constraintLeft_toLeftOf="@id/guideline9914"
+        app:layout_constraintTop_toTopOf="parent"
+
+        android:background="?attr/selectableItemBackgroundBorderless"
+
+        android:src="@android:drawable/ic_media_previous"
+        />
+    <ImageButton
+        android:id="@+id/bcBtnPlayPause"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+
+
+        android:scaleType="fitCenter"
+
+        android:backgroundTint="@null"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="@id/guideline9916"
+        app:layout_constraintLeft_toLeftOf="@id/guideline9915"
+        app:layout_constraintTop_toTopOf="parent"
+
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="play_pause"
+        android:src="@android:drawable/ic_media_play"
+        />
+    <ImageButton
+        android:id="@+id/bcBtnNext"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+
+
+        android:scaleType="fitCenter"
+
+        android:backgroundTint="@null"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="@id/guideline9916"
+        app:layout_constraintTop_toTopOf="parent"
+
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="next"
+        android:src="@android:drawable/ic_media_next"
+        />
+
+    <ProgressBar
+        android:id="@+id/currentPositionBer"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:indeterminateTint="@color/light_purple_glass"
+        android:progressTint="@color/purple_500"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:padding="0dp"
+        android:layout_margin="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/guideline998"
+
+        app:layout_constraintStart_toStartOf="parent"
+   />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

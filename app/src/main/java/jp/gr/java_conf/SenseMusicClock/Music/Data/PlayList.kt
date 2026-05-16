@@ -6,11 +6,8 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.TypeConverter
 import androidx.room.Update
 import androidx.room.Upsert
 import java.util.Date
@@ -53,15 +50,23 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlists WHERE playlistId = :playlistId")
     suspend fun loadPlaylistById(playlistId: Long): PlayList?
 
+    @Query("SELECT EXISTS(SELECT 1  FROM playlists WHERE playlistName  = :playlistName)")
+    suspend fun existsPlaylist(playlistName: String): Boolean
+    @Query("DELETE FROM playlists WHERE playlistId = :playlistId")
+    suspend fun deletePlaylist(playlistId: Long)
+
+
 
     @Delete
     suspend fun deletePlaylist(playlist: PlayList)
+
+
 
     @Update
     suspend fun updatePlaylist(playlist: PlayList)
 
     @Upsert
-    suspend fun insertPlaylist(playlist: PlayList): Long
+    suspend fun upsertPlaylist(playlist: PlayList): Long
 
 }
 
@@ -78,13 +83,16 @@ interface PlaylistItemDao {
     @Query("SELECT MAX('index') FROM playlistItems WHERE playlistId = :playlistId")
     suspend fun getMaxIndexForPlaylist(playlistId: Long): Int?
 
+    @Query("DELETE FROM playlistItems WHERE playlistId = :playlistId")
+    suspend fun deleteItemsForPlaylist(playlistId: Long)
+
     @Update
     suspend fun updatePlaylistItem(playlistItem: PlaylistItem)
 
     @Upsert
-    suspend fun insertPlaylistItem(playlistItem: PlaylistItem)
+    suspend fun upsertPlaylistItem(playlistItem: PlaylistItem)
 
     @Upsert
-    suspend fun insertPlaylistItems(playlistItems: List<PlaylistItem>)
+    suspend fun upsertPlaylistItems(playlistItems: List<PlaylistItem>)
 }
 

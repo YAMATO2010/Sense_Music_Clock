@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_back"
+        android:icon="@android:drawable/ic_menu_revert"
+        android:title="@string/back"
+
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_edit"
+        android:icon="@drawable/outline_edit_note_24"
+        android:title="@string/Edit"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_delete"
+
+        android:title="@string/Delete"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_copy_list"
+
+        android:title="@string/copy_list"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_copy_Item"
+
+        android:title="@string/copy_Item"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_change_name"
+        android:title="@string/name_change"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_change_set"
+        android:title="@string/use"
+        app:showAsAction="never" />
+
+
+
+</menu>
