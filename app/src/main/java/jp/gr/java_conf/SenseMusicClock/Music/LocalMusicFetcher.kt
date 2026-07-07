@@ -32,6 +32,7 @@ object LocalMusicFetcher {
 
     const val OR = " OR "
 
+
     fun selection(UserRelativePaths: List<String> = emptyList()): Pair<String, Array<String>> {
         val relativePaths = listOf("Music/SMC") + UserRelativePaths
 
@@ -49,16 +50,17 @@ object LocalMusicFetcher {
     }
 
     fun path_selection_RPath_LIKE(fileItems: List<FileItem>): Pair<String, Array<String>> {
-        val selection = "(${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Audio.Media.DISPLAY_NAME} = ?)"
+        val selection =
+            "(${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Audio.Media.DISPLAY_NAME} = ?)"
         val args = mutableListOf<String>()
         val selectionParts = mutableListOf<String>()
 
         for (item in fileItems) {
 
             selectionParts.add(selection)
-            args.add( "%${item.relativePath}%" )
+            args.add("%${item.relativePath}%")
             args.add(item.fileName)
-             Log.d(
+            Log.d(
                 "LocalMusicRepository",
                 "path_selection_RPath_LIKE: added selection for ${item.relativePath}/${item.fileName}"
             )
@@ -68,6 +70,7 @@ object LocalMusicFetcher {
 
         return (finalSelection to args.toTypedArray())
     }
+
     fun playlist_selection(playlistItems: List<PlaylistItem>): Pair<String, Array<String>> {
 
         val parts = mutableListOf<String>()
@@ -95,6 +98,7 @@ object LocalMusicFetcher {
         )
         return (selection to args)
     }
+
     fun title_selection(title: String): Pair<String, Array<String>> {
 
         val parts = mutableListOf<String>()
@@ -129,6 +133,8 @@ object LocalMusicFetcher {
 
 
     }
+
+
     fun artistID_selection(artistID: Long): Pair<String, Array<String>> {
         val parts = mutableListOf<String>()
 
@@ -146,6 +152,7 @@ object LocalMusicFetcher {
 
 
     }
+
     fun mediaId_selection(ids: List<Long>): Pair<String, Array<String>> {
 
         val parts = mutableListOf<String>()
@@ -162,6 +169,7 @@ object LocalMusicFetcher {
         val selection = parts.joinToString(OR)
         return (selection to args.toTypedArray())
     }
+
 
     fun sortOrder(): String {
 
@@ -219,6 +227,39 @@ object LocalMusicFetcher {
             )
             putString(ContentResolver.QUERY_ARG_SORT_COLUMNS, MediaStore.Audio.Media.TITLE)
         }
+        return args
+    }
+
+    fun createQueryArgs(
+        selection: String?,
+        selectionArgs: Array<String>?,
+        limit: Int,
+        offset: Int,
+        sortColumn: String,
+        sortDirection: Int ,
+    ): Bundle {
+        val args = Bundle()
+
+        args.apply {
+
+            if (selection != null && !selectionArgs.isNullOrEmpty()) {
+                putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+                putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
+
+            }
+            putInt(ContentResolver.QUERY_ARG_LIMIT, limit)
+            putInt(ContentResolver.QUERY_ARG_OFFSET, offset)
+
+            putStringArray(
+                ContentResolver.QUERY_ARG_SORT_COLUMNS,
+                arrayOf(sortColumn)
+            )
+            putInt(
+                ContentResolver.QUERY_ARG_SORT_DIRECTION,
+                sortDirection
+            )
+        }
+
         return args
     }
 
@@ -287,7 +328,7 @@ object LocalMusicFetcher {
                 resolver,
                 queryArgs,
                 cancellationSignal
-            ).map { it.toMediaItem() }
+            ).map { it.toMediaItem() }.withUniqueMediaIds()
         }
 
 
@@ -311,7 +352,7 @@ object LocalMusicFetcher {
                 chunkSize,
                 argsPerItem,
                 singleCondition
-            ).map { it.toMediaItem() }
+            ).map { it.toMediaItem() }.withUniqueMediaIds()
         }
 
 
@@ -357,6 +398,8 @@ object LocalMusicFetcher {
         val selection = queryArgs.getString(ContentResolver.QUERY_ARG_SQL_SELECTION)
         val selectionArgs = queryArgs.getStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS)
         val noMediaSelection = "${MediaStore.Audio.Media.DISPLAY_NAME} NOT LIKE ?"
+        val sortColumns = queryArgs.getStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS)
+        val sortDirection = queryArgs.getInt(ContentResolver.QUERY_ARG_SORT_DIRECTION, ContentResolver.QUERY_SORT_DIRECTION_ASCENDING)
 
         val newSelection = if (selection == null) {
             noMediaSelection
@@ -370,7 +413,9 @@ object LocalMusicFetcher {
             selection = newSelection,
             selectionArgs = newSelectionArgs,
             limit = queryArgs.getInt(ContentResolver.QUERY_ARG_LIMIT, -1),
-            offset = queryArgs.getInt(ContentResolver.QUERY_ARG_OFFSET, 0)
+            offset = queryArgs.getInt(ContentResolver.QUERY_ARG_OFFSET, 0),
+            sortColumn = sortColumns?.firstOrNull() ?: MediaStore.Audio.Media.DATE_ADDED,
+            sortDirection = sortDirection
         )
         val projection: Array<String> = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -449,6 +494,7 @@ object LocalMusicFetcher {
                                 "Skipping item with ID $id because data path contains .nomedia: $path"
                             )
 
+                            continue
                         }
 
                         val relativePath = c.getString(relativePathIdx) ?: ""
@@ -458,6 +504,7 @@ object LocalMusicFetcher {
                                 "Skipping item with ID $id because relative path contains .nomedia: $relativePath"
                             )
 
+                            continue
                         }
 
                         val displayName = c.getString(displayNameIdx) ?: ""
@@ -466,6 +513,7 @@ object LocalMusicFetcher {
                                 "LocalMusicFetcher",
                                 "Skipping item with ID $id because display name contains .nomedia: $displayName"
                             )
+                            continue
 
                         }
 
@@ -475,19 +523,10 @@ object LocalMusicFetcher {
                                 id
                             )
 
-                        val albumArtUri: Uri? = try {
-                            "content://media/external/audio/albumart".toUri()
-                                .buildUpon()
-                                .appendPath(albumId.toString())
-                                .build()
-                        } catch (e: Exception) {
-                            android.util.Log.w(
-                                "LocalMusicRepository",
-                                "build albumArtUri failed",
-                                e
-                            )
-                            null
-                        }
+                        val albumArtUri: Uri = ContentUris.withAppendedId(
+                            MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                            albumId
+                        )
                         val mediaItem = MediaStoreAudioSummary(
                             id = id,
                             title = title,
@@ -518,7 +557,7 @@ object LocalMusicFetcher {
             Log.e("LocalMusicFetcher", "SecurityException while querying MediaStore", e)
         } catch (e: OperationCanceledException) {
             Log.e("LocalMusicFetcher", "OperationCanceledException while querying MediaStore", e)
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             Log.e("LocalMusicFetcher", "Unexpected exception while querying MediaStore", e)
         }
 
@@ -567,10 +606,40 @@ object LocalMusicFetcher {
             .build()
 
         return MediaItem.Builder()
-            .setMediaId(id.toString() + "_" + fastRandomUUID().toString()) // ID とタイトルを組み合わせてユニークな mediaId を生成
+            .setMediaId(id.toString())
             .setUri(uri)
             .setMediaMetadata(metadata)
             .build()
+    }
+
+    fun List<MediaItem>.withUniqueMediaIds(): List<MediaItem> {
+        val seen = mutableSetOf<String>()
+        return this.map { item ->
+            val originalId = item.mediaId ?: ""
+            // mediaId が空ならランダムな基本 ID を使う（先頭に "_" を付けて区別）
+            var candidateId = if (originalId.isNotEmpty()) originalId else "_${fastRandomUUID()}"
+
+            // すでに存在する ID ならランダム文字列を付与してユニーク化
+            while (seen.contains(candidateId)) {
+                candidateId = if (originalId.isNotEmpty()) {
+                    "${originalId}_${fastRandomUUID()}"
+                } else {
+                    // 元が空の場合は別のランダム ID を作る
+                    "_${fastRandomUUID()}"
+                }
+            }
+
+            seen.add(candidateId)
+
+            // mediaId を変更する必要がある場合は buildUpon() で新しい MediaItem を作る
+            if (candidateId == item.mediaId) {
+                item
+            } else {
+                item.buildUpon()
+                    .setMediaId(candidateId)
+                    .build()
+            }
+        }
     }
 
 

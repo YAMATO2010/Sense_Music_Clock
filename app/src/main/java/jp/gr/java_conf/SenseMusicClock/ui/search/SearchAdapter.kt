@@ -47,7 +47,7 @@ class SearchAdapter (
 
         val subText = view.findViewById<TextView>(R.id.ItemArtistView)
         val Image = view.findViewById<ImageView>(R.id.Itemartwork)
-        val Button = view.findViewById<ImageButton>(R.id.etcButton)
+
         val container = view.findViewById<View>(R.id.listItemContainer_display)
 
     }

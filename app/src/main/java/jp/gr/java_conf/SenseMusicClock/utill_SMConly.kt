@@ -40,7 +40,7 @@ val app_dir = ContentValues().apply {
     put(MediaStore.Audio.Media.MIME_TYPE, "Audio/mpeg") // ファイルタイプ
 }
 
-const val DUMMY_PLAYLIST_REMOVAL_ID = -1236457810114514L
+
 
 
 const val IDENTIFIER_INITIAL_INDEX_PROBLEM = "  ///IDENTIFIER_INITIAL_INDEX_PROBLEM"
@@ -626,6 +626,36 @@ fun AppCompatActivity.showListSelectDialog(
         })
         .create()
     dialog.show()
+}
+
+fun <T> Context.utilDialog(
+    title: String,
+    initItems: List<T>,
+    initialStrings: Array<String>,
+    onSelected: (T) -> Unit
+) {
+
+    val dialog = AlertDialog.Builder(this)
+        .setTitle(title)
+        .setItems(initialStrings, { _, index ->
+            Log.d("utilDialog", "Selected index: $index, item: ${initItems.getOrNull(index)}")
+            if (index < 0 || index >= initItems.size) {
+                Toast.makeText(this, "無効な選択です", Toast.LENGTH_SHORT).show()
+                return@setItems
+            } else {
+
+
+                onSelected(initItems[index])
+            }
+
+        })
+        .setNegativeButton("キャンセル", { dialog, _ ->
+            dialog.dismiss()
+        })
+        .create()
+    dialog.show()
+
+
 }
 
 fun BlockList.toListInfo(): DBManager.ListInfo {

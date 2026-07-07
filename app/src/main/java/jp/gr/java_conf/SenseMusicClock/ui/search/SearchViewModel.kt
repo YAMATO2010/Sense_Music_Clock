@@ -33,6 +33,8 @@ class SearchViewModel : ViewModel() {
 
     val searchHistory: LiveData<List<SearchHistory>> get() = _searchHistory
 
+    private val _isSearchMode: MutableLiveData<Boolean> = MutableLiveData(false)
+    val isSearchMode: LiveData<Boolean> get() = _isSearchMode
     fun setSearchType(type: SearchActivity.SearchType) {
         _currentSearchType.value = type
     }
@@ -71,6 +73,10 @@ class SearchViewModel : ViewModel() {
 
     fun clearSearchHistory() {
         _searchHistory.value = emptyList()
+    }
+
+    fun setSearchMode(isSearchMode: Boolean) {
+        _isSearchMode.value = isSearchMode
     }
 
 

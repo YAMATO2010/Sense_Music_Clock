@@ -2,15 +2,12 @@ package jp.gr.java_conf.SenseMusicClock
 
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import android.widget.ImageView
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
-import coil.decode.VideoFrameDecoder
 import coil.load
-import coil.size.Precision
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -25,13 +22,13 @@ object BackgroundResolver {
 
 
     val IMAGEFILE_KEY_OBLONG_MORNING = PrefsManager.IMAGEFILE_KEY_OBLONG_MORNING_KEY
-    val IMAGEFILE_KEY_OBLONG_NOON    = PrefsManager.IMAGEFILE_KEY_OBLONG_NOON_KEY
+    val IMAGEFILE_KEY_OBLONG_NOON = PrefsManager.IMAGEFILE_KEY_OBLONG_NOON_KEY
     val IMAGEFILE_KEY_OBLONG_EVENING = PrefsManager.IMAGEFILE_KEY_OBLONG_EVENING_KEY
-    val IMAGEFILE_KEY_OBLONG_NIGHT   = PrefsManager.IMAGEFILE_KEY_OBLONG_NIGHT_KEY
-    val IMAGEFILE_KEY_LAND_MORNING   = PrefsManager.IMAGEFILE_KEY_LAND_MORNING_KEY
-    val IMAGEFILE_KEY_LAND_NOON      = PrefsManager.IMAGEFILE_KEY_LAND_NOON_KEY
-    val IMAGEFILE_KEY_LAND_EVENING   = PrefsManager.IMAGEFILE_KEY_LAND_EVENING_KEY
-    val IMAGEFILE_KEY_LAND_NIGHT     = PrefsManager.IMAGEFILE_KEY_LAND_NIGHT_KEY
+    val IMAGEFILE_KEY_OBLONG_NIGHT = PrefsManager.IMAGEFILE_KEY_OBLONG_NIGHT_KEY
+    val IMAGEFILE_KEY_LAND_MORNING = PrefsManager.IMAGEFILE_KEY_LAND_MORNING_KEY
+    val IMAGEFILE_KEY_LAND_NOON = PrefsManager.IMAGEFILE_KEY_LAND_NOON_KEY
+    val IMAGEFILE_KEY_LAND_EVENING = PrefsManager.IMAGEFILE_KEY_LAND_EVENING_KEY
+    val IMAGEFILE_KEY_LAND_NIGHT = PrefsManager.IMAGEFILE_KEY_LAND_NIGHT_KEY
 
 
     const val BACKGROUNDS_PATH = "backgrounds"
@@ -43,17 +40,16 @@ object BackgroundResolver {
     sealed class ImageSource {
         abstract val key: String
 
-        data class FilePath(val file: File) : ImageSource(){
+        data class FilePath(val file: File) : ImageSource() {
             override val key: String
                 get() = file.absolutePath
         }
-        data class Res(val id: Int) : ImageSource(){
+
+        data class Res(val id: Int) : ImageSource() {
             override val key: String
                 get() = id.toString()
         }
     }
-
-
 
 
     fun loadFileIfExists(context: Context, path: String?): ImageSource? {
@@ -82,8 +78,7 @@ object BackgroundResolver {
     }
 
 
-
-    suspend fun getImageFilePath_forBackground(context: Context , key: String): String? {
+    suspend fun getImageFilePath_forBackground(context: Context, key: String): String? {
 
         return PrefsManager.getImageFilePath(context, key)
     }
@@ -107,40 +102,67 @@ object BackgroundResolver {
         return ImageSource.Res(DrawableId)
     }
 
+    fun randomImageSource(context: Context, orientation: Int): ImageSource {
 
-    suspend fun loadBackgroundSource(context: Context, orientation: Int): ImageSource {
+        val files = context.getAllFile_inInternalStorage(
+            BackgroundResolver.BACKGROUNDS_PATH
+        ).map { value -> ImageSource.FilePath(value) }
+        val defaultBackgrounds = if (orientation == ORIENTATION_OBLONG) {
+            listOf(
 
-
-
-
-        val partOfDay = getPartOfDay(getNowHour_Int())
-
-        Log.d("BackgroundResolver", "現在の時間帯：${partOfDay}、画像の向き：${orientation}")
-        val prefKey = PrefsManager.getImageFileKey(orientation, partOfDay)
-        Log.d("BackgroundResolver", "取得するPrefKey：${prefKey}")
-        val filePath = getImageFilePath_forBackground(context, prefKey)
-        Log.d("BackgroundResolver", "取得した画像ファイルパス：${filePath}")
-
-        loadFileIfExists(context, "$BACKGROUNDS_PATH/$filePath")?.let {
-            Log.d("BackgroundResolver", "画像ファイルが存在したのでそれを使用：${it}")
-            return it
+                ImageSource.Res(R.drawable.oblong_morning),
+                ImageSource.Res(R.drawable.oblong_noon),
+                ImageSource.Res(R.drawable.oblong_evening),
+                ImageSource.Res(R.drawable.oblong_night)
+            )
+        } else {
+            listOf(
+                ImageSource.Res(R.drawable.land_morning),
+                ImageSource.Res(R.drawable.land_noon),
+                ImageSource.Res(R.drawable.land_evening),
+                ImageSource.Res(R.drawable.land_night),
+            )
         }
-
-        Log.d("BackgroundResolver", "画像ファイルが存在しなかったのでデフォルト画像を使用")
-        return getDrawableId_byPrefsKey(prefKey)
+        val allSources = files + defaultBackgrounds
+        return allSources.random()
 
 
     }
 
 
+    suspend fun loadBackgroundSource(context: Context, orientation: Int): ImageSource {
+
+
+        val isRandom = PrefsManager.getRandomBackground(context)
+
+        if (isRandom) {
+            Log.d("BackgroundResolver", "ランダム背景が有効なのでランダム画像を取得")
+            return randomImageSource(context, orientation)
+        } else {
+            val partOfDay = getPartOfDay(getNowHour_Int())
+
+            Log.d("BackgroundResolver", "現在の時間帯：${partOfDay}、画像の向き：${orientation}")
+            val prefKey = PrefsManager.getImageFileKey(orientation, partOfDay)
+            Log.d("BackgroundResolver", "取得するPrefKey：${prefKey}")
+            val filePath = getImageFilePath_forBackground(context, prefKey)
+            Log.d("BackgroundResolver", "取得した画像ファイルパス：${filePath}")
+
+            loadFileIfExists(context, "$BACKGROUNDS_PATH/$filePath")?.let {
+                Log.d("BackgroundResolver", "画像ファイルが存在したのでそれを使用：${it}")
+                return it
+            }
+
+            Log.d("BackgroundResolver", "画像ファイルが存在しなかったのでデフォルト画像を使用")
+            return getDrawableId_byPrefsKey(prefKey)
+        }
+
+    }
+
 
 }
 
 
-
 suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
-
-
 
 
     val source = BackgroundResolver.loadBackgroundSource(context, orientation)
@@ -153,6 +175,7 @@ suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
                     add(GifDecoder.Factory())          // Android 8以前のGIF用
 
                 }
+                .crossfade(true)
                 .memoryCache {
                     coil.memory.MemoryCache.Builder(context)
                         .maxSizePercent(0.01) // メモリの25%までキャッシュを使用
@@ -171,7 +194,7 @@ suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
 
         }
     }
-    return  source.key
+    return source.key
 
 
 }

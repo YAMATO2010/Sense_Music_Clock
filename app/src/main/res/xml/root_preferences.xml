@@ -1,25 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     tools:context=".SettingsFragment">
-
 
 
     <PreferenceCategory app:title="音楽(全般)">
 
 
-
         <Preference
             android:key="reLoad_Tracks"
-            android:title="再読み込み"
-            android:selectable="true" />
+            android:selectable="true"
+            android:title="再読み込み" />
 
         <SeekBarPreference
-            android:key="volume_adjustment"
-            android:title="音量調整 (%)"
-            android:max="100"
             android:defaultValue="100"
+            android:key="volume_adjustment"
+            android:max="100"
+            android:title="音量調整 (%)"
             app:min="0"
             app:showSeekBarValue="true"
             app:updatesContinuously="true" />
@@ -32,6 +30,7 @@
         android:defaultValue="false"
         android:key="playMode_loop"
         android:title="一曲ループ" />
+
     <SwitchPreference
         android:defaultValue="true"
         android:key="is_shuffle"
@@ -41,24 +40,37 @@
 
         <Preference
             android:key="background_add"
-            android:title="背景画像の追加"
-            android:selectable="true" />
+            android:selectable="true"
+            android:title="背景画像の追加" />
 
         <Preference
             android:key="background_select"
-            android:title="背景画像の選択"
-            android:selectable="true" />
+            android:selectable="true"
+            android:title="背景画像の選択" />
 
         <Preference
             android:key="background_clear"
-            android:title="背景画像の選択（削除）"
-            android:selectable="true" />
+            android:selectable="true"
+            android:title="背景画像の選択（削除）" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="is_widget_background"
+            android:title="ウィジェットに画像背景をつける" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="is_random_background"
+            android:title="背景ランダムモード" />
     </PreferenceCategory>
     <PreferenceCategory android:title="通常再生">
         <Preference
-            android:key="action_selectDirectory"
-            android:title="再生するディレクトリの選択"
-            android:selectable="true" />
+            android:key="action_selectDirectory_add"
+            android:selectable="true"
+            android:title="再生するディレクトリの追加" />
+        <Preference
+            android:key="action_selectDirectory_delete"
+            android:selectable="true"
+            android:title="再生するディレクトリの削除" />
+
 
     </PreferenceCategory>
 
@@ -66,17 +78,49 @@
 
         <Preference
             android:key="action_playList"
-            android:title="プレイリスト"
-            android:selectable="true" />
-        <Preference
-            android:key="action_listeningHistory"
-            android:title="鑑賞履歴"
-            android:selectable="true" />
+            android:selectable="true"
+            android:title="プレイリスト" />
 
         <Preference
             android:key="action_blockList"
-            android:title="ブロックリスト"
-            android:selectable="true" />
+            android:selectable="true"
+            android:title="ブロックリスト" />
+
+
+    </PreferenceCategory>
+    <PreferenceCategory app:title="最近追加された曲">
+
+        <Preference
+            android:key="action_play_added_at_Desc"
+            android:selectable="true"
+            android:title="再生する" />
+
+        <SeekBarPreference
+            android:defaultValue="50"
+            android:key="max_load_tracks_added_at_Desc"
+            android:max="300"
+            android:title="最大読み込み曲数"
+            app:min="0"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="true" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="useCurrentShuffleMode_added_at_Desc"
+            android:title="他モードとシャッフルを同期" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="isBlock_added_at_Desc"
+            android:title="ブロックリストを適用" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="isFilterByDir_added_at_Desc"
+            android:title="フォルダでフィルタリングする" />
+
+        <Preference
+            android:key="action_play_default"
+            android:selectable="true"
+            android:title="デフォルトモードにする" />
 
 
     </PreferenceCategory>

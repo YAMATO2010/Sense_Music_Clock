@@ -12,12 +12,30 @@ import kotlinx.coroutines.withContext
 
 object LocalArtistFetcher {
 
+    suspend fun loadArtist(
+        resolver: ContentResolver,
+        artistId: Long,
+        cancellationSignal: CancellationSignal? = null,
+    ): MediaStoreArtistSummary? {
+        val (selection, selectionArgs) = artistId_selection(artistId)
+        val queryArgs = createQueryArgs(selection, selectionArgs)
+        val artist = loadArtistsFromAppDir(resolver, queryArgs,cancellationSignal).firstOrNull()
+        return artist
+    }
+
     fun artist_selection(artist: String): Pair<String, Array<String>> {
         val selection = "${MediaStore.Audio.Artists.ARTIST} LIKE ?"
         val args = arrayOf("%$artist%")
         return (selection to args)
 
 
+    }
+
+
+    fun artistId_selection(artistId: Long): Pair<String, Array<String>> {
+        val selection = "${MediaStore.Audio.Artists._ID} = ?"
+        val args = arrayOf(artistId.toString())
+        return (selection to args)
     }
 
     fun createQueryArgs(

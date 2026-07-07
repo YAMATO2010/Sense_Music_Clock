@@ -31,9 +31,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KProperty
-
 object PrefsManager {
 
     val mutex = Mutex()
@@ -52,6 +49,21 @@ object PrefsManager {
 
     private val IS_SHUFFLE_KEY = booleanPreferencesKey("is_shuffle")
 
+    private val LAST_TRACK_RELATIVE_PATH_KEY = stringPreferencesKey("last_track_relative_path")
+
+    private val LAST_TRACK_DISPLAY_NAME_KEY = stringPreferencesKey("last_track_display_name")
+
+    private val LAST_TRACK_POSITION = longPreferencesKey("last_track_position")
+
+    private val IS_WIDGET_BACKGROUND_KEY = booleanPreferencesKey("is_widget_background")
+    private val IS_RANDOM_BACKGROUND_KEY = booleanPreferencesKey("is_random_background")
+
+    private val MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY = intPreferencesKey("max_load_tracks_added_at_Desc")
+    private val USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC = booleanPreferencesKey("useCurrentShuffleMode_added_at_Desc")
+    private val IS_BLOCK_ADDED_AT_DESC = booleanPreferencesKey("isBlock_added_at_Desc")
+    private val IS_FILTER_BY_DIR_ADDED_AT_DESC = booleanPreferencesKey("isFilterByDir_added_at_Desc")
+
+
     const val IMAGEFILE_KEY_OBLONG_MORNING_KEY= "imageFile_key_oblong_morning"
     const val IMAGEFILE_KEY_OBLONG_NOON_KEY  = "imageFile_key_oblong_noon"
     const val IMAGEFILE_KEY_OBLONG_EVENING_KEY = "imageFile_key_oblong_evening"
@@ -60,6 +72,9 @@ object PrefsManager {
     const val IMAGEFILE_KEY_LAND_NOON_KEY  = "imageFile_key_land_noon"
     const val IMAGEFILE_KEY_LAND_EVENING_KEY = "imageFile_key_land_evening"
     const val IMAGEFILE_KEY_LAND_NIGHT_KEY = "imageFile_key_land_night"
+
+
+
 
 
 
@@ -193,7 +208,44 @@ object PrefsManager {
         context.clearPrefsValue(CURRENT_BLOCKLIST_ID_KEY)
     }
 
+    fun getLastTrackRelativePathFlow(context: Context, default: String = ""): Flow<String> {
+        return context.getPrefsFlow(LAST_TRACK_RELATIVE_PATH_KEY, default)
+    }
+    suspend fun getLastTrackRelativePath(context: Context, default: String = ""): String {
+        return context.getPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY, default)
+    }
+    suspend fun setLastTrackRelativePath(context: Context, value: String) {
+        context.setPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY, value)
+    }
+    suspend fun clearLastTrackRelativePath(context: Context) {
+        context.clearPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY)
+    }
 
+    fun getLastTrackDisplayNameFlow(context: Context, default: String = ""): Flow<String> {
+        return context.getPrefsFlow(LAST_TRACK_DISPLAY_NAME_KEY, default)
+    }
+    suspend fun getLastTrackDisplayName(context: Context, default: String = ""): String {
+        return context.getPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY, default)
+    }
+    suspend fun setLastTrackDisplayName(context: Context, value: String) {
+        context.setPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY, value)
+    }
+    suspend fun clearLastTrackDisplayName(context: Context) {
+        context.clearPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY)
+    }
+
+    fun getLastTrackPositionFlow(context: Context, default: Long = 0L): Flow<Long> {
+        return context.getPrefsFlow(LAST_TRACK_POSITION, default)
+    }
+    suspend fun getLastTrackPosition(context: Context, default: Long = 0L): Long {
+        return context.getPrefsValue(LAST_TRACK_POSITION, default)
+    }
+    suspend fun setLastTrackPosition(context: Context, value: Long) {
+        context.setPrefsValue(LAST_TRACK_POSITION, value)
+    }
+    suspend fun clearLastTrackPosition(context: Context) {
+        context.clearPrefsValue(LAST_TRACK_POSITION)
+    }
 
 
 
@@ -229,6 +281,7 @@ object PrefsManager {
     }
 
     suspend fun setMusicDirRelativePath(context: Context, value: String) {
+        Log.d("PrefsManager", "setMusicDirRelativePath() -> $value")
         context.setPrefsValue(MUSIC_DIR_RELATIVE_PATHS_KEY, value)
     }
 
@@ -282,6 +335,35 @@ object PrefsManager {
 
     suspend fun setTileTitleDisplay(context: Context, value: Boolean) {
         context.setPrefsValue(TILE_TITLE_DISPLAY, value)
+    }
+
+
+
+    // ウィジェットの背景フラグ
+    fun getWidgetBackgroundFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(IS_WIDGET_BACKGROUND_KEY, default)
+    }
+
+    suspend fun getWidgetBackground(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(IS_WIDGET_BACKGROUND_KEY, default)
+    }
+
+    suspend fun setWidgetBackground(context: Context, value: Boolean) {
+        context.setPrefsValue(IS_WIDGET_BACKGROUND_KEY, value)
+    }
+
+
+    // ランダム背景フラグ
+    fun getRandomBackgroundFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(IS_RANDOM_BACKGROUND_KEY, default)
+    }
+
+    suspend fun getRandomBackground(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(IS_RANDOM_BACKGROUND_KEY, default)
+    }
+
+    suspend fun setRandomBackground(context: Context, value: Boolean) {
+        context.setPrefsValue(IS_RANDOM_BACKGROUND_KEY, value)
     }
 
 
@@ -355,6 +437,54 @@ object PrefsManager {
             prefs.remove(SET_ALARM_TIME_KEY)
         }
     }
+
+
+    // 最大新しいロードトラック数
+    fun getMaxLoadTracksAddedAtDeskFlow(context: Context, default: Int = 50): Flow<Int> {
+        return context.getPrefsFlow(MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY, default)
+    }
+
+    suspend fun getMaxLoadTracksAddedAtDesk(context: Context, default: Int = 50): Int {
+        return context.getPrefsValue(MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY, default)
+    }
+
+    suspend fun setMaxLoadTracksAddedAtDesk(context: Context, value: Int) {
+        context.setPrefsValue(MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY, value)
+    }
+
+    // 新しいモード現在のシャッフルモードを使用するかどうか
+    fun getUseCurrentShuffleModeAddedAtDescFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC, default)
+    }
+    suspend fun getUseCurrentShuffleModeAddedAtDesc(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC, default)
+    }
+    suspend fun setUseCurrentShuffleModeAddedAtDesc(context: Context, value: Boolean) {
+        context.setPrefsValue(USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC, value)
+    }
+
+    // 新しいモードブロックするかどうか
+    fun getIsBlockAddedAtDescFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(IS_BLOCK_ADDED_AT_DESC, default)
+    }
+    suspend fun getIsBlockAddedAtDesc(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(IS_BLOCK_ADDED_AT_DESC, default)
+    }
+    suspend fun setIsBlockAddedAtDesc(context: Context, value: Boolean) {
+        context.setPrefsValue(IS_BLOCK_ADDED_AT_DESC, value)
+    }
+
+    // 新しいモードディレクトリでフィルタリングするかどうか
+    fun getIsFilterByDirAddedAtDescFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(IS_FILTER_BY_DIR_ADDED_AT_DESC, default)
+    }
+    suspend fun getIsFilterByDirAddedAtDesc(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(IS_FILTER_BY_DIR_ADDED_AT_DESC, default)
+    }
+    suspend fun setIsFilterByDirAddedAtDesc(context: Context, value: Boolean) {
+        context.setPrefsValue(IS_FILTER_BY_DIR_ADDED_AT_DESC, value)
+    }
+
 
 
 

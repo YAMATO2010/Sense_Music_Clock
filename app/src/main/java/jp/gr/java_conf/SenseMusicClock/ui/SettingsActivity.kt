@@ -2,11 +2,11 @@ package jp.gr.java_conf.SenseMusicClock.ui
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -14,8 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
-import jp.gr.java_conf.SenseMusicClock.DUMMY_PLAYLIST_REMOVAL_ID
-import jp.gr.java_conf.SenseMusicClock.Music.BottomController
+
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
@@ -23,6 +22,7 @@ import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.toMediaItem
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
+import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.SettingsActivityBinding
@@ -33,6 +33,7 @@ import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
 import jp.gr.java_conf.SenseMusicClock.toFileItem
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
+import jp.gr.java_conf.SenseMusicClock.utilDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -158,17 +159,27 @@ class SettingsActivity : AppCompatActivity() {
                                             selection,
                                             selectionArgs
                                         )
-                                        val Summarys : List<LocalMusicFetcher.MediaStoreAudioSummary> = LocalMusicFetcher.SafeLocalMusicFromAppDir(requireContext().applicationContext.contentResolver, queryArgs)
+                                        val Summarys: List<LocalMusicFetcher.MediaStoreAudioSummary> =
+                                            LocalMusicFetcher.SafeLocalMusicFromAppDir(
+                                                requireContext().applicationContext.contentResolver,
+                                                queryArgs
+                                            )
 
-                                        val sortedList : List<FileItem> = Summarys.sortedBy { summary ->
-                                            items.any{ item ->  summary.displayName == item.fileName && summary.relativePath?.contains(item.relativePath) ?: false }
+                                        val sortedList: List<FileItem> =
+                                            Summarys.sortedBy { summary ->
+                                                items.any { item ->
+                                                    summary.displayName == item.fileName && summary.relativePath?.contains(
+                                                        item.relativePath
+                                                    ) ?: false
+                                                }
 
-                                        }.mapNotNull { item ->
-                                            item.toMediaItem().toFileItem()
-                                        }
+                                            }.mapNotNull { item ->
+                                                item.toMediaItem().toFileItem()
+                                            }
                                         DBManager.addPlaylistAndItems(
                                             context = requireContext(),
-                                            playlistName = DisplayName ?: "インポートされたプレイリスト",
+                                            playlistName = DisplayName
+                                                ?: "インポートされたプレイリスト",
                                             sortedList
                                         )
 
@@ -188,12 +199,48 @@ class SettingsActivity : AppCompatActivity() {
             preferenceManager.preferenceDataStore = MyDataStore
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
-            val pickPref: Preference? = findPreference("action_selectDirectory")
+            val pickPref: Preference? = findPreference("action_selectDirectory_add")
             pickPref?.setOnPreferenceClickListener {
                 Log.d("SettingsFragment", "action_selectDirectory clicked")
                 (activity as? SettingsActivity)?.launchDirectoryPicker()
                 true
             }
+            val dirDeletePref: Preference? = findPreference("action_selectDirectory_delete")
+            dirDeletePref?.setOnPreferenceClickListener {
+                lifecycleScope.launch {
+
+                    val dirs = TargetDirectoryPrefJSONManager.getAll(requireContext())
+
+                    context?.utilDialog(
+                        "再生ディレクトリの削除",
+                        dirs,
+                        dirs.toTypedArray()
+                    ) { selected ->
+
+                        lifecycleScope.launch {
+                            val removed: Boolean =
+                                TargetDirectoryPrefJSONManager.remove(selected, requireContext())
+                            if (removed) {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "「$selected」を再生ディレクトリから削除しました。",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "「$selected」の削除に失敗しました。",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+
+                    }
+
+                }
+                true
+            }
+
 
             val reloadPref: Preference? = findPreference("reLoad_Tracks")
             reloadPref?.setOnPreferenceClickListener {
@@ -247,7 +294,7 @@ class SettingsActivity : AppCompatActivity() {
                         val playlists =
                             listOf(
                                 PlayList(
-                                    DUMMY_PLAYLIST_REMOVAL_ID,
+                                    PlayList.CURRENT_REMOVAL_ID,
                                     "デフォルト",
                                 )
                             ) + withContext(
@@ -264,7 +311,7 @@ class SettingsActivity : AppCompatActivity() {
                             // プレイリストが選択されたときの処理
                             Log.d("SettingsFragment", "Selected playlist ID: $playlistId")
                             when (playlistId) {
-                                DUMMY_PLAYLIST_REMOVAL_ID -> {
+                                PlayList.CURRENT_REMOVAL_ID -> {
                                     Log.d(
                                         "LIST_/SettingsFragment",
                                         "Dummy playlist selected, ignoring"
@@ -273,7 +320,7 @@ class SettingsActivity : AppCompatActivity() {
 
                                         PrefsManager.setCurrentPlaylistId(
                                             requireContext(),
-                                            DUMMY_PLAYLIST_REMOVAL_ID
+                                            PlayList.CURRENT_REMOVAL_ID
                                         )
                                     }
 
@@ -319,7 +366,7 @@ class SettingsActivity : AppCompatActivity() {
                         val blocklists =
                             listOf(
                                 BlockList(
-                                    DUMMY_PLAYLIST_REMOVAL_ID,
+                                    PlayList.CURRENT_REMOVAL_ID,
                                     "ブロック無しモード",
                                 )
                             ) + withContext(
@@ -336,7 +383,7 @@ class SettingsActivity : AppCompatActivity() {
                             // プレイリストが選択されたときの処理
                             Log.d("SettingsFragment", "Selected playlist ID: $blocklistId")
                             when (blocklistId) {
-                                DUMMY_PLAYLIST_REMOVAL_ID -> {
+                                PlayList.CURRENT_REMOVAL_ID -> {
                                     Log.d(
                                         "LIST_/SettingsFragment",
                                         "Dummy blocklist selected, ignoring"
@@ -345,7 +392,7 @@ class SettingsActivity : AppCompatActivity() {
 
                                         PrefsManager.setCurrentBlocklistId(
                                             requireContext(),
-                                            DUMMY_PLAYLIST_REMOVAL_ID
+                                            PlayList.CURRENT_REMOVAL_ID
                                         )
                                     }
 
@@ -392,6 +439,20 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
+            val playAddedAtDeskPref : Preference? = findPreference("action_play_added_at_Desc")
+            playAddedAtDeskPref?.setOnPreferenceClickListener{
+                lifecycleScope.launch {
+                    PrefsManager.setCurrentPlaylistId(requireContext(), PlayList.ADDED_AT_DESC_ID)
+                }
+                true
+            }
+            val playDefaultPref : Preference? = findPreference("action_play_default")
+            playDefaultPref?.setOnPreferenceClickListener {
+                lifecycleScope.launch {
+                    PrefsManager.setCurrentPlaylistId(requireContext(), PlayList.CURRENT_REMOVAL_ID)
+                }
+                true
+            }
 
         }
 
@@ -444,6 +505,10 @@ class SettingsActivity : AppCompatActivity() {
                         PrefsManager.setVolumeAdjustment(context, value)
                     }
 
+                    "max_load_tracks_added_at_Desc" -> {
+                        PrefsManager.setMaxLoadTracksAddedAtDesk(context, value)
+                    }
+
                 }
 
             }
@@ -457,6 +522,10 @@ class SettingsActivity : AppCompatActivity() {
 
                 when (key) {
                     "volume_adjustment" -> PrefsManager.getVolumeAdjustment(context)
+                    "max_load_tracks_added_at_Desc" -> PrefsManager.getMaxLoadTracksAddedAtDesk(
+                        context
+                    )
+
                     else -> defaultValue
                 }
             }
@@ -471,6 +540,22 @@ class SettingsActivity : AppCompatActivity() {
                     "tile_title_display" -> PrefsManager.setTileTitleDisplay(context, value)
                     "playMode_loop" -> PrefsManager.setPlayModeLoop(context, value)
                     "is_shuffle" -> PrefsManager.setIsShuffle(context, value)
+                    "is_widget_background" -> PrefsManager.setWidgetBackground(context, value)
+                    "is_random_background" -> PrefsManager.setRandomBackground(context, value)
+                    "useCurrentShuffleMode_added_at_Desc" -> PrefsManager.setUseCurrentShuffleModeAddedAtDesc(
+                        context,
+                        value
+                    )
+
+                    "isBlock_added_at_Desc" -> PrefsManager.setIsBlockAddedAtDesc(context, value)
+                    "isFilterByDir_added_at_Desc" -> PrefsManager.setIsFilterByDirAddedAtDesc(
+                        context,
+                        value
+                    )
+
+                    else -> {
+                        Log.w("MyDataStore", "Unknown key for putBoolean: $key")
+                    }
                 }
             }
 
@@ -483,6 +568,17 @@ class SettingsActivity : AppCompatActivity() {
                     "tile_title_display" -> PrefsManager.getTileTitleDisplay(context)
                     "playMode_loop" -> PrefsManager.getPlayModeLoop(context)
                     "is_shuffle" -> PrefsManager.getIsShuffle(context)
+                    "is_widget_background" -> PrefsManager.getWidgetBackground(context)
+                    "is_random_background" -> PrefsManager.getRandomBackground(context)
+                    "useCurrentShuffleMode_added_at_Desc" -> PrefsManager.getUseCurrentShuffleModeAddedAtDesc(
+                        context
+                    )
+
+                    "isBlock_added_at_Desc" -> PrefsManager.getIsBlockAddedAtDesc(context)
+                    "isFilterByDir_added_at_Desc" -> PrefsManager.getIsFilterByDirAddedAtDesc(
+                        context
+                    )
+
                     else -> defValue
                 }
             }

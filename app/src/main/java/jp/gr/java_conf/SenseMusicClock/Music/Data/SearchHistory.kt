@@ -23,6 +23,7 @@ data class SearchHistory(
         const val TYPE_ARTIST = "artist"
         const val TYPE_ALBUM = "album"
         const val TYPE_SONG = "song"
+        const val TYPE_UNKNOWN = "unknown"
     }
 }
 
@@ -44,6 +45,9 @@ interface SearchHistoryDao {
 
     @Query("DELETE FROM SearchHistory ")
     suspend fun deleteAllSearchHistory(): Int
+
+    @Query("DELETE FROM SearchHistory WHERE itemID = :itemID AND itemType = :itemType")
+    suspend fun deleteSearchHistoryByItem(itemID: Long, itemType: String): Int
 
     @Upsert
     suspend fun insertSearchHistory(searchHistory: SearchHistory)

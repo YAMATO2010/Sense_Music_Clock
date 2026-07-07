@@ -370,7 +370,9 @@ object DBManager {
         newItems: List<BlocklistItem>
     ): List<BlocklistItem> {
         val db = AppDataBase.getInstance(context)
-        if (newItems.isEmpty()) return emptyList()
+        if (newItems.isEmpty()) {
+            Log.d("LIST_/DBManager/replaceBlocklistContent", "replace blocklist content with empty list")
+        }
         return withContext(Dispatchers.IO) {
             db.withTransaction {
                 val blocklistItemDao = db.blockListItemDao()

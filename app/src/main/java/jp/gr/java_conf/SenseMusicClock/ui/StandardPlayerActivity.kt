@@ -31,9 +31,12 @@ import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
+import jp.gr.java_conf.SenseMusicClock.convertMsToTimeString
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
 import jp.gr.java_conf.SenseMusicClock.load_forRoot
 import kotlinx.coroutines.launch
+import org.w3c.dom.Text
+import kotlin.time.Duration
 
 class StandardPlayerActivity : AppCompatActivity() {
 
@@ -84,11 +87,13 @@ class StandardPlayerActivity : AppCompatActivity() {
                 val durationMs = mediaController?.duration ?: 0L
                 val posMs = mediaController?.currentPosition ?: 0L
 
+                binding.CurrentTimeTextView.text = convertMsToTimeString(posMs)
+                setDurationText(durationMs)
+
                 val durationSec = (durationMs / 1000L).coerceAtLeast(0L).toInt()
                 val posSec = (posMs / 1000L).toInt()
 
                 val sb = binding.seekBar
-                // binding.seekBar is non-null via viewBinding
                 if (durationSec > 0 && sb.max != durationSec) sb.max = durationSec
                 sb.progress = posSec.coerceIn(0, (sb.max))
                 mediaController?.playWhenReady.let {
@@ -101,74 +106,6 @@ class StandardPlayerActivity : AppCompatActivity() {
             if (progressUpdaterScheduled) uiHandler.postDelayed(this, 500)
         }
     }
-
-
-    /* TODO : ServiceConnectionのところ
-
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as? Musicservice.LocalBinder ?: return
-            musicService = binder.getService()
-            musicBound = true
-            try {
-                val token = binder.getSessionToken()
-                val mc = MediaControllerCompat(this@StandardPlayerActivity, token)
-                MediaControllerCompat.setMediaController(this@StandardPlayerActivity, mc)
-                mediaController = mc
-                mc.registerCallback(controllerCallback)
-                // initial sync
-                controllerCallback.onMetadataChanged(mc.metadata)
-                controllerCallback.onPlaybackStateChanged(mc.playbackState)
-            } catch (e: Exception) {
-                android.util.Log.w("StandardPlayerActivity", "create media controller failed", e)
-            }
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            musicBound = false
-            musicService = null
-            try { mediaController?.unregisterCallback(controllerCallback) } catch (e: Exception) { android.util.Log.w("StandardPlayerActivity", "unregister callback failed", e) }
-            mediaController = null
-        }
-    }
-
-     */
-    /*
-
-    private val controllerCallback = object : MediaControllerCompat.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            runOnUiThread {
-                val playing = state?.state == PlaybackStateCompat.STATE_PLAYING
-                animatePlayButton(playing)
-                if (playing) startProgressUpdates() else stopProgressUpdates()
-            }
-        }
-
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            runOnUiThread {
-                try {
-                    val title = metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE) ?: ""
-                    val artist = metadata?.getString(MediaMetadataCompat.METADATA_KEY_ARTIST) ?: ""
-                    val album = metadata?.getString(MediaMetadataCompat.METADATA_KEY_ALBUM) ?: ""
-                    binding.tvTitle.text = title
-                    binding.tvArtist.text = artist
-                    binding.tvAlbumName.text = album
-
-                    val art = metadata?.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART)
-                        ?: android.graphics.BitmapFactory.decodeResource(resources, R.drawable.default_album_art)
-
-                    binding.ivAlbumArt.setImageBitmap(art)
-
-                    binding.root.background =getDrawble_forRootBackgroundByTimeAndOrientation(resources.configuration.orientation,this@StandardPlayerActivity)
-
-                } catch (e: Exception) {
-                    android.util.Log.w("StandardPlayerActivity", "metadata update failed", e)
-                }
-            }
-        }
-    }
-
-     */
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -216,6 +153,9 @@ class StandardPlayerActivity : AppCompatActivity() {
                         val title = it.mediaMetadata.title ?: ""
                         val artist = it.mediaMetadata.artist ?: ""
                         val album = it.mediaMetadata.albumTitle ?: ""
+                        val durationMs = it.mediaMetadata.durationMs ?: 0L
+
+                        setDurationText(durationMs)
                         binding.tvTitle.text = title
                         binding.tvArtist.text = artist
                         binding.tvAlbumName.text = album
@@ -251,6 +191,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                                 val title = mediaItem?.mediaMetadata?.title ?: ""
                                 val artist = mediaItem?.mediaMetadata?.artist ?: ""
                                 val album = mediaItem?.mediaMetadata?.albumTitle ?: ""
+
                                 binding.tvTitle.text = title
                                 binding.tvArtist.text = artist
                                 binding.tvAlbumName.text = album
@@ -260,6 +201,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
 
                                 val durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L
+                                setDurationText(durationMs)
                                 if (durationMs > 0) binding.seekBar.max =
                                     (durationMs / 1000L).toInt()
                                 startProgressUpdates()
@@ -417,6 +359,11 @@ class StandardPlayerActivity : AppCompatActivity() {
         }
     }
 
+
+    private fun setDurationText(durationMs : Long) {
+        binding.durationTextView.text = "/" + convertMsToTimeString(durationMs)
+
+    }
     override fun onPause() {
         super.onPause()
         unregisterReceiver(timeTickReceiver)

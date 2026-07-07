@@ -11,6 +11,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.addTextChangedListener
@@ -44,6 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class SearchActivity : AppCompatActivity() {
@@ -58,6 +60,8 @@ class SearchActivity : AppCompatActivity() {
         val ARTIST = "アーティスト"
         val TITLE = "タイトル"
         val ALBUM = "アルバム"
+
+        val HISTORY_ITEM_MAX_COUNT = 50
     }
 
     private val searchType: Map<String, SearchType> = mapOf<String, SearchType>(
@@ -79,6 +83,7 @@ class SearchActivity : AppCompatActivity() {
 
     private var mediaController: MediaController? = null
 
+
     override fun onStart() {
         super.onStart()
 
@@ -87,7 +92,7 @@ class SearchActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        binding.bottomController.initialize(this)
+        binding.bottomController.release()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -164,16 +169,39 @@ class SearchActivity : AppCompatActivity() {
             Log.d("SearchActivity", "Text changed: ${it.toString()}")
             onEditTextChanged(it.toString())
         }
+        viewModel.viewModelScope.launch {
+            val history =
+                HistoryDBManager.loadSearchHistory(this@SearchActivity, HISTORY_ITEM_MAX_COUNT)
+            viewModel.setSearchHistory(history)
+            viewModel.setSearchMode(false)
+            handleHistory()
+
+        }
+
 
         observes()
 
 
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaController?.release()
+        mediaController = null
+    }
+
     fun observes() {
         viewModel.currentSearchType.observe(this) {
             resultSubmit()
         }
+        viewModel.isSearchMode.observe(this) { isSearchMode ->
+            if (isSearchMode) {
+                binding.currentModeTextView.text = "検索"
+            } else {
+                binding.currentModeTextView.text = "検索履歴"
+            }
+        }
+
     }
 
     fun resultSubmit() {
@@ -253,7 +281,13 @@ class SearchActivity : AppCompatActivity() {
     fun popupMenu(item: Any, view: View) {
         val popupMenu = PopupMenu(this, view).also {
             it.menuInflater.inflate(R.menu.search_menu, it.menu)
+
             it.setOnMenuItemClickListener { menuItem ->
+                lifecycleScope.launch {
+
+                    addHistory(item)
+                }
+
                 when (menuItem.itemId) {
                     R.id.play -> {
                         // 再生処理
@@ -297,14 +331,6 @@ class SearchActivity : AppCompatActivity() {
     }
 
     fun clickPlay_Music(item: LocalMusicFetcher.MediaStoreAudioSummary) {
-        //曲の再生処理
-
-        viewModel.viewModelScope.launch {
-            HistoryDBManager.insertSSongHistory(
-                this@SearchActivity,
-                item.id
-            )
-        }
 
 
         val command =
@@ -320,13 +346,6 @@ class SearchActivity : AppCompatActivity() {
         //アルバムの再生処理
 
 
-        viewModel.viewModelScope.launch {
-            HistoryDBManager.insertSAlbumHistory(
-                this@SearchActivity,
-                item.albumId
-            )
-        }
-
         val command = SessionCommand(MusicService.CUSTOM_ACTION_LOAD_ALBUM_BY_ID, Bundle.EMPTY)
         mediaController?.sendCustomCommand(command, Bundle().apply {
             putLong(MusicService.ALBUM_ID, item.albumId)
@@ -339,12 +358,6 @@ class SearchActivity : AppCompatActivity() {
     fun clickPlay_Artist(item: LocalArtistFetcher.MediaStoreArtistSummary) {
         //アーティストの再生処理
 
-        viewModel.viewModelScope.launch {
-            HistoryDBManager.insertSArtistHistory(
-                this@SearchActivity,
-                item.artistId
-            )
-        }
         val command = SessionCommand(MusicService.CUSTOM_ACTION_LOAD_ARTIST_BY_ID, Bundle.EMPTY)
         Log.d("SearchActivity", "Sending play command for artist ID: ${item.artistId}")
         if (mediaController == null) {
@@ -501,7 +514,11 @@ class SearchActivity : AppCompatActivity() {
                         it.toMediaItem().toFileItem() ?: (return@mapNotNull null)
                     }
                     Log.d("DEBUG", "Loaded musics: ${musics.size}")
-                    DBManager.upsertBlockListItems(this@SearchActivity.applicationContext, blocklistId, musics)
+                    DBManager.upsertBlockListItems(
+                        this@SearchActivity.applicationContext,
+                        blocklistId,
+                        musics
+                    )
                 }
             }
         }
@@ -527,7 +544,11 @@ class SearchActivity : AppCompatActivity() {
                     ).mapNotNull {
                         it.toMediaItem().toFileItem() ?: (return@mapNotNull null)
                     }
-                    DBManager.upsertBlockListItems(this@SearchActivity.applicationContext, blocklistId, musics)
+                    DBManager.upsertBlockListItems(
+                        this@SearchActivity.applicationContext,
+                        blocklistId,
+                        musics
+                    )
                 }
             }
         }
@@ -536,11 +557,69 @@ class SearchActivity : AppCompatActivity() {
 
 
     fun onBindSearchHistoryAdapter(
-        holder: SearchAdapter.SearchViewHolder,
+        holder: SearchHistoryAdapter.SearchHistoryVHolder,
         position: Int,
         item: SearchHistory
     ) {
         //アイテムがクリックされたときの処理
+
+        Log.d("SearchActivity", "Binding history item at position $position: $item")
+        holder.deleteButton.setOnClickListener {
+
+            viewModel.viewModelScope.launch {
+                HistoryDBManager.deleteSearchHistory(this@SearchActivity, item)
+                val updatedHistory =
+                    HistoryDBManager.loadSearchHistory(this@SearchActivity, HISTORY_ITEM_MAX_COUNT)
+                viewModel.setSearchHistory(updatedHistory)
+                searchHistoryAdapter.submitList(updatedHistory)
+            }
+        }
+        lifecycleScope.launch {
+            val metadata = loadHistoryMetadata(item)
+            withContext(Dispatchers.Main) {
+                holder.Title?.text = metadata.title
+                holder.subText?.text = metadata.type
+                holder.Image?.artworkLoad(metadata.imageUrl)
+            }
+        }
+        holder.container.setOnClickListener {
+            val pMenuItem: Any = when (item.itemType) {
+                SearchHistory.TYPE_ALBUM -> LocalAlbumFetcher.MediaStoreAlbumSummary(
+                    albumId = item.itemID,
+                    albumName = null,
+                    artist = null,
+                    albumArtUri = null
+                )
+
+                SearchHistory.TYPE_ARTIST -> LocalArtistFetcher.MediaStoreArtistSummary(
+                    artistId = item.itemID,
+                    artistName = null,
+                )
+
+                SearchHistory.TYPE_SONG -> LocalMusicFetcher.MediaStoreAudioSummary(
+                    id = item.itemID,
+                    title = null,
+                    artist = null,
+                    albumId = 0L,
+                    albumArtUri = null,
+                    album = null,
+                    artistId = null,
+                    trackNo = null,
+                    data = null,
+                    relativePath = null,
+                    displayName = null,
+                    uri = null
+                )
+
+                else -> {
+                    Log.w("SearchActivity", "Unknown item type for history click: ${item.itemType}")
+                    return@setOnClickListener
+                }
+            }
+            popupMenu(pMenuItem, it)
+        }
+
+
     }
 
 
@@ -553,9 +632,12 @@ class SearchActivity : AppCompatActivity() {
             delay(500) // ユーザーが入力を完了するのを待つ
             if (text.isBlank()) {
                 viewModel.clearResult()
+                viewModel.setSearchMode(false)
+                handleHistory()
                 searchHistoryAdapter.submitList(viewModel.searchHistory.value ?: emptyList())
                 searchResultAdapter.submitList(emptyList())
             } else {
+                viewModel.setSearchMode(true)
                 searchHistoryAdapter.submitList(emptyList())
 
                 val (albumSelection, albumSelectionArgs) = LocalAlbumFetcher.albumTitle_selection(
@@ -617,6 +699,72 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    fun handleHistory() {
+
+        lifecycleScope.launch {
+            HistoryDBManager.loadSearchHistoryInRange(
+                this@SearchActivity,
+                0,
+                HISTORY_ITEM_MAX_COUNT
+            ).let { historyList ->
+                viewModel.setSearchHistory(historyList)
+            }
+            searchHistoryAdapter.submitList(viewModel.searchHistory.value ?: emptyList())
+        }
+
+    }
+
+    suspend fun addHistory(item: Any) {
+        when (item) {
+            is LocalMusicFetcher.MediaStoreAudioSummary -> {
+                val deleteCount = HistoryDBManager.deleteSearchHistoryByItem(
+                    this@SearchActivity,
+                    item.id,
+                    SearchHistory.TYPE_SONG
+                )
+                Log.d(
+                    "SearchActivity",
+                    "Deleted $deleteCount existing history entries for song ID: ${item.id}"
+                )
+                HistoryDBManager.insertSSongHistory(this, item.id)
+
+            }
+
+            is LocalAlbumFetcher.MediaStoreAlbumSummary -> {
+                val deleteCount = HistoryDBManager.deleteSearchHistoryByItem(
+                    this@SearchActivity,
+                    item.albumId,
+                    SearchHistory.TYPE_ALBUM
+                )
+                Log.d(
+                    "SearchActivity",
+                    "Deleted $deleteCount existing history entries for album ID: ${item.albumId}"
+                )
+                HistoryDBManager.insertSAlbumHistory(this, item.albumId)
+            }
+
+            is LocalArtistFetcher.MediaStoreArtistSummary -> {
+                val deleteCount = HistoryDBManager.deleteSearchHistoryByItem(
+                    this@SearchActivity,
+                    item.artistId,
+                    SearchHistory.TYPE_ARTIST
+                )
+                Log.d(
+                    "SearchActivity",
+                    "Deleted $deleteCount existing history entries for artist ID: ${item.artistId}"
+                )
+                HistoryDBManager.insertSArtistHistory(this, item.artistId)
+            }
+
+            else -> Log.w(
+                "SearchActivity",
+                "Unknown item type for history insertion: ${item.javaClass}"
+            )
+        }
+
+    }
+
+
     fun ImageView.artworkLoad(item: Any?) {
         this.load(item) {
 
@@ -625,6 +773,67 @@ class SearchActivity : AppCompatActivity() {
             diskCachePolicy(CachePolicy.ENABLED)
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
+
+        }
+    }
+
+    suspend fun loadHistoryMetadata(item: SearchHistory): SearchHistoryAdapter.HistoryMetadata {
+
+        return when (item.itemType) {
+
+            SearchHistory.TYPE_ALBUM -> {
+                val (selection, selectionArgs) = LocalAlbumFetcher.albumId_selection(item.itemID)
+                val queryArgs = LocalAlbumFetcher.createQueryArgs(selection, selectionArgs)
+                val album =
+                    LocalAlbumFetcher.loadAlbumsFromAppDir(contentResolver, queryArgs).firstOrNull()
+                val data = album?.let {
+
+                    SearchHistoryAdapter.HistoryMetadata(
+                        id = it.albumId.toString(),
+                        type = SearchHistory.TYPE_ALBUM,
+                        title = it.albumName ?: "<UNKNOWN>",
+                        imageUrl = it.albumArtUri ?: "".toUri()
+                    )
+                }
+
+                data ?: SearchHistoryAdapter.HistoryMetadata()
+            }
+
+            SearchHistory.TYPE_ARTIST -> {
+                val (selection, selectionArgs) = LocalArtistFetcher.artistId_selection(item.itemID)
+                val queryArgs = LocalArtistFetcher.createQueryArgs(selection, selectionArgs)
+                val artist = LocalArtistFetcher.loadArtistsFromAppDir(contentResolver, queryArgs)
+                    .firstOrNull()
+                val data = artist?.let {
+                    SearchHistoryAdapter.HistoryMetadata(
+                        id = it.artistId.toString(),
+                        type = SearchHistory.TYPE_ARTIST,
+                        title = it.artistName ?: "<UNKNOWN>",
+                        imageUrl = "".toUri()
+                    )
+                }
+                data ?: SearchHistoryAdapter.HistoryMetadata()
+            }
+
+            SearchHistory.TYPE_SONG -> {
+                val (selection, selectionArgs) = LocalMusicFetcher.id_selection(item.itemID)
+                val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
+                val song = LocalMusicFetcher.loadLocalMusicFromAppDir(contentResolver, queryArgs)
+                    .firstOrNull()
+                val data = song?.let {
+                    SearchHistoryAdapter.HistoryMetadata(
+                        id = it.id.toString(),
+                        type = SearchHistory.TYPE_SONG,
+                        title = it.title ?: "<UNKNOWN>",
+                        imageUrl = it.albumArtUri ?: "".toUri()
+                    )
+                }
+                data ?: SearchHistoryAdapter.HistoryMetadata()
+            }
+
+            else -> {
+                SearchHistoryAdapter.HistoryMetadata()
+            }
 
         }
     }

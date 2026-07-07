@@ -57,7 +57,7 @@ class ListDisplayAdapter(
 
         val titleTextView: TextView = view.findViewById<TextView>(R.id.ItemTitleView)
         val artistTextView: TextView = view.findViewById<TextView>(R.id.ItemArtistView)
-        val etcButton: View = view.findViewById(R.id.etcButton)
+
 
         val itemArtwork: ImageView = view.findViewById(R.id.Itemartwork)
 

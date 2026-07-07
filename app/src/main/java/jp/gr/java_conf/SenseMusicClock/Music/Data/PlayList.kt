@@ -18,7 +18,14 @@ data class PlayList(
     @PrimaryKey(autoGenerate = true) val playlistId : Long = 0,
     val playlistName      : String,
     val deleted : Date? = null
-)
+){
+    companion object{
+
+        const val ADDED_AT_DESC_ID = -2L
+        const val CURRENT_REMOVAL_ID = -3L
+    }
+}
+
 
 
 @Entity(tableName = "playlistItems",
@@ -38,7 +45,6 @@ data class PlaylistItem (
     val index: Int
 
 )
-
 
 @Dao
 interface PlaylistDao {

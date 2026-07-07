@@ -38,6 +38,15 @@ fun pendingIntentFlags(minSdkForImmutable: Int = Build.VERSION_CODES.S): Int {
         PendingIntent.FLAG_UPDATE_CURRENT
 }
 
+fun convertMsToTimeString(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    val minutesStr = if (minutes < 10) "0$minutes" else "$minutes"
+    val secondsStr = if (seconds < 10) "0$seconds" else "$seconds"
+
+    return "$minutesStr:$secondsStr"
+}
 fun Context.saveToInternalStorage(uri: android.net.Uri, childPath: String = ""): File {
     val dir = File(filesDir, childPath)
     if (!dir.exists()) dir.mkdirs()

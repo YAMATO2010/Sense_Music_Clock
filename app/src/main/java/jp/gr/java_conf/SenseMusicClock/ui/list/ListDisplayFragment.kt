@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -19,6 +20,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import coil.request.CachePolicy
+import com.google.android.gms.common.api.internal.LifecycleCallback
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
@@ -298,24 +300,17 @@ class ListDisplayFragment : Fragment() {
 
 
         sharedViewModel.run {
-            list.observe(requireActivity()) { value ->
+            list.observe(viewLifecycleOwner) { value ->
                 Log.d("LIST_/ListDisplayFragment", "list updated: ${value.size} items")
 
-                value.run {
-
-                    getOrNull(0)?.let {
-                        binding.img1.artworkLoad(it.albumArtUri)
-                    }
-                    getOrNull(1)?.let {
-                        binding.img2.artworkLoad(it.albumArtUri)
-                    }
-                    getOrNull(2)?.let {
-                        binding.img3.artworkLoad(it.albumArtUri)
-                    }
-                    getOrNull(3)?.let {
-                        binding.img4.artworkLoad(it.albumArtUri)
-                    }
+                val headerImages = listOf(binding.img1, binding.img2, binding.img3, binding.img4)
+                headerImages.forEach {
+                    it.setImageResource(R.drawable.outline_hide_image_24)
                 }
+                value.take(4).forEachIndexed { index, item ->
+                    headerImages[index].artworkLoad(item.albumArtUri)
+                }
+
                 binding.listItemCount.text = getString(R.string.track_count, value.size)
 
 
@@ -325,13 +320,13 @@ class ListDisplayFragment : Fragment() {
 
             }
 
-            listName.observe(requireActivity()) { value ->
+            listName.observe(viewLifecycleOwner) { value ->
 
                 binding.listName.text = value
 
             }
 
-            listId.observe(requireActivity()) { value ->
+            listId.observe(viewLifecycleOwner) { value ->
 
 
             }
@@ -346,10 +341,21 @@ class ListDisplayFragment : Fragment() {
 
     }
 
+    override fun onDestroyView() {
+        binding.items.adapter = null
+        super.onDestroyView()
+        _binding = null
+    }
+
     fun goEdit() {
         val nextFragment = ListEditFragment()
         parentFragmentManager.beginTransaction()
-            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out,android.R.anim.fade_in, android.R.anim.fade_out) // 任意：アニメーション
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            ) // 任意：アニメーション
             .replace(R.id.fragment_container, nextFragment) // 貼り替え
             .addToBackStack(null) // ★重要：これがないと「戻る」ができない
             .commit()
@@ -367,11 +373,11 @@ class ListDisplayFragment : Fragment() {
         }
 
         adapter = ListDisplayAdapter(
-            onBind = { view, item ,pos->
+            onBind = { view, item, pos ->
 
             }
         ).also {
-                binding.items.adapter = it
+            binding.items.adapter = it
         }
 
 

@@ -212,11 +212,42 @@
                     android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_next" />
-
-                <Space
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="1" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginRight="5dp">
+
+                    <TextView
+                        android:id="@+id/CurrentTimeTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+
+                        android:autoSizeTextType="uniform"
+                        android:textColor="@color/white_glass_item_square"
+                        android:gravity="center"
+                        />
+
+                    <TextView
+                        android:id="@+id/durationTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:textColor="@color/white_glass_item_square"
+                        android:autoSizeTextType="uniform"
+                        android:gravity="right"
+
+                        />
+
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="4" />
+
+                </LinearLayout>
+
 
 
             </LinearLayout>
@@ -248,6 +279,7 @@
         android:src="@android:drawable/ic_menu_revert"
         app:layout_constraintBottom_toBottomOf="@+id/controlLayout"
         app:layout_constraintEnd_toEndOf="@+id/bgImageView" />
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

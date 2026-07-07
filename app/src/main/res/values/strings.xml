@@ -44,4 +44,7 @@
     <string name="move_first">最初に移動</string>
     <string name="addList">リストに追加</string>
     <string name="play">再生</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="app_widget_description">This is an app widget description</string>
 </resources>

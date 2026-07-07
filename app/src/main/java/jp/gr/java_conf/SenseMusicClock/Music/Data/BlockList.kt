@@ -56,6 +56,7 @@ interface BlocklistDao {
     @Query("SELECT EXISTS(SELECT 1  FROM blockLists WHERE blockListName = :blockListName)")
     suspend fun existsBlocklist(blockListName: String): Boolean
 
+
     @Query("DELETE FROM blockLists WHERE blockListID = :blockListID")
     suspend fun deleteBlocklist(blockListID: Long)
     @Delete

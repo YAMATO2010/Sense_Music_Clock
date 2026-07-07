@@ -19,6 +19,11 @@ object LocalAlbumFetcher {
 
 
     }
+    fun albumId_selection(albumId: Long): Pair<String, Array<String>> {
+        val selection = "${MediaStore.Audio.Albums._ID} = ?"
+        val args = arrayOf(albumId.toString())
+        return (selection to args)
+    }
 
     fun createQueryArgs(
         selection: String?,

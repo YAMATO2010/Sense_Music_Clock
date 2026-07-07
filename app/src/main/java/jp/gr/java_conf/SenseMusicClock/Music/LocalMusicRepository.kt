@@ -1,35 +1,23 @@
 package jp.gr.java_conf.SenseMusicClock
 
 
-import android.content.ContentUris
+import android.content.ContentResolver
 import android.content.Context
-
-import android.net.Uri
-import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.view.Display
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.core.net.toUri
-import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import com.spotify.protocol.types.Artist
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
+
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
-import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.loadLocalMusicFromAppDir
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.playlist_selection
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.selection
-import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.sortOrder
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
 
 object LocalMusicRepository {
 
@@ -63,8 +51,10 @@ object LocalMusicRepository {
     //TODO プレイリストの時に、同じ曲（同じクエリ）が重複していた場合、消される可能性がある。重複していた場合、それに該当するパスを持つもののMediaItemのIDを操作し、重複させよ。
 
 
-    fun setTracks(newTracks: List<MediaItem>) {
-        _tracksFlow.value = newTracks.filterByBlocklist(blockItems)
+    fun setTracks(newTracks: List<MediaItem>): List<MediaItem> {
+        val filteredTracks = newTracks.filterByBlocklist(blockItems)
+        _tracksFlow.value = filteredTracks
+        return filteredTracks
     }
 
 
@@ -79,28 +69,70 @@ object LocalMusicRepository {
         idToIndexMap.clear()
     }
 
-    suspend fun loadLocalMusicAndSetTracksAndCreateMap_playlist(
+    suspend fun loadMusicAndSetTracksAndCreateMap_addedAtDesc(
+        context: Context,
+        UserRelativePaths: List<String> = emptyList(),
+        isFilterByDir: Boolean,
+        isBlock: Boolean,
+        limit: Int,
+        useCurrentShuffleMode: Boolean
+
+    ) {
+        val isShuffle = if (useCurrentShuffleMode) this.isShuffle else false
+
+        val (selection, selectionArgs) = if (isFilterByDir) {
+            LocalMusicFetcher.selection(UserRelativePaths)
+        } else {
+            Pair(null, null)
+        }
+
+        val queryArgs = LocalMusicFetcher.createQueryArgs(
+            selection = selection,
+            selectionArgs = selectionArgs,
+            limit = limit,
+            offset = 0,
+            sortColumn = MediaStore.Audio.Media.DATE_ADDED,
+            sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+        )
+
+        return withContext(Dispatchers.IO) {
+            val tracks = LocalMusicFetcher
+                .loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
+                .let { tracks ->
+                    if (isBlock) tracks.filterByBlocklist(blockItems) else tracks
+                }
+                .let { tracks ->
+                    if (isShuffle) tracks.shuffled() else tracks
+                }
+            Log.d("LocalMusicRepository", "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}")
+            setTracksAndCreateMap(tracks)
+        }
+
+
+    }
+
+    suspend fun loadMusicAndSetTracksAndCreateMap_playlist(
         context: Context,
         playlistItems: List<PlaylistItem>
     ) {
         setTracksAndCreateMap(loadPlaylistMusic(context, playlistItems))
     }
 
-    suspend fun loadLocalMusicAndSetTracksAndCreateMap_albumId(
+    suspend fun loadMusicAndSetTracksAndCreateMap_albumId(
         context: Context,
         albumId: Long
     ) {
         setTracksAndCreateMap(loadAlbumMusic(context, albumId))
     }
 
-    suspend fun loadLocalMusicAndSetTracksAndCreateMap_artistId(
+    suspend fun loadMusicAndSetTracksAndCreateMap_artistId(
         context: Context,
         artistId: Long
     ) {
         setTracksAndCreateMap(loadArtistMusic(context, artistId))
     }
 
-    suspend fun loadLocalMusicAndSetTracksAndCreateMap_Id(
+    suspend fun loadMusicAndSetTracksAndCreateMap_Id(
         context: Context,
         Id: Long
     ) {
@@ -220,7 +252,7 @@ object LocalMusicRepository {
     }
 
 
-    suspend fun loadLocalMusicAndSetTracksAndCreateMap(
+    suspend fun loadMusicAndSetTracksAndCreateMap(
         context: Context,
         UserRelativePaths: List<String> = emptyList()
     ) {
@@ -244,8 +276,11 @@ object LocalMusicRepository {
     fun setTracksAndCreateMap(newTracks: List<MediaItem>) {
 
         setTracks(newTracks)
-        createMap_idToIndex(newTracks)
+        val filteredTracks = setTracks(newTracks)
+        createMap_idToIndex(filteredTracks)
+
     }
+
 
     fun getIndexById(mediaId: String): Int? {
         if (idToIndexMap.isEmpty()) {
@@ -267,6 +302,13 @@ object LocalMusicRepository {
     }
 
     fun getBlockItems(): List<BlocklistItem> = blockItems
+
+    fun findIdxByPathAndName(relativePath: String, displayName: String): Int {
+        return tracksFlow.value.indexOfFirst {
+            it.mediaMetadata.getRelativePath() == relativePath
+                    && it.mediaMetadata.getDisplayName() == displayName
+        }
+    }
 
 
 }

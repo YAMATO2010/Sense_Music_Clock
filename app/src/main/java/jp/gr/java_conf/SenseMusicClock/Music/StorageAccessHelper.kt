@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.DocumentsContract
+import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -48,8 +49,9 @@ class StorageAccessHelper(
 
 
                 val rel = parseTreeUriToRelativePath(uri)
+                Log.d("StorageAccessHelper", "Picked URI: $uri, Parsed relative path: $rel")
                 activity.lifecycleScope.launch {
-                    TargetDirectoryPrefJSONManager(activity).add(rel ?: return@launch)
+                    TargetDirectoryPrefJSONManager.add(rel ?: return@launch,activity)
                 }
 
                 onDirectoryPicked(rel, uri)

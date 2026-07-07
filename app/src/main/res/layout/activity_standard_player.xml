@@ -221,10 +221,40 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="next"
             android:src="@android:drawable/ic_media_next" />
-        <Space
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginRight="5dp">
+
+            <TextView
+                android:id="@+id/CurrentTimeTextView"
+                android:layout_width="match_parent"
+                android:gravity="center"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textColor="@color/white_glass_item_square"
+                />
+
+            <TextView
+                android:id="@+id/durationTextView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:textColor="@color/white_glass_item_square"
+                android:gravity="right"
+
+                />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="4" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -241,6 +271,7 @@
         android:src="@drawable/media3_icon_repeat_all"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
 
 
 
