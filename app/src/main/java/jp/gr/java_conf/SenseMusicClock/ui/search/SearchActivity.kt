@@ -106,23 +106,7 @@ class SearchActivity : AppCompatActivity() {
                 mediaController = it.get()
             }, ContextCompat.getMainExecutor(this))
         }
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            // システムバーのインセット（余白）を取得
-            val navigationBarsInsets =
-                insets.getInsets(WindowInsetsCompat.Type.navigationBars())
 
-            // 取得したボトムインセット（ナビゲーションバーの高さ）をパディングに設定
-            view.setPadding(
-                navigationBarsInsets.left,
-                navigationBarsInsets.top,
-                navigationBarsInsets.right,
-                navigationBarsInsets.bottom
-            )
-
-            // インセットを消費したことを伝える
-            // これにより、他のビューに同じインセットが適用されるのを防ぐ
-            insets
-        }
         val types = arrayOf(ALBUM, TITLE, ARTIST)
         viewModel.setSearchType(
             searchType[types[binding.typeTabLayout.selectedTabPosition]] ?: SearchType.ARTIST
@@ -773,6 +757,15 @@ class SearchActivity : AppCompatActivity() {
             diskCachePolicy(CachePolicy.ENABLED)
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
+            listener(
+                onError = { request, result ->
+                    Log.e("SearchMusicAdapter", "Coil error: ${request.data}", result.throwable)
+                },
+                onSuccess = { request, _ ->
+                    Log.d("SearchMusicAdapter", "Coil success: ${request.data}")
+                }
+            )
+
 
         }
     }

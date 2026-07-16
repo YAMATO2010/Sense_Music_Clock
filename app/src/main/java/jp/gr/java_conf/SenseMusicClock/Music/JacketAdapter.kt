@@ -128,13 +128,16 @@ class JacketAdapter(
                     .build()
             }
             .build()
+        Log.d("JacketAdapter", "onBindViewHolder: artworkUri=${track.mediaMetadata.artworkUri}")
 
-        holder.artwork.load(track.mediaMetadata.artworkUri,imageLoader) {
+        holder.artwork.load(track.mediaMetadata.artworkUri, imageLoader) {
+            size(200, 200)
+            precision(coil.size.Precision.INEXACT)
 
-            size(ViewSizeResolver(holder.artwork))
-
-
+            placeholder(R.drawable.default_album_art)
+            error(R.drawable.default_album_art)
         }
+
 
         val title = track.mediaMetadata.title?.toString() ?: "Unknown Title"
 
@@ -178,9 +181,6 @@ class JacketAdapter(
         }
         return layout_type
     }
-
-    /** 外部から差分更新する際は submitList を使う（内部で DiffUtil が効く） */
-    // 既存のシグネチャを残しつつ、コミット完了コールバック対応のオーバーロードを追加
 
 
     fun setItems(newItems: List<MediaItem>, commitCallback: (() -> Unit)?) {

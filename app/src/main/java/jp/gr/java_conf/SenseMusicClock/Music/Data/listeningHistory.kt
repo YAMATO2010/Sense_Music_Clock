@@ -32,7 +32,7 @@ fun listeningHistory.toPlayListItem(index: Int): PlaylistItem {
 
 @Dao
 interface listeningHistoryDao {
-    // DAO methods would be defined here
+
 
     @Query("SELECT * FROM listeningHistory ORDER BY timestamp DESC")
     suspend fun loadAllListeningHistory(): List<listeningHistory>

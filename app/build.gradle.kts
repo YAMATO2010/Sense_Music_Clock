@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.devtools.ksp") version "2.3.3"
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -41,12 +43,14 @@ android {
 
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+    implementation("com.google.firebase:firebase-analytics")
     implementation(libs.ads.mobile.sdk)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.legacy.support.v4)
-
+    implementation("com.google.firebase:firebase-crashlytics")
     implementation("androidx.paging:paging-runtime:3.4.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

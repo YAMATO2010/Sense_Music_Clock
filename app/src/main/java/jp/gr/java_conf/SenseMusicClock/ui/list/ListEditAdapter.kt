@@ -20,10 +20,7 @@ import jp.gr.java_conf.SenseMusicClock.ui.list.placeholder.PlaceholderContent.Pl
 import jp.gr.java_conf.SenseMusicClock.R
 
 
-/**
- * [RecyclerView.Adapter] that can display a [PlaceholderItem].
- * TODO: Replace the implementation with code for your data type.
- */
+
 class ListEditAdapter(
     values: List<MediaItemWithChecked>,
     private val ItemType: LIST_TYPE,
@@ -113,6 +110,15 @@ class ListEditAdapter(
             diskCachePolicy(coil.request.CachePolicy.ENABLED)
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
+            listener(
+                onError = { request, result ->
+                    Log.e("SearchMusicAdapter", "Coil error: ${request.data}", result.throwable)
+                },
+                onSuccess = { request, _ ->
+                    Log.d("SearchMusicAdapter", "Coil success: ${request.data}")
+                }
+            )
+
 
         }
 

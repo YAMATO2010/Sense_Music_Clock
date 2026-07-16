@@ -1,6 +1,6 @@
 package jp.gr.java_conf.SenseMusicClock.Music.Data
 
-//TODO RoomDatabaseの原型。作成しても大丈夫と確信した時のみにコメントアウト解除して使うこと。
+
 
 import android.content.Context
 import androidx.room.Database
@@ -27,15 +27,14 @@ abstract class AppDataBase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDataBase? = null
 
-        //TODO  ここのfallbackToDestructiveMigration()を公開前に絶対治しとけよ！！！！！！！！！
+
         fun getInstance(context: Context): AppDataBase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDataBase::class.java,
                     "app_database"
-                ).fallbackToDestructiveMigration()
-                    .build()
+                ).build()
 
                 INSTANCE = instance
                 instance

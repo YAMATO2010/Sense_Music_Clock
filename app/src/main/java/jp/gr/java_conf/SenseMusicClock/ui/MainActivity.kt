@@ -62,6 +62,11 @@ import jp.gr.java_conf.SenseMusicClock.ui.search.SearchActivity
 import kotlinx.coroutines.launch
 import java.io.File
 
+
+
+
+
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
@@ -112,6 +117,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("LeakCheck", "MainActivity onCreate $this")
+
 
 
         binding = ActivityMainBinding.inflate(layoutInflater)

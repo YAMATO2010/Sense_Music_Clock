@@ -26,15 +26,15 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
     private val scope = CoroutineScope(Dispatchers.IO)
 
     override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> {
-        // バイト配列からのデコードが必要な場合（通常はあまり使われません）
+
         val future = SettableFuture.create<Bitmap>()
-        // ここにデコードロジックを記述
+
         return future
     }
 
-    // 新規追加が必要なメソッド
+
     override fun supportsMimeType(mimeType: String): Boolean {
-        // 画像形式（image/jpeg, image/png など）をサポートするかどうか
+
         return mimeType.startsWith("image/")
     }
 
@@ -96,7 +96,7 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
 
             val request = ImageRequest.Builder(context)
                 .data(R.drawable.default_album_art)
-                .allowHardware(false) // 通知用BitmapはソフトウェアBitmapである必要がある
+                .allowHardware(false)
                 .build()
 
 

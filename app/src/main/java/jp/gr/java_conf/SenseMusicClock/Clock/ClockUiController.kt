@@ -349,17 +349,12 @@ class ClockUiController(
             true
         }
 
-        // Alarm TODO
         binding.alarmButton.setOnClickListener {
             val now = LocalDateTime.now()
             val tpd = android.app.TimePickerDialog(activity, { _, hourOfDay, minute ->
-                // compute scheduled epoch (today or next day)
 
 
                 Log.d("ClockUiController", "Selected time: $hourOfDay:$minute")
-                // persist hour/minute and scheduled epoch
-                // update button label with possible next-day marker
-                //TODO add "翌日" marker if scheduled time is after today
                 val minuteText = if (minute < 10) "0$minute" else "$minute"
                 val hourText = if (hourOfDay < 10) "0$hourOfDay" else "$hourOfDay"
                 val text = "$hourText:$minuteText"
@@ -367,7 +362,7 @@ class ClockUiController(
                 activity.lifecycleScope.launch {
 
                     PrefsManager.setSetAlarmTime(activity, hourOfDay, minute)
-                    // schedule with WorkManager
+
                     requestSetAlarm(hourOfDay, minute)
                 }
             }, now.hour, now.minute, true)

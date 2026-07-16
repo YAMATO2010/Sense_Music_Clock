@@ -1,6 +1,7 @@
 package jp.gr.java_conf.SenseMusicClock.Music
 
 import android.content.ContentResolver
+import android.content.ContentUris
 import android.net.Uri
 import android.os.Bundle
 import android.os.CancellationSignal
@@ -86,19 +87,10 @@ object LocalAlbumFetcher {
                         val albumName = c.getString(albumIdx) ?: ""
 
 
-                        val albumArtUri: Uri? = try {
-                            "content://media/external/audio/albumart".toUri()
-                                .buildUpon()
-                                .appendPath(albumId.toString())
-                                .build()
-                        } catch (e: Exception) {
-                            android.util.Log.w(
-                                "LocalMusicRepository",
-                                "build albumArtUri failed",
-                                e
-                            )
-                            null
-                        }
+                        val albumArtUri: Uri = ContentUris.withAppendedId(
+                            MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                            albumId
+                        )
                         val artistName = c.getString(artistIdx) ?: ""
 
                         albums.add(

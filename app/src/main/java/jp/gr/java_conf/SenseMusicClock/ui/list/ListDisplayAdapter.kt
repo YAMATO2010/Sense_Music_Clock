@@ -1,5 +1,6 @@
 package jp.gr.java_conf.SenseMusicClock.ui.list
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -49,6 +50,15 @@ class ListDisplayAdapter(
             diskCachePolicy(coil.request.CachePolicy.ENABLED)
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
+            listener(
+                onError = { request, result ->
+                    Log.e("SearchMusicAdapter", "Coil error: ${request.data}", result.throwable)
+                },
+                onSuccess = { request, _ ->
+                    Log.d("SearchMusicAdapter", "Coil success: ${request.data}")
+                }
+            )
+
 
         }
     }

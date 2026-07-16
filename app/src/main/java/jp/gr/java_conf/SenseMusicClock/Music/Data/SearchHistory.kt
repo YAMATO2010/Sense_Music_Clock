@@ -29,7 +29,7 @@ data class SearchHistory(
 
 @Dao
 interface SearchHistoryDao {
-    // DAO methods would be defined here
+
     @Query("SELECT * FROM SearchHistory ORDER BY timestamp DESC")
     suspend fun loadAllSearchHistory(): List<SearchHistory>
 

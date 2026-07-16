@@ -12,44 +12,25 @@ import java.util.Date
 import java.util.Locale
 
 class App : Application() {
-/*
-    override fun onCreate() {
-        super.onCreate()
-        Log.d("LeakCheck", "App onCreate - enabling StrictMode")
-        StrictMode.setThreadPolicy(
-            StrictMode.ThreadPolicy.Builder()
-                .detectAll()
-                .penaltyLog()
-                .build()
-        )
-        StrictMode.setVmPolicy(
-            StrictMode.VmPolicy.Builder()
-                .detectLeakedSqlLiteObjects()
-                .detectLeakedClosableObjects()
-                .detectActivityLeaks()
-                .penaltyLog()
-                .build()
-        )
-    }
 
-    */
 override fun onCreate() {
     super.onCreate()
 
-    // 1. OS本来のクラッシュハンドラを退避させておく
+    Log.d("CrashTest", "Application onCreate")
+
     val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
 
-    // 2. アプリ全体の未キャッチ例外をここで一括キャッチ
     Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+        Log.e("CrashTest", "Uncaught exception!", throwable)
+
         try {
-            // ローカルファイルにログを保存
             saveCrashLog(throwable)
+            Log.d("CrashTest", "saveCrashLog finished")
         } catch (e: Exception) {
-            Log.e("MyApplication", "ログの保存中にエラーが発生", e)
-        } finally {
-            // 3. ログ保存が終わったら、OS本来の挙動（アプリ終了）に引き渡す
-            defaultHandler?.uncaughtException(thread, throwable)
+            Log.e("CrashTest", "saveCrashLog failed", e)
         }
+
+        defaultHandler?.uncaughtException(thread, throwable)
     }
 }
 

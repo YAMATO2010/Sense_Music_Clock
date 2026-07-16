@@ -40,19 +40,17 @@ object LocalMusicRepository {
     val EXTRA_DATA_PATH = LocalMusicFetcher.EXTRA_DATA_PATH
 
 
-    /*TODO プレイリストの選択肢を増やすときはここに追加する
-    fun playlist_selection(): Pair<String, Array<String>> {
-
-
-    }
-
-     */
-
     //TODO プレイリストの時に、同じ曲（同じクエリ）が重複していた場合、消される可能性がある。重複していた場合、それに該当するパスを持つもののMediaItemのIDを操作し、重複させよ。
 
 
-    fun setTracks(newTracks: List<MediaItem>): List<MediaItem> {
-        val filteredTracks = newTracks.filterByBlocklist(blockItems)
+    fun blockAndSetTracks(newTracks: List<MediaItem>,isBlock: Boolean): List<MediaItem> {
+
+        val filteredTracks = if (isBlock) newTracks.filterByBlocklist(blockItems) else newTracks
+        return setTracks(filteredTracks)
+
+    }
+    fun setTracks(newTracks: List<MediaItem>,): List<MediaItem> {
+        val filteredTracks = newTracks
         _tracksFlow.value = filteredTracks
         return filteredTracks
     }
@@ -75,9 +73,11 @@ object LocalMusicRepository {
         isFilterByDir: Boolean,
         isBlock: Boolean,
         limit: Int,
-        useCurrentShuffleMode: Boolean
+        useCurrentShuffleMode: Boolean,
+
 
     ) {
+        Log.d("LocalMusicRepository", "loadMusicAndSetTracksAndCreateMap_addedAtDesc called with isFilterByDir=$isFilterByDir, isBlock=$isBlock, limit=$limit, useCurrentShuffleMode=$useCurrentShuffleMode")
         val isShuffle = if (useCurrentShuffleMode) this.isShuffle else false
 
         val (selection, selectionArgs) = if (isFilterByDir) {
@@ -99,13 +99,10 @@ object LocalMusicRepository {
             val tracks = LocalMusicFetcher
                 .loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
                 .let { tracks ->
-                    if (isBlock) tracks.filterByBlocklist(blockItems) else tracks
-                }
-                .let { tracks ->
                     if (isShuffle) tracks.shuffled() else tracks
                 }
             Log.d("LocalMusicRepository", "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}")
-            setTracksAndCreateMap(tracks)
+            setTracksAndCreateMap(tracks,isBlock)
         }
 
 
@@ -113,30 +110,34 @@ object LocalMusicRepository {
 
     suspend fun loadMusicAndSetTracksAndCreateMap_playlist(
         context: Context,
-        playlistItems: List<PlaylistItem>
+        playlistItems: List<PlaylistItem>,
+        isBlock: Boolean = true
     ) {
-        setTracksAndCreateMap(loadPlaylistMusic(context, playlistItems))
+        setTracksAndCreateMap(loadPlaylistMusic(context, playlistItems), isBlock = isBlock)
     }
 
     suspend fun loadMusicAndSetTracksAndCreateMap_albumId(
         context: Context,
-        albumId: Long
+        albumId: Long,
+        isBlock: Boolean = false
     ) {
-        setTracksAndCreateMap(loadAlbumMusic(context, albumId))
+        setTracksAndCreateMap(loadAlbumMusic(context, albumId), isBlock = isBlock)
     }
 
     suspend fun loadMusicAndSetTracksAndCreateMap_artistId(
         context: Context,
-        artistId: Long
+        artistId: Long,
+        isBlock: Boolean = false
     ) {
-        setTracksAndCreateMap(loadArtistMusic(context, artistId))
+        setTracksAndCreateMap(loadArtistMusic(context, artistId), isBlock = isBlock)
     }
 
     suspend fun loadMusicAndSetTracksAndCreateMap_Id(
         context: Context,
-        Id: Long
+        Id: Long,
+        isBlock: Boolean = false
     ) {
-        setTracksAndCreateMap(loadIdMusic(context, Id))
+        setTracksAndCreateMap(loadIdMusic(context, Id), isBlock = isBlock)
     }
 
     suspend fun loadAlbumMusic(
@@ -240,9 +241,9 @@ object LocalMusicRepository {
             }
 
             if (isShuffle) {
-                return@withContext PlaylistTracks.shuffled().filterByBlocklist(blockItems)
+                return@withContext PlaylistTracks.shuffled()
             } else {
-                PlaylistTracks.sortedByPlaylistItems(playlistItems).filterByBlocklist(blockItems)
+                PlaylistTracks.sortedByPlaylistItems(playlistItems)
 
             }
 
@@ -254,7 +255,8 @@ object LocalMusicRepository {
 
     suspend fun loadMusicAndSetTracksAndCreateMap(
         context: Context,
-        UserRelativePaths: List<String> = emptyList()
+        UserRelativePaths: List<String> = emptyList(),
+        isBlock: Boolean = true
     ) {
         val (selection, selectionArgs) = selection(UserRelativePaths)
 
@@ -262,21 +264,20 @@ object LocalMusicRepository {
 
         val localTracks =
             LocalMusicFetcher.loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
-                .filterByBlocklist(blockItems)
+
         withContext(Dispatchers.Default) {
-            if (isShuffle) {
-                setTracksAndCreateMap(localTracks.shuffled())
-            } else {
-                setTracksAndCreateMap(localTracks)
+            localTracks.let {
+                value ->
+                val shuffledTracks = if (isShuffle) value.shuffled() else value
+                setTracksAndCreateMap(shuffledTracks, isBlock)
             }
         }
     }
 
 
-    fun setTracksAndCreateMap(newTracks: List<MediaItem>) {
+    fun setTracksAndCreateMap(newTracks: List<MediaItem>, isBlock: Boolean ) {
 
-        setTracks(newTracks)
-        val filteredTracks = setTracks(newTracks)
+        val filteredTracks = blockAndSetTracks(newTracks, isBlock)
         createMap_idToIndex(filteredTracks)
 
     }

@@ -48,7 +48,6 @@ data class PlaylistItem (
 
 @Dao
 interface PlaylistDao {
-    // DAO methods would be defined here
 
     @Query("SELECT * FROM playlists")
     suspend fun loadAllPlaylists(): List<PlayList>
@@ -78,7 +77,6 @@ interface PlaylistDao {
 
 @Dao
 interface PlaylistItemDao {
-    // DAO methods would be defined here
 
     @Query("SELECT * FROM playlistItems WHERE playlistId = :playlistId")
     suspend fun loadItemsForPlaylist(playlistId: Long): List<PlaylistItem>

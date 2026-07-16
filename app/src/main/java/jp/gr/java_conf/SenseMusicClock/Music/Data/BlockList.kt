@@ -44,7 +44,7 @@ data class BlocklistItem (
 
 @Dao
 interface BlocklistDao {
-    // DAO methods would be defined here
+
 
 
     @Query("SELECT * FROM blockLists")
@@ -70,7 +70,6 @@ interface BlocklistDao {
 }
 @Dao
 interface BlocklistItemDao {
-    // DAO methods would be defined here
 
     @Query("SELECT * FROM blocklistItems WHERE blocklistId = :blocklistId")
     suspend fun loadItemsForBlocklist(blocklistId: Long): List<BlocklistItem>

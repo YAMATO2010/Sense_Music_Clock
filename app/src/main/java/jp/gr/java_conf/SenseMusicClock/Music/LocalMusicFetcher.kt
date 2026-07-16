@@ -200,7 +200,10 @@ object LocalMusicFetcher {
                 ContentResolver.QUERY_ARG_SORT_DIRECTION,
                 ContentResolver.QUERY_SORT_DIRECTION_ASCENDING
             )
-            putString(ContentResolver.QUERY_ARG_SORT_COLUMNS, MediaStore.Audio.Media.TITLE)
+            putStringArray(
+                ContentResolver.QUERY_ARG_SORT_COLUMNS,
+                arrayOf(MediaStore.Audio.Media.TITLE)
+            )
         }
 
 
@@ -225,7 +228,10 @@ object LocalMusicFetcher {
                 ContentResolver.QUERY_ARG_SORT_DIRECTION,
                 ContentResolver.QUERY_SORT_DIRECTION_ASCENDING
             )
-            putString(ContentResolver.QUERY_ARG_SORT_COLUMNS, MediaStore.Audio.Media.TITLE)
+            putStringArray(
+                ContentResolver.QUERY_ARG_SORT_COLUMNS,
+                arrayOf(MediaStore.Audio.Media.TITLE)
+            )
         }
         return args
     }

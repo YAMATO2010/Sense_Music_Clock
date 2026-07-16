@@ -129,7 +129,7 @@ class MusicService : MediaLibraryService() {
 
             return CallbackToFutureAdapter.getFuture { completer ->
                 scope.launch {
-                    initRepository()
+
 
                     val lastTrack = findLastIndexByRepo()
                     val lastPosition = PrefsManager.getLastTrackPosition(this@MusicService)
@@ -524,7 +524,7 @@ class MusicService : MediaLibraryService() {
                             "MusicService",
                             "reload music directory requested  "
                         )
-                        repoLoadMusicAndCreateMap()
+                        initRepository()
 
                     }
                 }
@@ -678,26 +678,26 @@ class MusicService : MediaLibraryService() {
 
     suspend fun initRepository() {
         try {
-            if (LocalMusicRepository.getTracks().isEmpty()) {
-                val blockListID = PrefsManager.getCurrentBlocklistId(this@MusicService)
-                if (blockListID >= 0) {
-                    Log.d(
-                        "LIST_/MusicService/loadBlocklistItem_sync",
-                        "loading blocklist synchronously id=$blockListID"
-                    )
-                    val items = DBManager.loadBlocklistItem(this@MusicService, blockListID)
-                    Log.d(
-                        "LIST_/MusicService/loadBlocklistItem_sync",
-                        "loaded blocklist items=${items.size} for id=$blockListID"
-                    )
-                    LocalMusicRepository.setBlockItems(items)
-                }
-                LocalMusicRepository.setShuffle(
-                    PrefsManager.getIsShuffle(this@MusicService),
-                    this@MusicService::class.simpleName
+
+            val blockListID = PrefsManager.getCurrentBlocklistId(this@MusicService)
+            if (blockListID >= 0) {
+                Log.d(
+                    "LIST_/MusicService/loadBlocklistItem_sync",
+                    "loading blocklist synchronously id=$blockListID"
                 )
-                repoLoadMusicAndCreateMap()
+                val items = DBManager.loadBlocklistItem(this@MusicService, blockListID)
+                Log.d(
+                    "LIST_/MusicService/loadBlocklistItem_sync",
+                    "loaded blocklist items=${items.size} for id=$blockListID"
+                )
+                LocalMusicRepository.setBlockItems(items)
             }
+            LocalMusicRepository.setShuffle(
+                PrefsManager.getIsShuffle(this@MusicService),
+                this@MusicService::class.simpleName
+            )
+            repoLoadMusicAndCreateMap()
+
         } catch (e: Exception) {
             Log.w("MusicService", "failed to load local tracks", e)
         }
