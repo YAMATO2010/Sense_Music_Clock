@@ -12,7 +12,7 @@ import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlaylistItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID

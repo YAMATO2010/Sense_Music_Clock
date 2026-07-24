@@ -11,9 +11,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import jp.gr.java_conf.SenseMusicClock.Music.AllMusicPagingSource
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity.ListType
 import kotlinx.coroutines.flow.Flow

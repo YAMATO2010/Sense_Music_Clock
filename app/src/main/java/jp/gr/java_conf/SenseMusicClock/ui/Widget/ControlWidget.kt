@@ -26,7 +26,6 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
 
-import androidx.glance.layout.Alignment
 import androidx.glance.layout.Alignment.Companion.CenterHorizontally
 import androidx.glance.layout.Alignment.Companion.CenterVertically
 import androidx.glance.layout.Box
@@ -49,6 +48,9 @@ import jp.gr.java_conf.SenseMusicClock.PrefsManager
 
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
+import jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions.ActionNext
+import jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions.ActionPlayPause
+import jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions.ActionPrev
 
 class ControlWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact

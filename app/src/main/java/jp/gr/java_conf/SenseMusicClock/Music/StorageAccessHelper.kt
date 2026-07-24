@@ -30,11 +30,18 @@ class StorageAccessHelper(
     val isGrantedFlow = _isGrantedFlow.asStateFlow()
 
 
-    private val perm: String =
+    private val readAudioPermission: String =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             Manifest.permission.READ_MEDIA_AUDIO
         } else {
             Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+
+    private val requiredPermissions: Array<String>
+        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(readAudioPermission, Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            arrayOf(readAudioPermission)
         }
 
     private val pickDirLauncher: ActivityResultLauncher<Uri?> =
@@ -66,9 +73,19 @@ class StorageAccessHelper(
             }
         }
     private val requestPermissionLauncher =
-        activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            _isGrantedFlow.value = granted
-            if (granted) {
+        activity.registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+            val readAudioGranted = grants[readAudioPermission] ?: hasReadAudioPermission()
+            _isGrantedFlow.value = readAudioGranted
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val notificationGranted =
+                    grants[Manifest.permission.POST_NOTIFICATIONS] ?: hasPostNotificationsPermission()
+                if (!notificationGranted) {
+                    Log.w("StorageAccessHelper", "post notifications permission denied")
+                }
+            }
+
+            if (readAudioGranted) {
 
                 onPermissionGranted()
             } else {
@@ -84,20 +101,36 @@ class StorageAccessHelper(
 
         if (hasReadAudioPermission()) {
             _isGrantedFlow.value = true
+            ensurePostNotificationsPermission()
             onPermissionGranted()
             return
         }
 
 
-        requestPermissionLauncher.launch(perm)
+        requestPermissionLauncher.launch(requiredPermissions)
 
     }
 
     fun hasReadAudioPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             activity,
-            perm
+            readAudioPermission
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun hasPostNotificationsPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+
+        return ContextCompat.checkSelfPermission(
+            activity,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun ensurePostNotificationsPermission() {
+        if (hasPostNotificationsPermission()) return
+
+        requestPermissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
     }
 
 

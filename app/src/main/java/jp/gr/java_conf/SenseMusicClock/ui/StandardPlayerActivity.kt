@@ -31,7 +31,7 @@ import coil.load
 import coil.request.CachePolicy
 import coil.size.Precision
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
-import jp.gr.java_conf.SenseMusicClock.MusicService
+import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.convertMsToTimeString

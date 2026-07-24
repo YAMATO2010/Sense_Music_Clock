@@ -1,6 +1,7 @@
 package jp.gr.java_conf.SenseMusicClock.Music.Data
 
 import android.content.Context
+import jp.gr.java_conf.SenseMusicClock.Music.Data.SearchHistorys.SearchHistory
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.Date

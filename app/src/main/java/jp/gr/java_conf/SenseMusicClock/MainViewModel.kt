@@ -19,7 +19,7 @@ class MainViewModel : ViewModel() {
     var lastOrientation: Int? = null
 
     /** If true, activity should perform an instant (no-animation) scroll to current track once adapter is ready. */
-    var pendingInstantScroll: Boolean = false
+
 
     private val _isHHmm = MutableLiveData<Boolean>(false)
 

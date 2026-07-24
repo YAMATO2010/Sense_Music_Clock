@@ -31,9 +31,6 @@
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="jp.gr.java_conf.SenseMusicClock.ui.ControlWidget.clickedPlay" />
-                <action android:name="jp.gr.java_conf.SenseMusicClock.ui.ControlWidget.clickedNext" />
-                <action android:name="jp.gr.java_conf.SenseMusicClock.ui.ControlWidget.clickedPrev" />
             </intent-filter>
 
             <meta-data
@@ -54,7 +51,7 @@
             android:theme="@style/Theme.SenseMusicClock.Fullscreen" />
 
         <service
-            android:name=".MusicService"
+            android:name=".Music.MusicService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback" >

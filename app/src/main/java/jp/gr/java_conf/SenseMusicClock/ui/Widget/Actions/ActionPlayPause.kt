@@ -1,4 +1,4 @@
-package jp.gr.java_conf.SenseMusicClock.ui.Widget
+package jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions
 
 import android.content.ComponentName
 import android.content.Context
@@ -7,7 +7,7 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import jp.gr.java_conf.SenseMusicClock.MusicService
+import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.withContext

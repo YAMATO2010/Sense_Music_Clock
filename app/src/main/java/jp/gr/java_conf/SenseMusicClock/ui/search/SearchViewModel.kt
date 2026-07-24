@@ -3,7 +3,7 @@ package jp.gr.java_conf.SenseMusicClock.ui.search
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import jp.gr.java_conf.SenseMusicClock.Music.Data.SearchHistory
+import jp.gr.java_conf.SenseMusicClock.Music.Data.SearchHistorys.SearchHistory
 import jp.gr.java_conf.SenseMusicClock.Music.LocalAlbumFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalArtistFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher

@@ -1,4 +1,4 @@
-package jp.gr.java_conf.SenseMusicClock.Music
+package jp.gr.java_conf.SenseMusicClock.ui
 
 import android.content.ComponentName
 import android.content.Context
@@ -23,9 +23,8 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import coil.load
 import coil.request.CachePolicy
-import jp.gr.java_conf.SenseMusicClock.MusicService
+import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.R
-import jp.gr.java_conf.SenseMusicClock.ui.StandardPlayerActivity
 import java.lang.ref.WeakReference
 
 class BottomController @JvmOverloads constructor(

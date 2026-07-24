@@ -9,7 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import jp.gr.java_conf.SenseMusicClock.Music.Data.SearchHistory
+import jp.gr.java_conf.SenseMusicClock.Music.Data.SearchHistorys.SearchHistory
 import jp.gr.java_conf.SenseMusicClock.R
 
 class SearchHistoryAdapter(

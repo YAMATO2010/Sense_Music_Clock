@@ -16,12 +16,13 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlayList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.Music.SleepTimerTimes
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
 import kotlinx.coroutines.launch
 import java.io.File
@@ -33,6 +34,27 @@ val app_dir = ContentValues().apply {
     put(MediaStore.Audio.Media.IS_PENDING, 0)
     put(MediaStore.Audio.Media.MIME_TYPE, "Audio/mpeg") // ファイルタイプ
 }
+
+
+val sleepTimerTimesToMinutes = mapOf(
+    SleepTimerTimes.OFF to 0,
+    SleepTimerTimes.MIN_5 to 5,
+    SleepTimerTimes.MIN_15 to 15,
+    SleepTimerTimes.MIN_30 to 30,
+    SleepTimerTimes.HOUR_1 to 60,
+    SleepTimerTimes.HOUR_2 to 120,
+    SleepTimerTimes.HOUR_5 to 300
+)
+
+val sleepTimerTimesToText = mapOf(
+    SleepTimerTimes.OFF to "OFF",
+    SleepTimerTimes.MIN_5 to "5分",
+    SleepTimerTimes.MIN_15 to "15分",
+    SleepTimerTimes.MIN_30 to "30分",
+    SleepTimerTimes.HOUR_1 to "1時間",
+    SleepTimerTimes.HOUR_2 to "2時間",
+    SleepTimerTimes.HOUR_5 to "5時間"
+)
 
 suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
 
@@ -711,5 +733,15 @@ fun MediaItem.isSamePath(Item2: FileItem): Boolean {
     val name2 = Item2.fileName
     return path1 == path2 && name1 == name2
 }
+
+fun FileItem.displayName(): String {
+    return if (relativePath.endsWith("/")) {
+        "$relativePath$fileName"
+    } else {
+        "$relativePath/$fileName"
+    }
+}
+
+
 
 

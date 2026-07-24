@@ -12,10 +12,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.FragmentListAddBinding

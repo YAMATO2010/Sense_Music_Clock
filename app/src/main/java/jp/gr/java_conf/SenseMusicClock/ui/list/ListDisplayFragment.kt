@@ -16,9 +16,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import coil.request.CachePolicy
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlayList
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.FragmentListDisplayBinding

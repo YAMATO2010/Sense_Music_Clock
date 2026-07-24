@@ -6,6 +6,7 @@ import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlaylistItem
 import java.util.Date
 
 @Entity

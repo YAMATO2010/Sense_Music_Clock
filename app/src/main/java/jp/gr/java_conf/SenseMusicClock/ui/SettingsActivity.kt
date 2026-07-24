@@ -24,18 +24,17 @@ import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreference
 import com.google.gson.Gson
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.toMediaItem
 import jp.gr.java_conf.SenseMusicClock.Music.SleepTimerTimes
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
-import jp.gr.java_conf.SenseMusicClock.Music.sleepTimerTimesToMinutes
-import jp.gr.java_conf.SenseMusicClock.Music.sleepTimerTimesToText
-import jp.gr.java_conf.SenseMusicClock.MusicService
+
+import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.SettingsActivityBinding
@@ -45,6 +44,8 @@ import jp.gr.java_conf.SenseMusicClock.saveToInternalStorage
 import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
 import jp.gr.java_conf.SenseMusicClock.showEditTextDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
+import jp.gr.java_conf.SenseMusicClock.sleepTimerTimesToMinutes
+import jp.gr.java_conf.SenseMusicClock.sleepTimerTimesToText
 import jp.gr.java_conf.SenseMusicClock.toFileItem
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
 import jp.gr.java_conf.SenseMusicClock.utilDialog

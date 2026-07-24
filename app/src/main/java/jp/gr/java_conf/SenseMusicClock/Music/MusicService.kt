@@ -1,6 +1,4 @@
-// kotlin
-package jp.gr.java_conf.SenseMusicClock
-
+package jp.gr.java_conf.SenseMusicClock.Music
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -26,10 +24,12 @@ import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import jp.gr.java_conf.SenseMusicClock.Music.BitmapLoaderForSession
+import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
-import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
-import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlayList
+import jp.gr.java_conf.SenseMusicClock.PrefsManager
+import jp.gr.java_conf.SenseMusicClock.getDisplayName
+import jp.gr.java_conf.SenseMusicClock.getRelativePath
 import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
 import jp.gr.java_conf.SenseMusicClock.ui.Widget.ControlWidgetUpdater
 import jp.gr.java_conf.SenseMusicClock.ui.Widget.WidgetState
@@ -41,7 +41,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 
 class MusicService : MediaLibraryService() {
 
@@ -409,8 +408,7 @@ class MusicService : MediaLibraryService() {
                 MediaLibrarySession.Builder(this, player, callback)
                     .setSessionActivity(pendingIntent)
                     .setBitmapLoader(
-                        @UnstableApi
-                        BitmapLoaderForSession(this)
+                        (BitmapLoaderForSession(this))
                     )
                     .build()
 
@@ -646,7 +644,7 @@ class MusicService : MediaLibraryService() {
 
     suspend fun repoLoadMusicAndCreateMap(playID: Long? = null) {
         val id = playID ?: PrefsManager.getCurrentPlaylistId(this)
-        if (id == PlayList.ADDED_AT_DESC_ID) {
+        if (id == PlayList.Companion.ADDED_AT_DESC_ID) {
             Log.d(
                 "LIST_/MusicService/loadPlaylistItem",
                 "loading playlist items for ADDED_AT_DESC_ID"
@@ -663,7 +661,7 @@ class MusicService : MediaLibraryService() {
             )
 
 
-        } else if (id == PlayList.CURRENT_REMOVAL_ID || id < 0) {
+        } else if (id == PlayList.Companion.CURRENT_REMOVAL_ID || id < 0) {
             val UserRelativePaths =
                 TargetDirectoryPrefJSONManager.getAll(this)
             LocalMusicRepository.loadMusicAndSetTracksAndCreateMap(this, UserRelativePaths)
@@ -822,5 +820,3 @@ class MusicService : MediaLibraryService() {
     }
 
 }
-
-

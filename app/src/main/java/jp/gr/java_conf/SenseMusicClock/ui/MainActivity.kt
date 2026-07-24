@@ -78,11 +78,11 @@ import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.IDENTIFIER_INITIAL_INDEX_PROBLEM
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.MainViewModel
-import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
+import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
-import jp.gr.java_conf.SenseMusicClock.MusicService
+import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.animateScrollToItemWithSkipCheck
