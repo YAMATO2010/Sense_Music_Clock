@@ -201,8 +201,7 @@ class ListAddFragment : Fragment() {
                 DBManager.replacePlaylistContent(requireContext().applicationContext, newList)
                     .map { it.fileItem })
         } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e("ListAddFragment", "Error saving playlist: ${e.message}")
+            Log.e("ListAddFragment", "Error saving playlist", e)
             return false
         }
 
@@ -234,8 +233,7 @@ class ListAddFragment : Fragment() {
             )
 
         } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e("ListAddFragment", "Error saving blocklist: ${e.message}")
+            Log.e("ListAddFragment", "Error saving blocklist", e)
             return false
         }
         return true

@@ -2,7 +2,6 @@ package jp.gr.java_conf.SenseMusicClock.ui.Widget
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -61,8 +60,6 @@ class ControlWidget : GlanceAppWidget() {
         // Use `withContext` to switch to another thread for long running
         // operations.
 
-        Log.d("ControlWidget", "[WidgetTrace] provideGlance called for widget id: $id")
-
         val initialState = WidgetStateManager.getWidgetState(context)
 
 
@@ -74,8 +71,6 @@ class ControlWidget : GlanceAppWidget() {
                 .collectAsState(initial = false)
             val isBackgroundRandom by PrefsManager.getRandomBackgroundFlow(context)
                 .collectAsState(initial = false)
-
-            Log.d("ControlWidget", "[WidgetTrace] Rendering widget with state: $state")
 
             val currentSize = LocalSize.current
             val isTall =

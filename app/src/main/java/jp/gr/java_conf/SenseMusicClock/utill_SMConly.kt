@@ -153,7 +153,7 @@ fun List<MediaItem>.sortedByPlaylistItems(playlistItemList: List<PlaylistItem>):
             sortedList.add(mediaItem)
             Items.remove(mediaItem)
         } else {
-            Log.w("sortedByPlaylistItems", "MediaItem not found for path: $path")
+            Log.w("sortedByPlaylistItems", "MediaItem not found for playlist item")
         }
 
     }
@@ -468,15 +468,6 @@ fun AppCompatActivity.showEditTextDialog(
 }
 
 
-/*
-だいぶ前に書いたコードなので推測ですが
-おそらくitemがnullのときはプレイリストの選択だけを行い、
-itemが非nullのときはプレイリストの選択と同時にそのアイテムを選択したプレイリストに追加する挙動を意図していると思われます。
-nullの場合、というのはプレイリストを選択し、listActivityなどでそのプレイリストの内容を表示する場合で、
-非nullの場合はMainActivityで曲を選択して「この曲をプレイリストに追加」みたいな操作をしたときに、
-その曲をどのプレイリストに追加するかを選ぶためのダイアログになるのではないでしょうか。
- */
-
 fun AppCompatActivity.showPlaylistSelectDialog(
     playlists: List<PlayList>,
     item: FileItem? = null,
@@ -486,7 +477,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
     val dialog = AlertDialog.Builder(this)
         .setTitle("プレイリストを選択")
         .setItems(playlists.map { it.playlistName }.toTypedArray(), { dialog, which ->
-            // TODO:アイテム選択時の挙動
+
             if (item == null) {
                 onPlaylistSelected(playlists[which].playlistId)
             } else {
@@ -581,7 +572,7 @@ fun AppCompatActivity.showBlockSelectDialog(
     val dialog = AlertDialog.Builder(this)
         .setTitle("プレイリストを選択")
         .setItems(blockList.map { it.blockListName }.toTypedArray(), { dialog, which ->
-            // TODO:アイテム選択時の挙動
+
             onBlockSelected(blockList[which].blockListID)
         })
         .setNeutralButton("新規作成") { dialog, _ ->
@@ -671,7 +662,6 @@ fun <T> Context.utilDialog(
     val dialog = AlertDialog.Builder(this)
         .setTitle(title)
         .setItems(initialStrings, { _, index ->
-            Log.d("utilDialog", "Selected index: $index, item: ${initItems.getOrNull(index)}")
             if (index < 0 || index >= initItems.size) {
                 Toast.makeText(this, "無効な選択です", Toast.LENGTH_SHORT).show()
                 return@setItems
@@ -741,7 +731,6 @@ fun FileItem.displayName(): String {
         "$relativePath/$fileName"
     }
 }
-
 
 
 

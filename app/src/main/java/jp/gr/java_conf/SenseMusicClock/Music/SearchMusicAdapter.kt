@@ -32,7 +32,6 @@ class SearchMusicAdapter(
      * Update items and the position map in-place when adapter already exists.
      */
     fun setItems(newItems: List<MediaItem>, newPositionMap: Map<String, Int>) {
-        Log.d("SearchMusicAdapter", "setItems: updating adapter with ${newItems.size} items")
         ItemPositionMap = newPositionMap
         submitList(newItems.toList())
     }
@@ -73,13 +72,11 @@ class SearchMusicAdapter(
         // ensure container and the full itemView are clickable (some layouts may intercept clicks)
         holder.container.isClickable = true
         holder.container.setOnClickListener {
-            Log.d("SearchMusicAdapter", "container clicked: ${track.mediaMetadata.title}")
             onItemClick(track)
         }
         // also attach listener to itemView itself to be robust against view-hierarchy click interception
         holder.itemView.isClickable = true
         holder.itemView.setOnClickListener {
-            Log.d("SearchMusicAdapter", "itemView clicked: ${track.mediaMetadata.title} ")
             onItemClick(track)
         }
     }
@@ -104,7 +101,6 @@ class SearchMusicAdapter(
         } catch (e: Exception) {
             Log.w("SearchMusicAdapter", "getOriginalItemPosition failed", e)
         }
-        Log.d("SearchMusicAdapter", "getOriginalItemPosition: no mapping for track (checked keys)")
         return null
     }
 

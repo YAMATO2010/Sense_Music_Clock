@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import androidx.core.net.toUri
 
 object PrefsManager {
 
@@ -578,7 +579,6 @@ object PrefsManager {
 
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                Log.d("PrefsManager", "saveSettingsProfile: $profile")
                 context.dataStore.edit { prefs ->
                     prefs[CURRENT_PLAYLIST_ID_KEY] = profile.currentPlaylistId
                     prefs[CURRENT_BLOCKLIST_ID_KEY] = profile.currentBlocklistId
@@ -645,7 +645,7 @@ object PrefsManager {
         return context.dataStore.data.map { prefs ->
             WidgetState(
                 title = prefs[WIDGET_TITLE_KEY] ?: "",
-                artwork = Uri.parse(prefs[WIDGET_ARTWORK_URI_KEY] ?: ""),
+                artwork = (prefs[WIDGET_ARTWORK_URI_KEY] ?: "").toUri(),
                 playing = prefs[WIDGET_IS_PLAYING_KEY] ?: false
             )
         }.distinctUntilChanged()
@@ -682,13 +682,6 @@ object PrefsManager {
     private suspend fun <T> Context.setPrefsValue(key: Preferences.Key<T>, value: T) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                // ログ出力：どのキーをどの値で変更したか
-                try {
-                    Log.d("PrefsManager", "setPrefsValue: key=${key.name}, value=${value}")
-                } catch (e: Exception) {
-                    // 値の toString() で例外が発生する可能性は低いが念のため
-                    Log.d("PrefsManager", "setPrefsValue: key=${key.name}, value=<unprintable>")
-                }
                 dataStore.edit { prefs ->
                     prefs[key] = value
                 }
@@ -700,7 +693,6 @@ object PrefsManager {
     private suspend fun <T> Context.clearPrefsValue(key: Preferences.Key<T>) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                Log.d("PrefsManager", "clearPrefsValue: key=${key.name}")
                 dataStore.edit { prefs ->
                     prefs.remove(key)
                 }

@@ -72,10 +72,7 @@ class SettingsActivity : AppCompatActivity() {
         // StorageAccessHelper は Activity の onCreate で作成しておく
         storageAccessHelper = StorageAccessHelper(
             activity = this,
-            onDirectoryPicked = { rel, uri ->
-                // 設定画面で選択された後の処理はここで行う（ログだけ出しておく）
-                Log.d("SettingsActivity", "directory picked: rel=$rel uri=$uri")
-            },
+            onDirectoryPicked = { _, _ -> },
             onPermissionGranted = {
                 Log.d("SettingsActivity", "read audio permission granted")
             },
@@ -133,15 +130,12 @@ class SettingsActivity : AppCompatActivity() {
                         // 永続権限を取得
 
                         // 内部ストレージに保存
-                        val savedFile =
-                            context?.saveToInternalStorage(uri, BackgroundResolver.BACKGROUNDS_PATH)
-                        Log.d("SettingsFragment", "Picked image saved to $savedFile")
+                        context?.saveToInternalStorage(uri, BackgroundResolver.BACKGROUNDS_PATH)
                     }
                 }
 
             registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
                 if (uri != null) {
-                    Log.d("SettingsFragment", "Picked M3U file: $uri")
                     // ここで M3U ファイルの処理を行う（例: プレイリストの読み込み）
 
                     lifecycleScope.launch {
@@ -467,7 +461,6 @@ class SettingsActivity : AppCompatActivity() {
                         if (activity?.isFinishing ?: false || activity?.isDestroyed ?: false) return@launch
                         it.showPlaylistSelectDialog(playlists) { playlistId ->
                             // プレイリストが選択されたときの処理
-                            Log.d("SettingsFragment", "Selected playlist ID: $playlistId")
                             when (playlistId) {
                                 PlayList.CURRENT_REMOVAL_ID -> {
                                     Log.d(
@@ -539,7 +532,6 @@ class SettingsActivity : AppCompatActivity() {
                         if (activity?.isFinishing ?: false || activity?.isDestroyed ?: false) return@launch
                         it.showBlockSelectDialog(blocklists) { blocklistId ->
                             // プレイリストが選択されたときの処理
-                            Log.d("SettingsFragment", "Selected playlist ID: $blocklistId")
                             when (blocklistId) {
                                 PlayList.CURRENT_REMOVAL_ID -> {
                                     Log.d(

@@ -60,8 +60,6 @@ class ListEditAdapter(
 
     override fun getItemViewType(position: Int): Int {
 
-        //TODO レイアウト切り替え対応
-
         return when (ItemType) {
             LIST_TYPE.TYPE_BLOCK -> TYPE_BLOCK
             LIST_TYPE.TYPE_PLAY -> TYPE_PLAY
@@ -74,14 +72,11 @@ class ListEditAdapter(
 
     override fun onAttachedToRecyclerView(rv: RecyclerView) {
         super.onAttachedToRecyclerView(rv)
-        Log.d("LeakCheck", "MyAdapter onAttachedToRecyclerView adapter=$this")
 
         recyclerView = rv
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        Log.d("LeakCheck", "MyAdapter onDetachedFromRecyclerView adapter=$this")
-
         super.onDetachedFromRecyclerView(recyclerView)
     }
 
@@ -109,11 +104,8 @@ class ListEditAdapter(
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
             listener(
-                onError = { request, result ->
-                    Log.e("SearchMusicAdapter", "Coil error: ${request.data}", result.throwable)
-                },
-                onSuccess = { request, _ ->
-                    Log.d("SearchMusicAdapter", "Coil success: ${request.data}")
+                onError = { _, result ->
+                    Log.w("ListEditAdapter", "Failed to load artwork", result.throwable)
                 }
             )
 

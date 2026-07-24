@@ -16,6 +16,7 @@ import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.compose.foundation.background
@@ -159,9 +160,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("LeakCheck", "MainActivity onCreate $this")
-
-
 
         binding = ActivityMainBinding.inflate(layoutInflater)
 
@@ -225,7 +223,13 @@ class MainActivity : AppCompatActivity() {
             onPermissionGranted = { read_music_Granted_foronCreate() },
             onPermissionDenied = {
                 allView_onParmissionInvalid()
-                //TODO 権限拒否時の処理
+                AlertDialog.Builder(this)
+                    .setTitle("権限が必要です")
+                    .setMessage("音楽を読み取るための権限が必要です。設定から権限を付与してください。")
+                    .setPositiveButton("OK") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
                 Log.w("MainActivity", "音楽読み取り権限が拒否されました。")
             }
 
@@ -573,7 +577,6 @@ class MainActivity : AppCompatActivity() {
                 DBManager.loadBlocklist(this@MainActivity)
 
             showBlockSelectDialog(blockLists, newItem) { id ->
-                Log.d("MainActivity", "Selected block list ID: $id")
                 val newBlockItem = newItem.toBlocklistItem(id)
                 lifecycleScope.launch {
                     DBManager.upsertBlocklistItem(
@@ -929,7 +932,6 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                         super.onMediaItemTransition(mediaItem, reason)
-                        Log.d("MainActivity", "onMediaItemTransition: $mediaItem")
 
                         runOnUiThread {
                             if (mediaItem != null) {
@@ -1063,10 +1065,6 @@ class MainActivity : AppCompatActivity() {
         setLoadingVisible(false)
 
 
-        val tracks = mainViewModel.tracks.value
-        Log.d("track viewmodel", "tracks Size:${tracks.size}, tracksHash:${tracks.hashCode()}")
-
-
         runOnUiThread {
 
             val current = browser.currentMediaItem
@@ -1121,15 +1119,13 @@ class MainActivity : AppCompatActivity() {
             null
         )?.use { cursor ->
             if (cursor.count > 0) {
-                Log.d("MainActivity", "app folder already exists")
                 return
             }
         }
 
         val values = app_dir
         try {
-            val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
-            Log.d("MainActivity", "フォルダ作成結果: $uri")
+            resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
         } catch (e: Exception) {
             Log.w("MainActivity", "フォルダ作成に失敗しました", e)
         }

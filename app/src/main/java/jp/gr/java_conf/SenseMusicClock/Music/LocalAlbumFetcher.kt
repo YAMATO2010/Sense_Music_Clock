@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.provider.MediaStore
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -104,7 +105,7 @@ object LocalAlbumFetcher {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("LocalAlbumFetcher", "Failed to load albums", e)
         }
 
         return albums

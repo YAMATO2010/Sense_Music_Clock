@@ -444,24 +444,12 @@ class MusicService : MediaLibraryService() {
 
                     scope.launch {
                         try {
-                            Log.d(
-                                "MusicService",
-                                "[WidgetTrace] media transition widget coroutine start state=$currentState"
-                            )
                             mediaItem.setLastInfos(0L)
-                            Log.d(
-                                "MusicService",
-                                "[WidgetTrace] media transition setLastInfos done"
-                            )
                             ControlWidgetUpdater.updateAllWidgets(this@MusicService, currentState)
-                            Log.d(
-                                "MusicService",
-                                "[WidgetTrace] media transition updateAllWidgets done"
-                            )
                         } catch (e: Exception) {
                             Log.e(
                                 "MusicService",
-                                "[WidgetTrace] media transition widget update failed",
+                                "Failed to update widget after media transition",
                                 e
                             )
                             throw e
@@ -490,19 +478,11 @@ class MusicService : MediaLibraryService() {
 
                     scope.launch {
                         try {
-                            Log.d(
-                                "MusicService",
-                                "[WidgetTrace] playWhenReady widget coroutine start state=$currentState"
-                            )
                             ControlWidgetUpdater.updateAllWidgets(this@MusicService, currentState)
-                            Log.d(
-                                "MusicService",
-                                "[WidgetTrace] playWhenReady updateAllWidgets done"
-                            )
                         } catch (e: Exception) {
                             Log.e(
                                 "MusicService",
-                                "[WidgetTrace] playWhenReady widget update failed",
+                                "Failed to update widget after playback state change",
                                 e
                             )
                             throw e
@@ -644,7 +624,7 @@ class MusicService : MediaLibraryService() {
 
     suspend fun repoLoadMusicAndCreateMap(playID: Long? = null) {
         val id = playID ?: PrefsManager.getCurrentPlaylistId(this)
-        if (id == PlayList.Companion.ADDED_AT_DESC_ID) {
+        if (id == PlayList.ADDED_AT_DESC_ID) {
             Log.d(
                 "LIST_/MusicService/loadPlaylistItem",
                 "loading playlist items for ADDED_AT_DESC_ID"
@@ -661,7 +641,7 @@ class MusicService : MediaLibraryService() {
             )
 
 
-        } else if (id == PlayList.Companion.CURRENT_REMOVAL_ID || id < 0) {
+        } else if (id == PlayList.CURRENT_REMOVAL_ID || id < 0) {
             val UserRelativePaths =
                 TargetDirectoryPrefJSONManager.getAll(this)
             LocalMusicRepository.loadMusicAndSetTracksAndCreateMap(this, UserRelativePaths)

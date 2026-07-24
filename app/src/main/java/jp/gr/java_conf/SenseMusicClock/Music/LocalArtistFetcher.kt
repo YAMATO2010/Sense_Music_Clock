@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.provider.MediaStore
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -103,7 +104,7 @@ object LocalArtistFetcher {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("LocalArtistFetcher", "Failed to load artists", e)
         }
 
         return artists

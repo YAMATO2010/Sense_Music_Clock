@@ -47,13 +47,9 @@ class StorageAccessHelper(
     private val pickDirLauncher: ActivityResultLauncher<Uri?> =
         activity.registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri != null) {
-                // 必要なら永続パーミッションを取る（コメントアウトして任意に切替可能）
-                // val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                // try { activity.contentResolver.takePersistableUriPermission(uri, flags) } catch (_: SecurityException) { }
 
 
                 val rel = parseTreeUriToRelativePath(uri)
-                Log.d("StorageAccessHelper", "Picked URI: $uri, Parsed relative path: $rel")
                 activity.lifecycleScope.launch {
                     TargetDirectoryPrefJSONManager.add(rel ?: return@launch, activity)
                 }
@@ -64,14 +60,7 @@ class StorageAccessHelper(
             }
         }
 
-    private val pickM3ULauncher =
-        activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) {
-                onDirectoryPicked(null, uri)
-            } else {
-                onDirectoryPicked(null, null)
-            }
-        }
+
     private val requestPermissionLauncher =
         activity.registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
             val readAudioGranted = grants[readAudioPermission] ?: hasReadAudioPermission()
@@ -151,7 +140,7 @@ class StorageAccessHelper(
             val parts = docId.split(":", limit = 2)
             if (parts.size == 2) {
                 val storageId = parts[0]
-                var pathPart = parts[1].removePrefix("/").trimEnd('/')
+                val pathPart = parts[1].removePrefix("/").trimEnd('/')
                 if (storageId == "primary") {
                     // MediaStore の RELATIVE_PATH はボリューム名を含めない場合が多い
                     pathPart.takeIf { it.isNotEmpty() }

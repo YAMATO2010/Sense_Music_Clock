@@ -61,7 +61,6 @@ class MusicSearcherByList(
                 delay(500)
 
                 val keyword = editText.text.toString().trim()
-                Log.d("MusicSearcher", "applySearch: keyword='${keyword}'")
                 if (keyword.isBlank()) {
                     // 空キーワードなら何も表示しない
                     targetTracks = emptyList()
@@ -200,7 +199,6 @@ class MusicSearcherByList(
 
 
 }
-
 
 
 

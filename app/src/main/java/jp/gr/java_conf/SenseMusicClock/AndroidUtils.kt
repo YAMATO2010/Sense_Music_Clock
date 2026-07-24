@@ -103,7 +103,6 @@ fun Context.getAllFile_inInternalStorage(childPath: String): List<File> {
     val dir = File(filesDir, childPath)
     return dir.walk()
         .filter { it.isFile } // ファイルだけを抽出
-        .onEach { Log.d("InternalStorageFile", "File: ${it.absolutePath}") } // ログ出し
         .toList()
 
 }

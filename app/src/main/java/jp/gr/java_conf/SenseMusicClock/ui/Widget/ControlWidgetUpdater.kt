@@ -50,10 +50,6 @@ object ControlWidgetUpdater {
         val orientation =
             if (isTall) BackgroundResolver.ORIENTATION_OBLONG else BackgroundResolver.ORIENTATION_LAND
         val isBackgroundEnabled = PrefsManager.getWidgetBackground(context)
-        Log.d(
-            "ControlWidget",
-            "[WidgetTrace] resolveBackground isTall=$isTall orientation=$orientation isBackgroundEnabled=$isBackgroundEnabled"
-        )
         val result = if (isBackgroundEnabled) {
             val loader = ImageLoader(context)
             val source = BackgroundResolver.loadBackgroundSource(
@@ -83,16 +79,8 @@ object ControlWidgetUpdater {
     }
 
     suspend fun updateAllWidgets(context: Context, newState: WidgetState) {
-        Log.d("ControlWidget", "[WidgetTrace] updateAllWidgets start state=$newState")
         WidgetStateManager.updateWidgetState(context, newState)
-        Log.d("ControlWidget", "[WidgetTrace] updateAllWidgets state saved")
-        val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(ControlWidget::class.java)
-        Log.d(
-            "ControlWidget",
-            "[WidgetTrace] updateAllWidgets glanceIds count=${glanceIds.size} ids=$glanceIds"
-        )
         ControlWidget().updateAll(context)
-        Log.d("ControlWidget", "[WidgetTrace] updateAllWidgets updateAll requested")
     }
 
 }

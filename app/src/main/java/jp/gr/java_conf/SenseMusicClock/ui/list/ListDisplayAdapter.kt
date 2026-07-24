@@ -47,11 +47,8 @@ class ListDisplayAdapter(
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
             listener(
-                onError = { request, result ->
-                    Log.e("SearchMusicAdapter", "Coil error: ${request.data}", result.throwable)
-                },
-                onSuccess = { request, _ ->
-                    Log.d("SearchMusicAdapter", "Coil success: ${request.data}")
+                onError = { _, result ->
+                    Log.w("ListDisplayAdapter", "Failed to load artwork", result.throwable)
                 }
             )
 

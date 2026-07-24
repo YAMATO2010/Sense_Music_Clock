@@ -39,7 +39,6 @@ object LocalMusicRepository {
     val EXTRA_DATA_PATH = LocalMusicFetcher.EXTRA_DATA_PATH
 
 
-    //TODO プレイリストの時に、同じ曲（同じクエリ）が重複していた場合、消される可能性がある。重複していた場合、それに該当するパスを持つもののMediaItemのIDを操作し、重複させよ。
 
 
     fun blockAndSetTracks(newTracks: List<MediaItem>, isBlock: Boolean): List<MediaItem> {

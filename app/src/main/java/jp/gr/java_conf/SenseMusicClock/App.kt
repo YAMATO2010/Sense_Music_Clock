@@ -20,8 +20,6 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        Log.d("CrashTest", "Application onCreate")
-
         backgroundImageLoader = ImageLoader.Builder(this.applicationContext)
 
             .components {
@@ -43,13 +41,12 @@ class App : Application() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
 
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e("CrashTest", "Uncaught exception!", throwable)
+            Log.e("App", "Uncaught exception", throwable)
 
             try {
                 saveCrashLog(throwable)
-                Log.d("CrashTest", "saveCrashLog finished")
             } catch (e: Exception) {
-                Log.e("CrashTest", "saveCrashLog failed", e)
+                Log.e("App", "Failed to save crash log", e)
             }
 
             defaultHandler?.uncaughtException(thread, throwable)

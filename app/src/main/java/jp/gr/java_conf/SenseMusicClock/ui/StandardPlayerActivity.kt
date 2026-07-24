@@ -41,6 +41,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import androidx.core.graphics.drawable.toDrawable
 
 class StandardPlayerActivity : AppCompatActivity() {
 
@@ -275,9 +276,9 @@ class StandardPlayerActivity : AppCompatActivity() {
 
             if (nowRepeatMode) {
 
-                binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
+                binding.btnRepeat.load(R.drawable.media3_icon_repeat_one)
             } else {
-                binding.btnRepeat.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+                binding.btnRepeat.load(R.drawable.media3_icon_repeat_all)
             }
         }
         binding.btnRepeat.setOnClickListener {
@@ -290,10 +291,10 @@ class StandardPlayerActivity : AppCompatActivity() {
 
                 if (isNewRepeatMode_oneLoop) {
                     val view = it as ImageButton
-                    view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_one)
+                    view.load(R.drawable.media3_icon_repeat_one)
                 } else {
                     val view = it as ImageButton
-                    view.load(androidx.media3.ui.R.drawable.exo_icon_repeat_all)
+                    view.load(R.drawable.media3_icon_repeat_all)
                 }
             }
         }
@@ -301,7 +302,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
         val orientation = resources.configuration.orientation
 
-        binding.scrimOverlay.background = ColorDrawable(getColor(R.color.black_overlay))
+        binding.scrimOverlay.background = getColor(R.color.black_overlay).toDrawable()
         lifecycleScope.launch {
 
             lastSourceBackGround =
@@ -398,7 +399,6 @@ class StandardPlayerActivity : AppCompatActivity() {
         super.onDestroy()
         // cleanup
         stopRemainingTimer()
-        //stopProgressUpdates()
         uiHandler.removeCallbacks(progressUpdateRunnable)
 
         try {
