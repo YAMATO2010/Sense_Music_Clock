@@ -15,18 +15,10 @@ import android.util.Log
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.withFrameNanos
-import androidx.datastore.preferences.core.Preferences
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
-import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -53,6 +45,7 @@ fun convertMsToTimeString(ms: Long): String {
 
     return "$minutesStr:$secondsStr"
 }
+
 fun Context.saveToInternalStorage(uri: Uri, childPath: String = ""): File {
     val dir = File(filesDir, childPath)
     if (!dir.exists()) dir.mkdirs()
@@ -300,7 +293,6 @@ fun RecyclerView.shouldSkipAnimation(
     }
 
 }
-
 
 
 suspend fun RecyclerView.smoothScrollToPositionWithSkipAnimationCheck(

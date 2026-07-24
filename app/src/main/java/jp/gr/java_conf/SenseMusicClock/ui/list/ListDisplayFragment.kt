@@ -2,17 +2,13 @@ package jp.gr.java_conf.SenseMusicClock.ui.list
 
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -20,7 +16,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import coil.load
 import coil.request.CachePolicy
-import com.google.android.gms.common.api.internal.LifecycleCallback
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
@@ -34,7 +29,6 @@ import jp.gr.java_conf.SenseMusicClock.showEditTextDialog
 import jp.gr.java_conf.SenseMusicClock.showListSelectDialog
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity.ListType
 import kotlinx.coroutines.launch
-import kotlin.getValue
 
 
 class ListDisplayFragment : Fragment() {
@@ -47,11 +41,6 @@ class ListDisplayFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var adapter: ListDisplayAdapter
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -364,7 +353,7 @@ class ListDisplayFragment : Fragment() {
     }
 
     fun adapterInit() {
-        val diff = object : DiffUtil.ItemCallback<MediaItem>() {
+        object : DiffUtil.ItemCallback<MediaItem>() {
             override fun areItemsTheSame(oldItem: MediaItem, newItem: MediaItem): Boolean =
                 oldItem.mediaId == newItem.mediaId
 

@@ -10,10 +10,8 @@ enum class SleepTimerTimes {
     HOUR_5,
 
 
-
-
-
 }
+
 val sleepTimerTimesToMinutes = mapOf(
     SleepTimerTimes.OFF to 0,
     SleepTimerTimes.MIN_5 to 5,

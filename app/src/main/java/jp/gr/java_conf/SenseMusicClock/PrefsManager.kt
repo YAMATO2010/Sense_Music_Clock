@@ -78,7 +78,6 @@ object PrefsManager {
         stringPreferencesKey("widget_artwork_uri")
 
 
-
     private val WIDGET_IS_PLAYING_KEY =
         booleanPreferencesKey("widget_is_playing")
 

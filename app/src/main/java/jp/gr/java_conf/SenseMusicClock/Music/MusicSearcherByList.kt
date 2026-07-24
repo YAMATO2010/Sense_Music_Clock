@@ -1,29 +1,18 @@
 package jp.gr.java_conf.SenseMusicClock.Music
 
 
-import android.content.Context
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.buildPositionMapFromIndexedTopLevel
-
-import jp.gr.java_conf.SenseMusicClock.smoothScrollToPositionWithSkipAnimationCheck
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -41,10 +30,10 @@ class MusicSearcherByList(
     private val activity: AppCompatActivity,
     private val recyclerView: RecyclerView,
     private val editText: EditText,
-    private val onSearch : (index: Int) -> Unit,
+    private val onSearch: (index: Int) -> Unit,
 
 
-) {
+    ) {
 
     private var targetTrackPositions: Map<String, Int> = mutableMapOf()
     private var targetTracks: List<MediaItem> = emptyList()
@@ -82,10 +71,17 @@ class MusicSearcherByList(
                     val results = LocalMusicRepository.tracksFlow.value.withIndex()
                         .filter { (_, track) ->
                             val metadata = track.mediaMetadata
-                            metadata.title?.contains(keyword, ignoreCase = true) ?: false              ||
-                                    metadata.artist?.contains(keyword, ignoreCase = true) ?: false     ||
-                                    metadata.albumTitle?.contains(keyword, ignoreCase = true) ?: false ||
-                                    metadata.extras?.getString("RELATIVE_PATH")?.contains(keyword, ignoreCase = true) ?: false
+                            metadata.title?.contains(keyword, ignoreCase = true) ?: false ||
+                                    metadata.artist?.contains(
+                                        keyword,
+                                        ignoreCase = true
+                                    ) ?: false ||
+                                    metadata.albumTitle?.contains(
+                                        keyword,
+                                        ignoreCase = true
+                                    ) ?: false ||
+                                    metadata.extras?.getString("RELATIVE_PATH")
+                                        ?.contains(keyword, ignoreCase = true) ?: false
                         }
                     targetTracks = results.map { it.value }
                     // build mapping from the filtered results (keys -> original index)
@@ -98,7 +94,7 @@ class MusicSearcherByList(
                         .joinToString(", ") { (k, v) -> "${k}=>${v}" }
                     Log.d("MusicSearcher", "applySearch: sampleMapping=[$sample]")
                 } catch (e: Exception) {
-                    android.util.Log.w("MusicSearcher", "sample mapping log failed", e)
+                    Log.w("MusicSearcher", "sample mapping log failed", e)
                 }
 
                 Log.d(
@@ -150,12 +146,12 @@ class MusicSearcherByList(
                                                 "fallback onItemClick: clicked=${track.mediaMetadata.title}  resolvedOriginalPos=$originalPosition2"
                                             )
 
-                                           onSearch(originalPosition2 ?: 0)
+                                            onSearch(originalPosition2 ?: 0)
                                         }
                                     )
                                 }
                             } catch (e: Exception) {
-                                android.util.Log.w("MusicSearcher", "post-check failed", e)
+                                Log.w("MusicSearcher", "post-check failed", e)
                             }
                         }, 200L)
                     }
@@ -201,7 +197,6 @@ class MusicSearcherByList(
         applySearch()
 
     }
-
 
 
 }

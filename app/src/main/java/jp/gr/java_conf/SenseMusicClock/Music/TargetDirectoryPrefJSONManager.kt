@@ -3,19 +3,14 @@ package jp.gr.java_conf.SenseMusicClock.Music
 
 
 import android.content.Context
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
-
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 
-object TargetDirectoryPrefJSONManager{
+object TargetDirectoryPrefJSONManager {
     const val UNKNOWN = "unkonwn//////////UNKNOWN"
 
 
@@ -53,7 +48,7 @@ object TargetDirectoryPrefJSONManager{
      * 空文字や空白のみの要素は除外し、最初に出現した順序を保持しつつ重複を除く。
      */
 
-    private suspend fun _saveAll(paths: List<String>,context: Context) {
+    private suspend fun _saveAll(paths: List<String>, context: Context) {
 
 
         val filtered = paths.map { it.trim() }
@@ -65,9 +60,9 @@ object TargetDirectoryPrefJSONManager{
 
     }
 
-    suspend fun saveAll(paths: List<String>,context: Context) {
+    suspend fun saveAll(paths: List<String>, context: Context) {
         mutex.withLock {
-            _saveAll(paths,context)
+            _saveAll(paths, context)
         }
     }
 
@@ -76,20 +71,20 @@ object TargetDirectoryPrefJSONManager{
      * 追加された場合は true を返す。
      */
 
-    suspend fun _add(path: String,context: Context): Boolean {
+    suspend fun _add(path: String, context: Context): Boolean {
         val p = path.trim()
         if (p.isBlank()) return false
         val current = _getAll(context).toMutableList()
         if (current.contains(p)) return false
         current.add(p)
-        _saveAll(current,context)
+        _saveAll(current, context)
         return true
 
     }
 
-    suspend fun add(path: String,context: Context): Boolean {
+    suspend fun add(path: String, context: Context): Boolean {
         return mutex.withLock {
-            _add(path,context)
+            _add(path, context)
         }
     }
 
@@ -97,7 +92,7 @@ object TargetDirectoryPrefJSONManager{
      * 指定したパスを削除する。削除が行われたら true を返す。
      */
 
-    private suspend fun _remove(path: String,context: Context): Boolean {
+    private suspend fun _remove(path: String, context: Context): Boolean {
 
 
         val p = path.trim()
@@ -114,9 +109,9 @@ object TargetDirectoryPrefJSONManager{
         }
     }
 
-    suspend fun remove(path: String,context: Context): Boolean {
+    suspend fun remove(path: String, context: Context): Boolean {
         return mutex.withLock {
-            _remove(path,context)
+            _remove(path, context)
         }
     }
 

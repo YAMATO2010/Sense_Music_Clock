@@ -3,19 +3,15 @@ package jp.gr.java_conf.SenseMusicClock.Music
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.FrameLayout
-
 import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -25,10 +21,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import androidx.work.Constraints
 import coil.load
 import coil.request.CachePolicy
-import coil.size.Precision
 import jp.gr.java_conf.SenseMusicClock.MusicService
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.ui.StandardPlayerActivity
@@ -38,19 +32,17 @@ class BottomController @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-): FrameLayout(context, attrs, defStyleAttr) {
+) : FrameLayout(context, attrs, defStyleAttr) {
 
     private val titleView: TextView by lazy { findViewById(R.id.nowItemTitleView) }
     private val artistView: TextView by lazy { findViewById(R.id.nowItemArtistView) }
     private val artworkView: ImageView by lazy { findViewById(R.id.nowItemartwork) }
     private val playBtn: ImageButton by lazy { findViewById(R.id.bcBtnPlayPause) }
-    private val backBtn: ImageButton by lazy { findViewById(R.id.bcBtnPrev)}
+    private val backBtn: ImageButton by lazy { findViewById(R.id.bcBtnPrev) }
 
-    private val nextBtn : ImageButton by lazy { findViewById(R.id.bcBtnNext) }
-    private val container : ConstraintLayout by  lazy { findViewById(R.id.bottomControllerContainer) }
+    private val nextBtn: ImageButton by lazy { findViewById(R.id.bcBtnNext) }
+    private val container: ConstraintLayout by lazy { findViewById(R.id.bottomControllerContainer) }
     private val progressBar: ProgressBar by lazy { findViewById(R.id.currentPositionBer) }
-
-
 
 
     private var mediaController: MediaController? = null
@@ -84,6 +76,7 @@ class BottomController @JvmOverloads constructor(
             barHandler.postDelayed(this, 500)
         }
     }
+
     init {
         LayoutInflater.from(context).inflate(R.layout.bottom_controller, this, true)
 
@@ -97,9 +90,10 @@ class BottomController @JvmOverloads constructor(
 
         val activityWeak = activityRef.get()
 
-        token = SessionToken(activityWeak ?: return, ComponentName(activity, MusicService::class.java))
+        token =
+            SessionToken(activityWeak ?: return, ComponentName(activity, MusicService::class.java))
 
-        val controllerFuture = MediaController.Builder(activityWeak , token).buildAsync()
+        val controllerFuture = MediaController.Builder(activityWeak, token).buildAsync()
 
 
 
@@ -190,10 +184,9 @@ class BottomController @JvmOverloads constructor(
         }
 
         container.setOnClickListener {
-            val intent = Intent( context, StandardPlayerActivity::class.java)
+            val intent = Intent(context, StandardPlayerActivity::class.java)
             context.startActivity(intent)
         }
-
 
 
     }

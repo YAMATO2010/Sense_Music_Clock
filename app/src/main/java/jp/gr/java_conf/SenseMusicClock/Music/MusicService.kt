@@ -3,24 +3,20 @@ package jp.gr.java_conf.SenseMusicClock
 
 
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.common.Player
-import androidx.media3.common.MediaItem
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.concurrent.futures.CallbackToFutureAdapter
-import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
@@ -33,20 +29,17 @@ import com.google.common.util.concurrent.ListenableFuture
 import jp.gr.java_conf.SenseMusicClock.Music.BitmapLoaderForSession
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
+import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
+import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
+import jp.gr.java_conf.SenseMusicClock.ui.Widget.ControlWidgetUpdater
+import jp.gr.java_conf.SenseMusicClock.ui.Widget.WidgetState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
-import jp.gr.java_conf.SenseMusicClock.ui.Widget.ControlWidgetUpdater
-
-import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
-import jp.gr.java_conf.SenseMusicClock.ui.Widget.WidgetState
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-
-
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
@@ -54,15 +47,14 @@ class MusicService : MediaLibraryService() {
 
     companion object {
 
-        const val clickedPlay = "jp.gr.java_conf.SenseMusicClock.ui.MusicService.clickedPlay"
-        const val clickedNext = "jp.gr.java_conf.SenseMusicClock.ui.MusicService.clickedNext"
-        const val clickedPrev = "jp.gr.java_conf.SenseMusicClock.ui.MusicService.clickedPrev"
+        const val CUSTOM_ACTION_SLEEP_TIMER_SET =
+            "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_SET"
 
-        const val CUSTOM_ACTION_SLEEP_TIMER_SET = "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_SET"
+        const val CUSTOM_ACTION_SLEEP_TIMER_CANCEL =
+            "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_CANCEL"
 
-        const val CUSTOM_ACTION_SLEEP_TIMER_CANCEL = "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_CANCEL"
-
-        const val CUSTOM_ACTION_SLEEP_TIMER_GET = "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_GET"
+        const val CUSTOM_ACTION_SLEEP_TIMER_GET =
+            "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_GET"
 
 
         const val CUSTOM_ACTION_LOAD_ALBUM_BY_ID =
@@ -93,37 +85,12 @@ class MusicService : MediaLibraryService() {
 
     private var isPlayerFirstItemSeted = false
 
-    private var sleepTimerJob : Job? = null
+    private var sleepTimerJob: Job? = null
 
     private var sleepTimerEndAtMillis: Long? = null
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
         session
-
-
-    private val becomingNoisyReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null) return
-
-            when (intent.action) {
-
-
-
-                clickedPlay -> {
-                    player.playWhenReady = !player.isPlaying
-                }
-
-                clickedNext -> {
-                    player.seekToNext()
-                }
-
-                clickedPrev -> {
-                    player.seekToPrevious()
-                }
-
-            }
-        }
-    }
 
 
     val callback = object : MediaLibrarySession.Callback {
@@ -212,10 +179,13 @@ class MusicService : MediaLibraryService() {
                 "onCustomCommand received: action=${customCommand.customAction} from controller=${controller.packageName}"
             )
             when (customCommand.customAction) {
-                CUSTOM_ACTION_SLEEP_TIMER_SET ->{
+                CUSTOM_ACTION_SLEEP_TIMER_SET -> {
 
-                    val  minutes = args.getInt(SLEEP_TIMER_DURATION_MINUTES, 0)
-                    Log.d("MusicService", "Received command to set sleep timer for $minutes minutes")
+                    val minutes = args.getInt(SLEEP_TIMER_DURATION_MINUTES, 0)
+                    Log.d(
+                        "MusicService",
+                        "Received command to set sleep timer for $minutes minutes"
+                    )
                     setSleepTimerByMinutes(minutes)
                     return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
 
@@ -230,7 +200,10 @@ class MusicService : MediaLibraryService() {
 
                 CUSTOM_ACTION_SLEEP_TIMER_GET -> {
                     val timerMillis = if (sleepTimerEndAtMillis == null) {
-                        Log.d("MusicService", "Received command to get sleep timer, but no timer is set")
+                        Log.d(
+                            "MusicService",
+                            "Received command to get sleep timer, but no timer is set"
+                        )
                         System.currentTimeMillis()
 
                     } else {
@@ -242,11 +215,16 @@ class MusicService : MediaLibraryService() {
                     }
 
                     Log.d("MusicService", "Returning sleep timer end time: $timerMillis")
-                    return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS, Bundle))
-
+                    return Futures.immediateFuture(
+                        SessionResult(
+                            SessionResult.RESULT_SUCCESS,
+                            Bundle
+                        )
+                    )
 
 
                 }
+
                 CUSTOM_ACTION_LOAD_ALBUM_BY_ID -> {
                     val albumId = args.getLong(ALBUM_ID, -1L)
                     if (albumId == -1L) {
@@ -339,7 +317,7 @@ class MusicService : MediaLibraryService() {
                 "MusicService",
                 "onGetChildren called parentId=$parentId page=$page pageSize=$pageSize controller=${browser.packageName}"
             )
-            val allSongs = LocalMusicRepository.getTracks() // リポジトリの全曲リスト
+            val allSongs = LocalMusicRepository.getTracks()
             val fromIndex = page * pageSize
             val toIndex = minOf(fromIndex + pageSize, allSongs.size)
 
@@ -400,11 +378,8 @@ class MusicService : MediaLibraryService() {
         Log.d("MusicService", "onCreate start")
 
         try {
-            val attributionContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val attributionContext =
                 createAttributionContext("sense_music_player")
-            } else {
-                this // Android 10以前はそのまま
-            }
 
 
             player = ExoPlayer.Builder(attributionContext)
@@ -419,9 +394,6 @@ class MusicService : MediaLibraryService() {
                 intent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-
-
-
 
 
             val audioAttributes = AudioAttributes.Builder()
@@ -452,6 +424,7 @@ class MusicService : MediaLibraryService() {
                         error
                     )
                 }
+
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                     super.onMediaItemTransition(mediaItem, reason)
 
@@ -463,7 +436,7 @@ class MusicService : MediaLibraryService() {
                     if (mediaItem == null) return
 
                     val title = mediaItem.mediaMetadata.title?.toString() ?: "Unknown Title"
-                    val artwork : Uri? = mediaItem.mediaMetadata.artworkUri
+                    val artwork: Uri? = mediaItem.mediaMetadata.artworkUri
                     val currentState = WidgetState(
                         title = title,
                         artwork = artwork,
@@ -509,7 +482,7 @@ class MusicService : MediaLibraryService() {
                     )
 
                     val title = player.mediaMetadata.title?.toString() ?: "Unknown Title"
-                    val artwork : Uri? = player.mediaMetadata.artworkUri
+                    val artwork: Uri? = player.mediaMetadata.artworkUri
                     val currentState = WidgetState(
                         title = title,
                         artwork = artwork,
@@ -538,8 +511,6 @@ class MusicService : MediaLibraryService() {
                         }
                     }
                 }
-
-
 
 
             })
@@ -595,7 +566,7 @@ class MusicService : MediaLibraryService() {
                             if (value) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_ALL
                         Log.d(
                             "MusicService",
-                            "Playmode loop set to $value -> repeatMode=${player.repeatMode}"
+                            "PlayMode loop set to $value -> repeatMode=${player.repeatMode}"
                         )
 
                     }
@@ -646,14 +617,9 @@ class MusicService : MediaLibraryService() {
     }
 
 
-
     override fun onDestroy() {
         Log.d("MusicService", "onDestroy start")
-        try {
-            unregisterReceiver(becomingNoisyReceiver)
-        } catch (e: IllegalArgumentException) {
-            Log.w("MusicService", "Receiver already unregistered", e)
-        }
+
         scope.launch {
 
             player.currentMediaItem?.setLastInfos(player.currentPosition)
@@ -788,7 +754,6 @@ class MusicService : MediaLibraryService() {
     }
 
 
-
     suspend fun findLastIndexByRepo(): Int {
         val lastDisPlayName =
             PrefsManager.getLastTrackDisplayName(this)
@@ -826,6 +791,7 @@ class MusicService : MediaLibraryService() {
         )
 
     }
+
     fun setSleepTimerByMinutes(minutes: Int) {
         if (minutes <= 0) {
             cancelSleepTimer()
@@ -835,6 +801,7 @@ class MusicService : MediaLibraryService() {
 
         }
     }
+
     fun setSleepTimer(durationMillis: Long) {
         cancelSleepTimer() // 既存のタイマーがあればキャンセル
         sleepTimerEndAtMillis = System.currentTimeMillis() + durationMillis
@@ -846,6 +813,7 @@ class MusicService : MediaLibraryService() {
             cancelSleepTimer() // タイマー終了後にジョブをクリア
         }
     }
+
     fun cancelSleepTimer() {
         sleepTimerEndAtMillis = null
         sleepTimerJob?.cancel()

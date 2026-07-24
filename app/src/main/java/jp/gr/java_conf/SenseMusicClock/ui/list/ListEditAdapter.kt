@@ -2,7 +2,6 @@ package jp.gr.java_conf.SenseMusicClock.ui.list
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -14,11 +13,10 @@ import android.widget.TextView
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
-import jp.gr.java_conf.SenseMusicClock.ui.list.placeholder.PlaceholderContent.PlaceholderItem
 import jp.gr.java_conf.SenseMusicClock.R
-
 
 
 class ListEditAdapter(
@@ -148,7 +146,7 @@ class ListEditAdapter(
         val artistTextView: TextView = view.findViewById<TextView>(R.id.ItemArtistView)
         val checkBox: CheckBox = view.findViewById<CheckBox>(R.id.listCheckBox)
 
-        val artWork : ImageView = view.findViewById<ImageView>(R.id.ITEMArtwork)
+        val artWork: ImageView = view.findViewById<ImageView>(R.id.ITEMArtwork)
     }
 
     class PlayHolder(view: View) : EditAdapterViewHolder(view) {

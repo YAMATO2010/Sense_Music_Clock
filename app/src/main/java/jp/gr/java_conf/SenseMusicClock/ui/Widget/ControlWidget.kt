@@ -68,8 +68,10 @@ class ControlWidget : GlanceAppWidget() {
             val state by WidgetStateManager.getWidgetStateFlow(context).collectAsState(
                 initial = initialState
             )
-            val isBackgroundEnabled by PrefsManager.getWidgetBackgroundFlow(context).collectAsState(initial = false)
-            val isBackgroundRandom by PrefsManager.getRandomBackgroundFlow(context).collectAsState(initial = false)
+            val isBackgroundEnabled by PrefsManager.getWidgetBackgroundFlow(context)
+                .collectAsState(initial = false)
+            val isBackgroundRandom by PrefsManager.getRandomBackgroundFlow(context)
+                .collectAsState(initial = false)
 
             Log.d("ControlWidget", "[WidgetTrace] Rendering widget with state: $state")
 
@@ -80,9 +82,16 @@ class ControlWidget : GlanceAppWidget() {
                 value = ControlWidgetUpdater.resolveArtworkBitmap(context, state.artwork)
             }
 
-            val background by produceState<Bitmap?>(initialValue = null, isTall,isBackgroundEnabled,isBackgroundRandom,state.title) {
+            val background by produceState<Bitmap?>(
+                initialValue = null,
+                isTall,
+                isBackgroundEnabled,
+                isBackgroundRandom,
+                state.title
+            ) {
 
-                value = ControlWidgetUpdater.resolveBackground(context, isTall)?.drawable?.toBitmap()
+                value =
+                    ControlWidgetUpdater.resolveBackground(context, isTall)?.drawable?.toBitmap()
             }
             Box(modifier = GlanceModifier.fillMaxSize()) {
 
@@ -333,7 +342,7 @@ class ControlWidget : GlanceAppWidget() {
         Row(
             modifier = GlanceModifier.fillMaxSize().padding(1.dp),
             verticalAlignment = CenterVertically,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = CenterHorizontally
         ) {
             Spacer(
                 modifier = GlanceModifier.width(oneWeight)

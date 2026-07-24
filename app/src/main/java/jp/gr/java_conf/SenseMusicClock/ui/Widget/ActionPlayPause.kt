@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.withContext
 
-class ActionPlayPause: ActionCallback {
+class ActionPlayPause : ActionCallback {
 
     override suspend fun onAction(
         context: Context,

@@ -3,7 +3,6 @@ package jp.gr.java_conf.SenseMusicClock.ui.search
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
@@ -11,11 +10,11 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import jp.gr.java_conf.SenseMusicClock.R
 
-class SearchAdapter (
+class SearchAdapter(
     InitialValue: List<Long>,
-    private val onBind :(SearchViewHolder, Int, Long,) -> Unit
+    private val onBind: (SearchViewHolder, Int, Long) -> Unit
 
-): ListAdapter<Long, SearchAdapter.SearchViewHolder>(DIFF) {
+) : ListAdapter<Long, SearchAdapter.SearchViewHolder>(DIFF) {
 
     init {
         submitList(InitialValue.toList())
@@ -51,7 +50,8 @@ class SearchAdapter (
         val container = view.findViewById<View>(R.id.listItemContainer_display)
 
     }
-    companion object{
+
+    companion object {
         val DIFF = object : DiffUtil.ItemCallback<Long>() {
             override fun areItemsTheSame(oldItem: Long, newItem: Long): Boolean {
                 return oldItem == newItem

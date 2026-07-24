@@ -7,8 +7,6 @@ import android.content.Intent
 import android.os.Binder
 import android.os.CountDownTimer
 import android.os.IBinder
-import android.os.SystemClock
-import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import jp.gr.java_conf.SenseMusicClock.R
@@ -19,8 +17,10 @@ import kotlinx.coroutines.flow.asStateFlow
 class TimerService : Service() {
 
     companion object {
-        const val ACTION_START_TIMER = "jp.gr.java_conf.SenseMusicClock.Clock.TimerService.ACTION_START_TIMER"
-        const val ACTION_STOP_TIMER = "jp.gr.java_conf.SenseMusicClock.Clock.TimerService.ACTION_STOP_TIMER"
+        const val ACTION_START_TIMER =
+            "jp.gr.java_conf.SenseMusicClock.Clock.TimerService.ACTION_START_TIMER"
+        const val ACTION_STOP_TIMER =
+            "jp.gr.java_conf.SenseMusicClock.Clock.TimerService.ACTION_STOP_TIMER"
         const val EXTRA_TIMER_DURATION = "timer_duration_millis"
 
         const val CHANNEL_ID = "timer_00110010010100101001"
@@ -39,13 +39,13 @@ class TimerService : Service() {
     inner class LocalBinder : Binder() {
         fun getService(): TimerService = this@TimerService
     }
+
     private var timer: CountDownTimer? = null
-
-
 
 
     // 1. 内部更新用のMutableStateFlow
     private val _remainingTime = MutableStateFlow(0L)
+
     // 2. 外部（Activity）公開用の読み取り専用Flow
     val remainingTime = _remainingTime.asStateFlow()
 
@@ -54,18 +54,23 @@ class TimerService : Service() {
     private var foregroundStarted = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("TimerService", "onStartCommand received: intent=$intent flags=$flags startId=$startId")
+        Log.d(
+            "TimerService",
+            "onStartCommand received: intent=$intent flags=$flags startId=$startId"
+        )
 
-        when(intent?.action) {
+        when (intent?.action) {
             ACTION_START_TIMER -> {
                 val duration = intent.getLongExtra(EXTRA_TIMER_DURATION, 0L)
                 Log.d("TimerService", "ACTION_START_TIMER with duration=$duration")
                 startTimer(duration)
             }
+
             ACTION_STOP_TIMER -> {
                 Log.d("TimerService", "ACTION_STOP_TIMER received")
                 stopTimer()
             }
+
             else -> {
                 Log.d("TimerService", "onStartCommand: unknown or null action: ${intent?.action}")
             }
@@ -85,7 +90,7 @@ class TimerService : Service() {
     }
 
 
-    private fun createNotificationChannel (){
+    private fun createNotificationChannel() {
         val nm = getSystemService(NotificationManager::class.java)
         nm?.createNotificationChannel(
             NotificationChannel(
@@ -96,8 +101,12 @@ class TimerService : Service() {
         )
 
     }
+
     private fun showNotification(endTime: Long) {
-        Log.d("TimerService", "showNotification called endTime=$endTime foregroundStarted=$foregroundStarted")
+        Log.d(
+            "TimerService",
+            "showNotification called endTime=$endTime foregroundStarted=$foregroundStarted"
+        )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification) // アイコンは必須
             .setContentTitle("タイマー起動中")
@@ -116,7 +125,6 @@ class TimerService : Service() {
     fun isTimerRunning(): Boolean {
         return timer != null
     }
-
 
 
     private fun startTimer(duration: Long) {

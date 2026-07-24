@@ -1,15 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.3.3"
+    alias(libs.plugins.ksp)
+
+
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
 }
 
 android {
     namespace = "jp.gr.java_conf.SenseMusicClock"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "jp.gr.java_conf.SenseMusicClock"
@@ -35,7 +36,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    buildFeatures{
+    buildFeatures {
         viewBinding = true
         compose = true
     }
@@ -58,7 +59,7 @@ dependencies {
     // Jetpack Compose
     // --------------------------------------------------
 
-    implementation(platform("androidx.compose:compose-bom:2026.06.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.06.01"))
 
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
@@ -104,7 +105,7 @@ dependencies {
     // Lifecycle
     // --------------------------------------------------
 
-    implementation("androidx.lifecycle:lifecycle-service:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-service:2.11.0")
 
 
     // --------------------------------------------------
@@ -140,21 +141,21 @@ dependencies {
     // Paging
     // --------------------------------------------------
 
-    implementation("androidx.paging:paging-runtime:3.4.2")
+    implementation("androidx.paging:paging-runtime:3.5.0")
 
 
     // --------------------------------------------------
     // DataStore
     // --------------------------------------------------
 
-    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
 
 
     // --------------------------------------------------
     // WorkManager
     // --------------------------------------------------
 
-    implementation("androidx.work:work-runtime-ktx:2.11.1")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
 
 
     // --------------------------------------------------
@@ -186,8 +187,8 @@ dependencies {
     // Dagger / KSP
     // --------------------------------------------------
 
-    implementation(libs.ksp.api)
-    ksp("com.google.dagger:dagger-compiler:2.59.2")
+
+    ksp("com.google.dagger:dagger-compiler:2.60.1")
 
 
     // --------------------------------------------------

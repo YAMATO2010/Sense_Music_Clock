@@ -3,19 +3,11 @@ package jp.gr.java_conf.SenseMusicClock
 
 import android.content.Context
 import android.util.Log
-import android.widget.ImageView
-import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.load
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 object BackgroundResolver {
-
-
-
 
 
     const val NOW_MORNING = 1
@@ -38,7 +30,6 @@ object BackgroundResolver {
 
     const val ORIENTATION_OBLONG = 1
     const val ORIENTATION_LAND = 2
-
 
 
     sealed class ImageSource {
@@ -82,7 +73,7 @@ object BackgroundResolver {
     }
 
 
-    suspend fun getImageFilePath_forBackground(context: Context, key: String): String? {
+    suspend fun getImageFilePath_forBackground(context: Context, key: String): String {
 
         return PrefsManager.getImageFilePath(context, key)
     }
@@ -90,15 +81,15 @@ object BackgroundResolver {
     fun getDrawableId_byPrefsKey(key: String): ImageSource {
         val DrawableId = when (key) {
 
-            IMAGEFILE_KEY_LAND_MORNING -> R.drawable.land_morning;
-            IMAGEFILE_KEY_LAND_NOON -> R.drawable.land_noon;
-            IMAGEFILE_KEY_LAND_EVENING -> R.drawable.land_evening;
-            IMAGEFILE_KEY_LAND_NIGHT -> R.drawable.land_night;
+            IMAGEFILE_KEY_LAND_MORNING -> R.drawable.land_morning
+            IMAGEFILE_KEY_LAND_NOON -> R.drawable.land_noon
+            IMAGEFILE_KEY_LAND_EVENING -> R.drawable.land_evening
+            IMAGEFILE_KEY_LAND_NIGHT -> R.drawable.land_night
 
-            IMAGEFILE_KEY_OBLONG_MORNING -> R.drawable.oblong_morning;
-            IMAGEFILE_KEY_OBLONG_NOON -> R.drawable.oblong_noon;
-            IMAGEFILE_KEY_OBLONG_EVENING -> R.drawable.oblong_evening;
-            IMAGEFILE_KEY_OBLONG_NIGHT -> R.drawable.oblong_night;
+            IMAGEFILE_KEY_OBLONG_MORNING -> R.drawable.oblong_morning
+            IMAGEFILE_KEY_OBLONG_NOON -> R.drawable.oblong_noon
+            IMAGEFILE_KEY_OBLONG_EVENING -> R.drawable.oblong_evening
+            IMAGEFILE_KEY_OBLONG_NIGHT -> R.drawable.oblong_night
 
             else -> R.drawable.land_noon
 
@@ -109,7 +100,7 @@ object BackgroundResolver {
     fun randomImageSource(context: Context, orientation: Int): ImageSource {
 
         val files = context.getAllFile_inInternalStorage(
-            BackgroundResolver.BACKGROUNDS_PATH
+            BACKGROUNDS_PATH
         ).map { value -> ImageSource.FilePath(value) }
         val defaultBackgrounds = if (orientation == ORIENTATION_OBLONG) {
             listOf(
@@ -161,10 +152,6 @@ object BackgroundResolver {
         }
 
     }
-
-
-
-
 
 
 }

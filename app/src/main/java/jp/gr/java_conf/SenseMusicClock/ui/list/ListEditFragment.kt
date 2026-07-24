@@ -2,25 +2,23 @@ package jp.gr.java_conf.SenseMusicClock.ui.list
 
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.toMediaItem
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.FragmentListEditBinding
-import jp.gr.java_conf.SenseMusicClock.getDisplayName
 import jp.gr.java_conf.SenseMusicClock.toBlockListItems
 import jp.gr.java_conf.SenseMusicClock.toPlaylistItems
 import kotlinx.coroutines.launch
-import kotlin.getValue
 
 /**
  * A fragment representing a list of Items.
@@ -70,12 +68,6 @@ class ListEditFragment : Fragment() {
     })
 
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -91,7 +83,7 @@ class ListEditFragment : Fragment() {
 
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
-                    R.id.action_back-> {
+                    R.id.action_back -> {
 
                         parentFragmentManager.popBackStack()
                         true
@@ -127,11 +119,9 @@ class ListEditFragment : Fragment() {
             isChecked = true
         )
         sharedViewModel.list.observe(requireActivity()) { list ->
-            adapterSetListByMediaItems(list.map { it.toMediaItem() } ,isChecked = true)
+            adapterSetListByMediaItems(list.map { it.toMediaItem() }, isChecked = true)
 
         }
-
-
 
 
         // Set the adapter
@@ -142,8 +132,14 @@ class ListEditFragment : Fragment() {
 
     fun save() {
 
-        Log.d("ListEditFragment", "Saving list with ${listadapter.currentList.size} items, checked count: ${getCheckedList().size}")
-        Log.d("ListEditFragment", "Saving list items: ${getCheckedList().map { it.mediaMetadata.title }}")
+        Log.d(
+            "ListEditFragment",
+            "Saving list with ${listadapter.currentList.size} items, checked count: ${getCheckedList().size}"
+        )
+        Log.d(
+            "ListEditFragment",
+            "Saving list items: ${getCheckedList().map { it.mediaMetadata.title }}"
+        )
 
         sharedViewModel.viewModelScope.launch {
 
@@ -152,9 +148,12 @@ class ListEditFragment : Fragment() {
                     val listId = sharedViewModel.listId.value ?: return@launch
                     val newItems = DBManager.replacePlaylistContent(
                         requireContext().applicationContext,
-                        getCheckedList().toPlaylistItems(listId) ,
+                        getCheckedList().toPlaylistItems(listId),
                     )
-                    Log.d("ListEditFragment", "Saving list items: ${newItems.map { it.fileItem.fileName }}")
+                    Log.d(
+                        "ListEditFragment",
+                        "Saving list items: ${newItems.map { it.fileItem.fileName }}"
+                    )
                     sharedViewModel.setFileItemListByListItems(newItems)
 
                 }
@@ -169,8 +168,12 @@ class ListEditFragment : Fragment() {
                     sharedViewModel.setFileItemListByListItems(newItems)
 
                 }
+
                 else -> {
-                    Log.e("ListEditFragment", "Unknown list type: ${sharedViewModel.listType.value}")
+                    Log.e(
+                        "ListEditFragment",
+                        "Unknown list type: ${sharedViewModel.listType.value}"
+                    )
                 }
             }
         }
@@ -178,7 +181,12 @@ class ListEditFragment : Fragment() {
 
     fun goAdd() {
         parentFragmentManager.beginTransaction()
-            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
             .replace(R.id.fragment_container, ListAddFragment())
             .addToBackStack(null)
             .commit()
@@ -190,7 +198,8 @@ class ListEditFragment : Fragment() {
             ListsActivity.ListType.PLAYLIST -> {
                 itemTouchHelper.attachToRecyclerView(binding.editList)
                 this.adapter = ListEditAdapter(
-                    sharedViewModel.list.value?.map { it.toMediaItem().toMediaItemWithChecked() } ?: emptyList(),
+                    sharedViewModel.list.value?.map { it.toMediaItem().toMediaItemWithChecked() }
+                        ?: emptyList(),
                     ListEditAdapter.LIST_TYPE.TYPE_PLAY,
                     onStartDrag = { viewHolder ->
                         itemTouchHelper.startDrag(viewHolder)
@@ -205,7 +214,8 @@ class ListEditFragment : Fragment() {
 
             ListsActivity.ListType.BLOCKLIST -> {
                 this.adapter = ListEditAdapter(
-                    sharedViewModel.list.value?.map { it.toMediaItem().toMediaItemWithChecked() } ?: emptyList(),
+                    sharedViewModel.list.value?.map { it.toMediaItem().toMediaItemWithChecked() }
+                        ?: emptyList(),
                     ListEditAdapter.LIST_TYPE.TYPE_BLOCK,
                     onStartDrag = { viewHolder ->
 
@@ -230,22 +240,20 @@ class ListEditFragment : Fragment() {
 
     }
 
-    fun MediaItem.toMediaItemWithChecked(isChecked: Boolean = true) = ListEditAdapter.MediaItemWithChecked(this, isChecked)
+    fun MediaItem.toMediaItemWithChecked(isChecked: Boolean = true) =
+        ListEditAdapter.MediaItemWithChecked(this, isChecked)
 
-    fun adapterSetListByMediaItems(list: List<MediaItem>,isChecked: Boolean = true) {
+    fun adapterSetListByMediaItems(list: List<MediaItem>, isChecked: Boolean = true) {
         val items = list.map {
-            ListEditAdapter.MediaItemWithChecked(it,isChecked)
+            ListEditAdapter.MediaItemWithChecked(it, isChecked)
         }
         listadapter.submitList(items.toList())
     }
 
 
-
     fun getCheckedList(): List<MediaItem> {
         return listadapter.currentList.filter { it.isChecked }.map { it.mediaItem }
     }
-
-
 
 
 }

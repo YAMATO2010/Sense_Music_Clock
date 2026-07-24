@@ -1,7 +1,6 @@
 package jp.gr.java_conf.SenseMusicClock.Music.Data
 
 
-
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room

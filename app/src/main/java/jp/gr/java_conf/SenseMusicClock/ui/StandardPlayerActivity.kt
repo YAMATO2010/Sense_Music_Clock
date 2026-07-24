@@ -39,11 +39,8 @@ import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
 import jp.gr.java_conf.SenseMusicClock.load_forRoot
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.w3c.dom.Text
-import kotlin.time.Duration
 
 class StandardPlayerActivity : AppCompatActivity() {
 

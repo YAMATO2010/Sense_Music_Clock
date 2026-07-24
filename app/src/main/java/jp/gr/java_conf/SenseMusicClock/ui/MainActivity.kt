@@ -1,14 +1,13 @@
 package jp.gr.java_conf.SenseMusicClock.ui
 
+
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -20,7 +19,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,16 +26,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -48,15 +41,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -67,7 +55,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -78,19 +65,14 @@ import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
-import coil3.memory.MemoryCache
-
-
 import coil.load
-
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
+import coil3.memory.MemoryCache
 import coil3.request.allowHardware
-import coil3.request.bitmapConfig
 import coil3.request.crossfade
 import coil3.request.maxBitmapSize
 import coil3.size.Precision
-import com.google.firebase.annotations.PreviewApi
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.IDENTIFIER_INITIAL_INDEX_PROBLEM
@@ -98,7 +80,6 @@ import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.MainViewModel
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
-
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.MusicService
@@ -106,21 +87,15 @@ import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.animateScrollToItemWithSkipCheck
 import jp.gr.java_conf.SenseMusicClock.app_dir
-import jp.gr.java_conf.SenseMusicClock.calculateScrollSpeed
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
-import jp.gr.java_conf.SenseMusicClock.dpToPx
-
 import jp.gr.java_conf.SenseMusicClock.load_forRoot
-import jp.gr.java_conf.SenseMusicClock.scrollToPositionCentered
 import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
-import jp.gr.java_conf.SenseMusicClock.smoothScrollToPositionWithSkipAnimationCheck
 import jp.gr.java_conf.SenseMusicClock.toBlocklistItem
 import jp.gr.java_conf.SenseMusicClock.toFileItem
 import jp.gr.java_conf.SenseMusicClock.ui.search.SearchActivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -212,7 +187,7 @@ class MainActivity : AppCompatActivity() {
 
         ViewModelProvider(
             this,
-            ViewModelProvider.AndroidViewModelFactory.Companion.getInstance(application)
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application)
         )
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         orientation = resources.configuration.orientation
@@ -227,13 +202,13 @@ class MainActivity : AppCompatActivity() {
         binding.jackets.setContent {
             if (orientation == BackgroundResolver.ORIENTATION_OBLONG) {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    item() { }
+                    item { }
 
                 }
             } else {
                 LazyRow(modifier = Modifier.fillMaxSize()) {
 
-                    item() { }
+                    item { }
                 }
 
             }
@@ -1072,7 +1047,7 @@ class MainActivity : AppCompatActivity() {
                 // すべてのアイテムを取得し終わった後の処理
                 Log.d(
                     "MainActivity",
-                    "All media items loaded: total=${mainViewModel.tracks.value.size ?: 0}"
+                    "All media items loaded: total=${mainViewModel.tracks.value.size}"
                 )
                 loadAllMediasComplete(list, browser)
 
@@ -1088,14 +1063,14 @@ class MainActivity : AppCompatActivity() {
         setLoadingVisible(false)
 
 
-        val tracks = mainViewModel.tracks.value ?: emptyList()
+        val tracks = mainViewModel.tracks.value
         Log.d("track viewmodel", "tracks Size:${tracks.size}, tracksHash:${tracks.hashCode()}")
 
 
         runOnUiThread {
 
             val current = browser.currentMediaItem
-            val currentIndex = getIndexById(current)
+            getIndexById(current)
 
             scrollToTrack()
 

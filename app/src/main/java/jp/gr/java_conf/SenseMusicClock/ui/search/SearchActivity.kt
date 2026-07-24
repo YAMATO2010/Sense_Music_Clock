@@ -12,8 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
@@ -40,13 +38,10 @@ import jp.gr.java_conf.SenseMusicClock.databinding.ActivitySearchBinding
 import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
 import jp.gr.java_conf.SenseMusicClock.toFileItem
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 class SearchActivity : AppCompatActivity() {
 
@@ -101,7 +96,7 @@ class SearchActivity : AppCompatActivity() {
 
         setContentView(binding.root)
         token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        val controllerFuture = MediaController.Builder(this, token).buildAsync().also {
+        MediaController.Builder(this, token).buildAsync().also {
             it.addListener({
                 mediaController = it.get()
             }, ContextCompat.getMainExecutor(this))
@@ -455,7 +450,7 @@ class SearchActivity : AppCompatActivity() {
             is LocalArtistFetcher.MediaStoreArtistSummary -> clickAddBlock_Artist(item)
             else -> Log.w(
                 "SearchActivity",
-                "Unknown item type for add block action: ${item?.javaClass}"
+                "Unknown item type for add block action: ${item.javaClass}"
             )
         }
 

@@ -14,10 +14,10 @@ import android.widget.LinearLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
+import jp.gr.java_conf.SenseMusicClock.ui.MainActivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -116,7 +116,7 @@ class ClockUiController(
 
 
     private val timerConnection = object : ServiceConnection {
-        private var timerJob : Job? = null
+        private var timerJob: Job? = null
         override fun onServiceConnected(
             name: ComponentName?,
             service: IBinder?
@@ -139,7 +139,7 @@ class ClockUiController(
                         it.remainingTime.collect { value ->
 
 
-                            if (binding.TimerButton.text != "Timer" && value <= 0L && it.isTimerFinished ) {
+                            if (binding.TimerButton.text != "Timer" && value <= 0L && it.isTimerFinished) {
                                 binding.TimerButton.text = "完了！"
                             } else {
                                 binding.TimerButton.text = formatMillisToTime(value)
@@ -233,7 +233,7 @@ class ClockUiController(
         }
         Log.d("ClockUiController", "BindService_StopWatch called")
         val intent = Intent(activity, StopWatchService::class.java)
-        isStopWatchBound  = activity.bindService(intent, stopWatchConnection, 0)
+        isStopWatchBound = activity.bindService(intent, stopWatchConnection, 0)
         Log.d("ClockUiController", "bindService requested for StopWatchService")
     }
 
@@ -289,7 +289,7 @@ class ClockUiController(
         activity.lifecycleScope.launch {
             val alarmTime = PrefsManager.getSetAlarmTime(activity)
             binding.alarmButton.text = when {
-                alarmTime.isBlank()|| alarmTime.isBlank() -> activity.getString(R.string.alarm_button_label)
+                alarmTime.isBlank() || alarmTime.isBlank() -> activity.getString(R.string.alarm_button_label)
                 else -> alarmTime
             }
         }
@@ -300,9 +300,8 @@ class ClockUiController(
 
         // Activity shows centiseconds; use centisecond formatter for initial label
         // remove alarm button setup
-        binding.stopWatchBtn.text = activity.getString(R.string.stop_watch_button_label) // initial label for stop watch
-
-        14
+        binding.stopWatchBtn.text =
+            activity.getString(R.string.stop_watch_button_label) // initial label for stop watch 14
         // Timer
         binding.TimerButton.setOnClickListener {
             // Build a horizontal LinearLayout containing three numeric EditTexts for H/M/S

@@ -5,19 +5,17 @@ import android.content.ContentResolver
 import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import androidx.media3.common.MediaItem
-
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.playlist_selection
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.selection
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 object LocalMusicRepository {
 
@@ -43,13 +41,14 @@ object LocalMusicRepository {
     //TODO プレイリストの時に、同じ曲（同じクエリ）が重複していた場合、消される可能性がある。重複していた場合、それに該当するパスを持つもののMediaItemのIDを操作し、重複させよ。
 
 
-    fun blockAndSetTracks(newTracks: List<MediaItem>,isBlock: Boolean): List<MediaItem> {
+    fun blockAndSetTracks(newTracks: List<MediaItem>, isBlock: Boolean): List<MediaItem> {
 
         val filteredTracks = if (isBlock) newTracks.filterByBlocklist(blockItems) else newTracks
         return setTracks(filteredTracks)
 
     }
-    fun setTracks(newTracks: List<MediaItem>,): List<MediaItem> {
+
+    fun setTracks(newTracks: List<MediaItem>): List<MediaItem> {
         val filteredTracks = newTracks
         _tracksFlow.value = filteredTracks
         return filteredTracks
@@ -76,12 +75,15 @@ object LocalMusicRepository {
         useCurrentShuffleMode: Boolean,
 
 
-    ) {
-        Log.d("LocalMusicRepository", "loadMusicAndSetTracksAndCreateMap_addedAtDesc called with isFilterByDir=$isFilterByDir, isBlock=$isBlock, limit=$limit, useCurrentShuffleMode=$useCurrentShuffleMode")
+        ) {
+        Log.d(
+            "LocalMusicRepository",
+            "loadMusicAndSetTracksAndCreateMap_addedAtDesc called with isFilterByDir=$isFilterByDir, isBlock=$isBlock, limit=$limit, useCurrentShuffleMode=$useCurrentShuffleMode"
+        )
         val isShuffle = if (useCurrentShuffleMode) this.isShuffle else false
 
         val (selection, selectionArgs) = if (isFilterByDir) {
-            LocalMusicFetcher.selection(UserRelativePaths)
+            selection(UserRelativePaths)
         } else {
             Pair(null, null)
         }
@@ -101,8 +103,11 @@ object LocalMusicRepository {
                 .let { tracks ->
                     if (isShuffle) tracks.shuffled() else tracks
                 }
-            Log.d("LocalMusicRepository", "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}")
-            setTracksAndCreateMap(tracks,isBlock)
+            Log.d(
+                "LocalMusicRepository",
+                "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}"
+            )
+            setTracksAndCreateMap(tracks, isBlock)
         }
 
 
@@ -266,8 +271,7 @@ object LocalMusicRepository {
             LocalMusicFetcher.loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
 
         withContext(Dispatchers.Default) {
-            localTracks.let {
-                value ->
+            localTracks.let { value ->
                 val shuffledTracks = if (isShuffle) value.shuffled() else value
                 setTracksAndCreateMap(shuffledTracks, isBlock)
             }
@@ -275,7 +279,7 @@ object LocalMusicRepository {
     }
 
 
-    fun setTracksAndCreateMap(newTracks: List<MediaItem>, isBlock: Boolean ) {
+    fun setTracksAndCreateMap(newTracks: List<MediaItem>, isBlock: Boolean) {
 
         val filteredTracks = blockAndSetTracks(newTracks, isBlock)
         createMap_idToIndex(filteredTracks)

@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".ui.search.SearchActivity">
 
 
@@ -22,7 +22,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </LinearLayout>
-
 
 
     <EditText
@@ -44,9 +43,6 @@
         app:layout_constraintTop_toBottomOf="@+id/searchEditText" />
 
 
-
-
-
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/typeTabLayout"
         android:layout_width="match_parent"
@@ -57,19 +53,19 @@
         tools:layout_editor_absoluteX="0dp">
 
         <com.google.android.material.tabs.TabItem
-            android:layout_height="match_parent"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
 
             android:text="アルバム" />
 
         <com.google.android.material.tabs.TabItem
-            android:layout_height="match_parent"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:text="曲" />
 
         <com.google.android.material.tabs.TabItem
-            android:layout_height="match_parent"
             android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:text="アーティスト" />
 
     </com.google.android.material.tabs.TabLayout>
@@ -94,16 +90,17 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/currentModeTextView"
         android:layout_width="match_parent"
         android:layout_height="30dp"
-        android:gravity="center"
-        android:id="@+id/currentModeTextView"
-        android:background="@drawable/gradient2"
         android:autoSizeTextType="uniform"
+        android:background="@drawable/gradient2"
+        android:gravity="center"
         android:textColor="@color/design_default_color_primary"
         app:layout_constraintTop_toBottomOf="@id/view"
 
         />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/searchResultRecyclerView"
         android:layout_width="0dp"
@@ -113,8 +110,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/currentModeTextView" />
-
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

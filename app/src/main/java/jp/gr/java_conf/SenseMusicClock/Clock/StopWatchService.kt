@@ -4,16 +4,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-
 import android.os.Binder
 import android.os.IBinder
-import com.google.common.base.Stopwatch
-
-import android.os.SystemClock
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.google.common.base.Stopwatch
 import jp.gr.java_conf.SenseMusicClock.R
-import javax.annotation.meta.When
 
 class StopWatchService : Service() {
     private var isSWFirstRunning = false
@@ -50,7 +46,7 @@ class StopWatchService : Service() {
 
 
     private var stoppedTime: Long = 0L
-    private var firstStartedTime : Long = 0L
+    private var firstStartedTime: Long = 0L
 
     private var baseTime: Long = 0L
 
@@ -149,10 +145,10 @@ class StopWatchService : Service() {
 
         val now = System.currentTimeMillis() // ミリ秒
 
-        return if(!isSWRunning){
-            stoppedTime  - baseTime
+        return if (!isSWRunning) {
+            stoppedTime - baseTime
 
-        }else if (baseTime > 0L) {
+        } else if (baseTime > 0L) {
             now - baseTime
         } else {
             0L
@@ -171,7 +167,7 @@ class StopWatchService : Service() {
                 firstStartedTime = System.currentTimeMillis()
 
             } else {
-                baseTime = System.currentTimeMillis() -( stoppedTime - baseTime)
+                baseTime = System.currentTimeMillis() - (stoppedTime - baseTime)
             }
             showNotification_Start()
             isSWFirstRunning = true

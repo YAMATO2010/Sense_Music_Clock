@@ -4,7 +4,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -13,7 +12,7 @@ class UtilAdapter<T>(
     private val layoutId: Int,
     private val bind: (View, T) -> Unit,
     diff: DiffUtil.ItemCallback<T>
-) : ListAdapter<T, UtilAdapter<T>.VH>(diff){
+) : ListAdapter<T, UtilAdapter<T>.VH>(diff) {
 
     private val items = mutableListOf<T>()
 
@@ -26,11 +25,9 @@ class UtilAdapter<T>(
         bind(holder.view, getItem(position))
 
 
-
     override fun getItemCount() = items.size
 
     override fun getItem(position: Int) = items[position]
-
 
 
     fun setItems(newItems: List<T>, commitCallback: (() -> Unit)?) {
@@ -44,7 +41,7 @@ class UtilAdapter<T>(
         })
     }
 
-    fun getItemPosition(item : T?): Int? {
+    fun getItemPosition(item: T?): Int? {
         if (item == null) return null
         val idx = items.indexOfFirst { it == item }
         return if (idx >= 0) idx else null

@@ -1,7 +1,5 @@
 package jp.gr.java_conf.SenseMusicClock
 
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -34,7 +32,7 @@ class MainViewModel : ViewModel() {
         get() = _tracks
 
 
-    private val _currentIndex : MutableSharedFlow<Int> = MutableSharedFlow<Int>(
+    private val _currentIndex: MutableSharedFlow<Int> = MutableSharedFlow<Int>(
         replay = 0, // 過去のイベントは再送しない
         extraBufferCapacity = 1
     )
@@ -45,21 +43,21 @@ class MainViewModel : ViewModel() {
         private set
 
     private val _sleepTimerEndAtTimeFlow = MutableStateFlow<Long?>(null)
-    val  sleepTimerEndAtTimeFlow: StateFlow<Long?>
+    val sleepTimerEndAtTimeFlow: StateFlow<Long?>
         get() = _sleepTimerEndAtTimeFlow
-
 
 
     private fun setSleepTimerEndAtTime(newTime: Long) {
         _sleepTimerEndAtTimeFlow.value = newTime
     }
+
     fun setSleepTimerIfNeeded(newTime: Long) {
         if (_sleepTimerEndAtTimeFlow.value != newTime && isValidSleepTimerEndAtTime(newTime)) {
             setSleepTimerEndAtTime(newTime)
         }
     }
 
-    fun isValidSleepTimerEndAtTime(endAtTime : Long? = _sleepTimerEndAtTimeFlow.value): Boolean {
+    fun isValidSleepTimerEndAtTime(endAtTime: Long? = _sleepTimerEndAtTimeFlow.value): Boolean {
         return endAtTime != null && endAtTime >= System.currentTimeMillis()
     }
 
@@ -78,6 +76,7 @@ class MainViewModel : ViewModel() {
             lastIndex = newIndex
         }
     }
+
     fun clearCurrentIndex() {
         setCurrentIndex(0)
     }
@@ -91,7 +90,6 @@ class MainViewModel : ViewModel() {
     fun reverseIsHHmm() {
         _isHHmm.value = !(_isHHmm.value ?: false)
     }
-
 
 
 }

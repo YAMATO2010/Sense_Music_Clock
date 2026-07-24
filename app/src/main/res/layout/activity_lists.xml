@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".ui.list.ListsActivity">
 
     <androidx.fragment.app.FragmentContainerView
@@ -16,9 +16,7 @@
         app:layout_constraintBottom_toTopOf="@+id/linearLayout6"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-      />
-
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <LinearLayout
@@ -32,7 +30,7 @@
         <jp.gr.java_conf.SenseMusicClock.Music.BottomController
             android:id="@+id/bottomController"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
 

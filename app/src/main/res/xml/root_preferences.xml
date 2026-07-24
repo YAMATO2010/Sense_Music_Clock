@@ -147,7 +147,6 @@
             android:title="設定の削除" />
 
 
-
     </PreferenceCategory>
 
 </PreferenceScreen>

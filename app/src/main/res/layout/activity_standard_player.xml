@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
 
 
@@ -36,6 +35,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.75" />
+
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline7"
         android:layout_width="wrap_content"
@@ -105,11 +105,11 @@
 
 
             android:layout_weight="2"
+            android:autoSizeMaxTextSize="30dp"
             android:autoSizeTextType="uniform"
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
-            android:autoSizeMaxTextSize="30dp"
             android:text="Title"
             android:textColor="@android:color/white"
             android:textStyle="bold"
@@ -126,9 +126,9 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
 
-            android:autoSizeMaxTextSize="25dp"
-
             android:layout_weight="1"
+
+            android:autoSizeMaxTextSize="25dp"
             android:autoSizeTextType="uniform"
             android:ellipsize="end"
             android:gravity="center"
@@ -149,8 +149,8 @@
             android:layout_height="0dp"
 
             android:layout_weight="1"
-            android:autoSizeTextType="uniform"
             android:autoSizeMaxTextSize="25dp"
+            android:autoSizeTextType="uniform"
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
@@ -187,6 +187,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/guideline6">
+
         <Space
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -221,22 +222,22 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="next"
             android:src="@android:drawable/ic_media_next" />
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginRight="5dp"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginRight="5dp">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/CurrentTimeTextView"
                 android:layout_width="match_parent"
-                android:gravity="center"
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:autoSizeTextType="uniform"
-                android:textColor="@color/white_glass_item_square"
-                />
+                android:gravity="center"
+                android:textColor="@color/white_glass_item_square" />
 
             <TextView
                 android:id="@+id/durationTextView"
@@ -244,8 +245,8 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:autoSizeTextType="uniform"
-                android:textColor="@color/white_glass_item_square"
                 android:gravity="right"
+                android:textColor="@color/white_glass_item_square"
 
                 />
 
@@ -277,8 +278,8 @@
         android:id="@+id/sleepTimerTextView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:autoSizeTextType="uniform"
         android:layout_marginHorizontal="20dp"
+        android:autoSizeTextType="uniform"
         android:background="@drawable/gradient4"
         android:gravity="center"
         android:textColor="@color/white"
@@ -287,11 +288,6 @@
         app:layout_constraintEnd_toStartOf="@+id/btnRepeat"
         app:layout_constraintStart_toEndOf="@+id/btnBackEdge"
         app:layout_constraintTop_toTopOf="@+id/btnRepeat" />
-
- 
-
-
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

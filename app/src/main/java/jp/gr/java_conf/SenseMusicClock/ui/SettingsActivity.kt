@@ -24,7 +24,6 @@ import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreference
 import com.google.gson.Gson
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
-
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
@@ -43,8 +42,8 @@ import jp.gr.java_conf.SenseMusicClock.databinding.SettingsActivityBinding
 import jp.gr.java_conf.SenseMusicClock.launchClearBackgroundImageFileDialog
 import jp.gr.java_conf.SenseMusicClock.launchSelectBackgroundImageDialog
 import jp.gr.java_conf.SenseMusicClock.saveToInternalStorage
-import jp.gr.java_conf.SenseMusicClock.showEditTextDialog
 import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
+import jp.gr.java_conf.SenseMusicClock.showEditTextDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
 import jp.gr.java_conf.SenseMusicClock.toFileItem
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
@@ -139,77 +138,76 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-            val openM3ULauncher =
-                registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                    if (uri != null) {
-                        Log.d("SettingsFragment", "Picked M3U file: $uri")
-                        // ここで M3U ファイルの処理を行う（例: プレイリストの読み込み）
+            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) {
+                    Log.d("SettingsFragment", "Picked M3U file: $uri")
+                    // ここで M3U ファイルの処理を行う（例: プレイリストの読み込み）
 
-                        lifecycleScope.launch {
+                    lifecycleScope.launch {
 
-                            val DisplayName = loadM3U_RPathAndName(uri)
+                        val DisplayName = loadM3U_RPathAndName(uri)
 
-                            try {
-                                context?.contentResolver?.openInputStream(uri)?.bufferedReader()
-                                    ?.use { reader ->
-                                        val lines = reader.readLines()
+                        try {
+                            context?.contentResolver?.openInputStream(uri)?.bufferedReader()
+                                ?.use { reader ->
+                                    val lines = reader.readLines()
 
-                                        val items: List<FileItem> = lines.mapNotNull {
-                                            if (it.first() == '#') {
-                                                // コメント行は無視
-                                                null
-                                            } else {
-                                                val name = it.substringAfterLast('/')
-                                                val rPath = it.substringBeforeLast('/')
-                                                val relative: String = File(rPath).normalize().path
-                                                FileItem(
-                                                    relative,
-                                                    name
-                                                )
-
-                                            }
-                                        }
-                                        val (selection, selectionArgs) = LocalMusicFetcher.path_selection_RPath_LIKE(
-                                            items
-                                        )
-                                        val queryArgs = LocalMusicFetcher.createQueryArgs(
-                                            selection,
-                                            selectionArgs
-                                        )
-                                        val Summarys: List<LocalMusicFetcher.MediaStoreAudioSummary> =
-                                            LocalMusicFetcher.SafeLocalMusicFromAppDir(
-                                                requireContext().applicationContext.contentResolver,
-                                                queryArgs
+                                    val items: List<FileItem> = lines.mapNotNull {
+                                        if (it.first() == '#') {
+                                            // コメント行は無視
+                                            null
+                                        } else {
+                                            val name = it.substringAfterLast('/')
+                                            val rPath = it.substringBeforeLast('/')
+                                            val relative: String = File(rPath).normalize().path
+                                            FileItem(
+                                                relative,
+                                                name
                                             )
 
-                                        val sortedList: List<FileItem> =
-                                            Summarys.sortedBy { summary ->
-                                                items.any { item ->
-                                                    summary.displayName == item.fileName && summary.relativePath?.contains(
-                                                        item.relativePath
-                                                    ) ?: false
-                                                }
-
-                                            }.mapNotNull { item ->
-                                                item.toMediaItem().toFileItem()
-                                            }
-                                        DBManager.addPlaylistAndItems(
-                                            context = requireContext(),
-                                            playlistName = DisplayName
-                                                ?: "インポートされたプレイリスト",
-                                            sortedList
+                                        }
+                                    }
+                                    val (selection, selectionArgs) = LocalMusicFetcher.path_selection_RPath_LIKE(
+                                        items
+                                    )
+                                    val queryArgs = LocalMusicFetcher.createQueryArgs(
+                                        selection,
+                                        selectionArgs
+                                    )
+                                    val Summarys: List<LocalMusicFetcher.MediaStoreAudioSummary> =
+                                        LocalMusicFetcher.SafeLocalMusicFromAppDir(
+                                            requireContext().applicationContext.contentResolver,
+                                            queryArgs
                                         )
 
-                                        // ここで lines を解析してプレイリストに変換する処理を実装
-                                    }
-                            } catch (e: Exception) {
-                                Log.e("SettingsFragment/M3U", "Failed to read M3U file", e)
-                            }
+                                    val sortedList: List<FileItem> =
+                                        Summarys.sortedBy { summary ->
+                                            items.any { item ->
+                                                summary.displayName == item.fileName && summary.relativePath?.contains(
+                                                    item.relativePath
+                                                ) ?: false
+                                            }
+
+                                        }.mapNotNull { item ->
+                                            item.toMediaItem().toFileItem()
+                                        }
+                                    DBManager.addPlaylistAndItems(
+                                        context = requireContext(),
+                                        playlistName = DisplayName
+                                            ?: "インポートされたプレイリスト",
+                                        sortedList
+                                    )
+
+                                    // ここで lines を解析してプレイリストに変換する処理を実装
+                                }
+                        } catch (e: Exception) {
+                            Log.e("SettingsFragment/M3U", "Failed to read M3U file", e)
                         }
-                    } else {
-                        Log.d("SettingsFragment", "M3U file pick cancelled")
                     }
+                } else {
+                    Log.d("SettingsFragment", "M3U file pick cancelled")
                 }
+            }
 
 
             val MyDataStore = MyDataStore(requireContext(), lifecycleScope)
@@ -656,7 +654,8 @@ class SettingsActivity : AppCompatActivity() {
         private fun showSwitchSettingsDialog() {
             val files = getSettingsProfileFiles(requireContext())
             if (files.isEmpty()) {
-                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT)
+                    .show()
                 return
             }
 
@@ -717,7 +716,8 @@ class SettingsActivity : AppCompatActivity() {
         private fun showDeleteSettingsDialog() {
             val files = getSettingsProfileFiles(requireContext())
             if (files.isEmpty()) {
-                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT)
+                    .show()
                 return
             }
 

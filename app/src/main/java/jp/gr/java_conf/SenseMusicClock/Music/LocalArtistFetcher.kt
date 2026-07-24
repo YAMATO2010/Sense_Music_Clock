@@ -1,12 +1,9 @@
 package jp.gr.java_conf.SenseMusicClock.Music
 
 import android.content.ContentResolver
-import android.net.Uri
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.provider.MediaStore
-import androidx.core.net.toUri
-import jp.gr.java_conf.SenseMusicClock.Music.LocalAlbumFetcher.MediaStoreAlbumSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -19,7 +16,7 @@ object LocalArtistFetcher {
     ): MediaStoreArtistSummary? {
         val (selection, selectionArgs) = artistId_selection(artistId)
         val queryArgs = createQueryArgs(selection, selectionArgs)
-        val artist = loadArtistsFromAppDir(resolver, queryArgs,cancellationSignal).firstOrNull()
+        val artist = loadArtistsFromAppDir(resolver, queryArgs, cancellationSignal).firstOrNull()
         return artist
     }
 

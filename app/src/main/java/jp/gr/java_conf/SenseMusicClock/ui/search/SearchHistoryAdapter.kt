@@ -12,11 +12,11 @@ import androidx.recyclerview.widget.RecyclerView
 import jp.gr.java_conf.SenseMusicClock.Music.Data.SearchHistory
 import jp.gr.java_conf.SenseMusicClock.R
 
-class SearchHistoryAdapter (
+class SearchHistoryAdapter(
     InitialValue: List<SearchHistory>,
-    private val onBind :(SearchHistoryVHolder, Int, SearchHistory,) -> Unit
+    private val onBind: (SearchHistoryVHolder, Int, SearchHistory) -> Unit
 
-): ListAdapter<SearchHistory, SearchHistoryAdapter.SearchHistoryVHolder>(DIFF) {
+) : ListAdapter<SearchHistory, SearchHistoryAdapter.SearchHistoryVHolder>(DIFF) {
 
     init {
         submitList(InitialValue.toList())
@@ -56,18 +56,22 @@ class SearchHistoryAdapter (
     }
 
     data class HistoryMetadata(
-        val id : String = "",
-        val type : String = SearchHistory.TYPE_UNKNOWN,
-        val title : String = "UNKNOWN",
-        val imageUrl : Uri = Uri.EMPTY,
+        val id: String = "",
+        val type: String = SearchHistory.TYPE_UNKNOWN,
+        val title: String = "UNKNOWN",
+        val imageUrl: Uri = Uri.EMPTY,
     )
-    companion object{
+
+    companion object {
         val DIFF = object : DiffUtil.ItemCallback<SearchHistory>() {
             override fun areItemsTheSame(oldItem: SearchHistory, newItem: SearchHistory): Boolean {
                 return oldItem.id == newItem.id
             }
 
-            override fun areContentsTheSame(oldItem: SearchHistory, newItem: SearchHistory): Boolean {
+            override fun areContentsTheSame(
+                oldItem: SearchHistory,
+                newItem: SearchHistory
+            ): Boolean {
                 return oldItem.equals(newItem)
             }
         }

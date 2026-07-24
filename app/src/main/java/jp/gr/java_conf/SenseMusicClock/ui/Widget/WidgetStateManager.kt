@@ -1,10 +1,9 @@
 package jp.gr.java_conf.SenseMusicClock.ui.Widget
 
 import android.content.Context
-import android.net.Uri
+import androidx.core.net.toUri
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import kotlinx.coroutines.flow.Flow
-import androidx.core.net.toUri
 
 object WidgetStateManager {
 

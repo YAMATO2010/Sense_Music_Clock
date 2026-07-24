@@ -5,25 +5,25 @@
 
     <!-- 小さめに縮めておいて、中央に向かってスケールアップ -->
     <scale
+        android:duration="320"
         android:fromXScale="0.95"
-        android:toXScale="1.0"
         android:fromYScale="0.95"
-        android:toYScale="1.0"
         android:pivotX="50%"
         android:pivotY="50%"
-        android:duration="320" />
+        android:toXScale="1.0"
+        android:toYScale="1.0" />
 
     <!-- 下から（奥から）手前に浮かび上がるように少しだけ移動 -->
     <translate
+        android:duration="320"
         android:fromYDelta="20dp"
-        android:toYDelta="0dp"
-        android:duration="320" />
+        android:toYDelta="0dp" />
 
     <!-- 徐々にフェードイン -->
     <alpha
+        android:duration="280"
         android:fromAlpha="0.0"
-        android:toAlpha="1.0"
-        android:duration="280" />
+        android:toAlpha="1.0" />
 
 </set>
 

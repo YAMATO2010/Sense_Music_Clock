@@ -6,8 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.provider.MediaStore
-import androidx.core.net.toUri
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,6 +18,7 @@ object LocalAlbumFetcher {
 
 
     }
+
     fun albumId_selection(albumId: Long): Pair<String, Array<String>> {
         val selection = "${MediaStore.Audio.Albums._ID} = ?"
         val args = arrayOf(albumId.toString())
@@ -78,7 +77,7 @@ object LocalAlbumFetcher {
                 cursor?.use { c ->
                     val idIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID)
                     val albumIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM)
-                    val albumIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM_ID)
+                    c.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM_ID)
                     val artistIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST)
 
 
@@ -104,7 +103,7 @@ object LocalAlbumFetcher {
                     }
                 }
             }
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
 

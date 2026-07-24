@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item_square_container"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:id="@+id/item_square_container"
     android:clickable="true"
 
     android:padding="9dp">
@@ -13,30 +12,20 @@
     <!-- コンテナは wrap_content にして中央寄せ、小さなマージンで詰める -->
 
 
+    <ImageView
+        android:id="@+id/artwork"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:background="@null"
+        android:maxWidth="160dp"
+        android:minWidth="160dp"
+        android:scaleType="fitCenter"
+        app:layout_constraintBottom_toBottomOf="parent"
 
-
-
-
-            <ImageView
-                android:id="@+id/artwork"
-                android:layout_width="wrap_content"
-                android:maxWidth="160dp"
-                android:minWidth="160dp"
-                android:layout_height="0dp"
-                android:background="@null"
-                app:layout_constraintDimensionRatio="1:1"
-                android:scaleType="fitCenter"
-
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                />
-
-
-
-
-
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -12,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -26,11 +25,9 @@ class StorageAccessHelper(
 ) {
 
 
-    private val _isGrantedFlow : MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val _isGrantedFlow: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     val isGrantedFlow = _isGrantedFlow.asStateFlow()
-
-
 
 
     private val perm: String =
@@ -51,7 +48,7 @@ class StorageAccessHelper(
                 val rel = parseTreeUriToRelativePath(uri)
                 Log.d("StorageAccessHelper", "Picked URI: $uri, Parsed relative path: $rel")
                 activity.lifecycleScope.launch {
-                    TargetDirectoryPrefJSONManager.add(rel ?: return@launch,activity)
+                    TargetDirectoryPrefJSONManager.add(rel ?: return@launch, activity)
                 }
 
                 onDirectoryPicked(rel, uri)
@@ -133,7 +130,7 @@ class StorageAccessHelper(
                 null
             }
         } catch (e: Exception) {
-            android.util.Log.w("StorageAccessHelper", "parseTreeUriToRelativePath failed", e)
+            Log.w("StorageAccessHelper", "parseTreeUriToRelativePath failed", e)
             null
         }
     }

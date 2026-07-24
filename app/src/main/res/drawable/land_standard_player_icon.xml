@@ -7,12 +7,18 @@
             <solid android:color="#88FFFFFF" />
             <corners android:radius="18dp" />
             <!-- make drawable wider than tall for landscape icon -->
-            <size android:width="320dp" android:height="200dp" />
+            <size
+                android:width="320dp"
+                android:height="200dp" />
         </shape>
     </item>
 
     <!-- 2) 画面領域（内側のスクリーン）：透過度は維持 -->
-    <item android:left="12dp" android:top="12dp" android:right="12dp" android:bottom="12dp">
+    <item
+        android:bottom="12dp"
+        android:left="12dp"
+        android:right="12dp"
+        android:top="12dp">
         <shape android:shape="rectangle">
             <solid android:color="#66F5F5F5" />
             <corners android:radius="12dp" />
@@ -21,9 +27,9 @@
 
     <!-- 3) アルバムアート画像を左半分中央に配置 -->
     <item
-        android:drawable="@drawable/goto_st_pl"
         android:width="140dp"
         android:height="140dp"
+        android:drawable="@drawable/goto_st_pl"
         android:gravity="center_vertical|start"
         android:left="18dp" />
 
@@ -35,16 +41,18 @@
         android:left="18dp">
         <shape android:shape="rectangle">
             <solid android:color="@android:color/transparent" />
-            <stroke android:width="2dp" android:color="#DDDDDD" />
+            <stroke
+                android:width="2dp"
+                android:color="#DDDDDD" />
             <corners android:radius="6dp" />
         </shape>
     </item>
 
     <!-- 5) 右半分中央に大型の右尖り三角（下側の要素を右側へ移動） -->
     <item
-        android:drawable="@drawable/triangle_right_semi"
         android:width="120dp"
         android:height="78dp"
+        android:drawable="@drawable/triangle_right_semi"
         android:gravity="center_vertical|end"
         android:right="18dp" />
 

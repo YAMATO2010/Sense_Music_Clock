@@ -3,10 +3,10 @@
     android:shape="rectangle">
 
     <!-- 背景色 -->
-    <solid android:color="@color/grey"/>
+    <solid android:color="@color/grey" />
 
     <!-- 角丸（0にすると完全に四角） -->
-    <corners android:radius="0dp"/>
+    <corners android:radius="0dp" />
 
 
 </shape>
