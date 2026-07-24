@@ -19,6 +19,7 @@ data class BlockList(
     val deleted: Date? = null
 )
 
+
 @Entity(
     tableName = "blocklistItems",
     primaryKeys = ["blocklistId", "relativePath", "fileName"],
@@ -41,7 +42,6 @@ data class BlocklistItem(
         const val TOPLAYLISTID = -333L
     }
 }
-
 
 @Dao
 interface BlocklistDao {

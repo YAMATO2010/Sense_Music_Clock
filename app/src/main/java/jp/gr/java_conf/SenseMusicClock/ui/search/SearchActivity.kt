@@ -52,11 +52,11 @@ class SearchActivity : AppCompatActivity() {
     }
 
     companion object {
-        val ARTIST = "アーティスト"
-        val TITLE = "タイトル"
-        val ALBUM = "アルバム"
+        const val ARTIST = "アーティスト"
+        const val TITLE = "タイトル"
+        const val ALBUM = "アルバム"
 
-        val HISTORY_ITEM_MAX_COUNT = 50
+        const val HISTORY_ITEM_MAX_COUNT = 50
     }
 
     private val searchType: Map<String, SearchType> = mapOf<String, SearchType>(
@@ -370,8 +370,7 @@ class SearchActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val playlists = DBManager.loadPlaylist(this@SearchActivity)
-            val fileItem: FileItem? = item.toMediaItem().toFileItem()
-            if (fileItem == null) return@launch
+            val fileItem: FileItem = item.toMediaItem().toFileItem() ?: return@launch
             showPlaylistSelectDialog(
                 playlists,
                 fileItem,
@@ -460,8 +459,7 @@ class SearchActivity : AppCompatActivity() {
         //曲のブロックリストへの追加処理
         lifecycleScope.launch {
             val blocklists = DBManager.loadBlocklist(this@SearchActivity)
-            val fileItem: FileItem? = item.toMediaItem().toFileItem()
-            if (fileItem == null) return@launch
+            val fileItem: FileItem = item.toMediaItem().toFileItem() ?: return@launch
             showBlockSelectDialog(
                 blocklists,
                 fileItem,

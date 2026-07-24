@@ -204,7 +204,7 @@ class ListEditFragment : Fragment() {
                     onStartDrag = { viewHolder ->
                         itemTouchHelper.startDrag(viewHolder)
                     },
-                    onCheckedChange = { pos, isChecked ->
+                    onCheckedChange = { _, _ ->
 
                     }
                 ).also {
@@ -217,10 +217,10 @@ class ListEditFragment : Fragment() {
                     sharedViewModel.list.value?.map { it.toMediaItem().toMediaItemWithChecked() }
                         ?: emptyList(),
                     ListEditAdapter.LIST_TYPE.TYPE_BLOCK,
-                    onStartDrag = { viewHolder ->
+                    onStartDrag = { _ ->
 
                     },
-                    onCheckedChange = { pos, isChecked ->
+                    onCheckedChange = { _, _ ->
 
                     }
                 ).also {
