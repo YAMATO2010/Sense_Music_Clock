@@ -35,6 +35,10 @@
         android:defaultValue="true"
         android:key="is_shuffle"
         android:title="シャッフルする" />
+    <Preference
+        android:key="action_sleepTimer"
+        android:selectable="true"
+        android:title="スリープタイマー" />
 
     <PreferenceCategory app:title="背景設定">
 
@@ -121,6 +125,26 @@
             android:key="action_play_default"
             android:selectable="true"
             android:title="デフォルトモードにする" />
+
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="設定の切り替え">
+
+        <Preference
+            android:key="action_switchSettings"
+            android:selectable="true"
+            android:title="切り替え" />
+
+        <Preference
+            android:key="action_switchSettings_add"
+            android:selectable="true"
+            android:title="今の設定を保存" />
+
+        <Preference
+            android:key="action_switchSettings_delete"
+            android:selectable="true"
+            android:title="設定の削除" />
 
 
     </PreferenceCategory>

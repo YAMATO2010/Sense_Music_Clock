@@ -14,12 +14,14 @@ import java.util.Date
 
 @Entity(tableName = "blockLists")
 data class BlockList(
-    @PrimaryKey(autoGenerate = true) val blockListID  : Long = 0,
-    val blockListName : String,
-    val deleted : Date? = null
+    @PrimaryKey(autoGenerate = true) val blockListID: Long = 0,
+    val blockListName: String,
+    val deleted: Date? = null
 )
 
-@Entity(tableName = "blocklistItems",
+
+@Entity(
+    tableName = "blocklistItems",
     primaryKeys = ["blocklistId", "relativePath", "fileName"],
     foreignKeys = [
         ForeignKey(
@@ -29,22 +31,20 @@ data class BlockList(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["blocklistId"])])
-data class BlocklistItem (
-    val blocklistId        : Long ,
+    indices = [Index(value = ["blocklistId"])]
+)
+data class BlocklistItem(
+    val blocklistId: Long,
     @Embedded val fileItem: FileItem
 
-    ){
-    companion object{
+) {
+    companion object {
         const val TOPLAYLISTID = -333L
     }
 }
 
-
-
 @Dao
 interface BlocklistDao {
-
 
 
     @Query("SELECT * FROM blockLists")
@@ -59,6 +59,7 @@ interface BlocklistDao {
 
     @Query("DELETE FROM blockLists WHERE blockListID = :blockListID")
     suspend fun deleteBlocklist(blockListID: Long)
+
     @Delete
     suspend fun deleteBlockList(blockList: BlockList)
 
@@ -68,6 +69,7 @@ interface BlocklistDao {
     @Upsert
     suspend fun upsertBlockList(blockList: BlockList): Long
 }
+
 @Dao
 interface BlocklistItemDao {
 
@@ -76,7 +78,6 @@ interface BlocklistItemDao {
 
     @Query("DELETE FROM blocklistItems WHERE blocklistId = :blockListID")
     suspend fun deleteItemsForBlocklist(blockListID: Long)
-
 
 
     @Delete

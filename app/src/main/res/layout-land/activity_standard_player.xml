@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
 
     android:layout_height="match_parent">
@@ -25,8 +24,6 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 
-
-
     <ImageView
         android:id="@+id/ivAlbumArt"
         android:layout_width="0dp"
@@ -40,7 +37,6 @@
         app:layout_constraintEnd_toStartOf="@+id/guidelineVert"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
 
 
     <androidx.constraintlayout.widget.Guideline
@@ -62,8 +58,7 @@
         app:layout_constraintEnd_toEndOf="@+id/scrimOverlay"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toEndOf="@+id/ivAlbumArt"
-        app:layout_constraintTop_toTopOf="@+id/ivAlbumArt"
-    >
+        app:layout_constraintTop_toTopOf="@+id/ivAlbumArt">
 
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/guideline"
@@ -71,12 +66,14 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             app:layout_constraintGuide_percent="0.45" />
+
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/guideline2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             app:layout_constraintGuide_percent="0.6" />
+
         <LinearLayout
             android:id="@+id/linearLayout7"
             android:layout_width="match_parent"
@@ -91,11 +88,11 @@
                 android:id="@+id/tvTitle"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-
-
                 android:layout_marginTop="24dp"
+
+
                 android:layout_marginBottom="8dp"
+                android:layout_weight="1"
                 android:ellipsize="end"
                 android:gravity="center"
                 android:maxLines="1"
@@ -174,12 +171,12 @@
                 android:id="@+id/controls"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="6"
-
                 android:layout_marginTop="16dp"
+
                 android:layout_marginBottom="24dp"
-                android:orientation="horizontal"
-    >
+                android:layout_weight="6"
+                android:orientation="horizontal">
+
                 <Space
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -212,12 +209,13 @@
                     android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_next" />
+
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
                     android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginRight="5dp">
+                    android:orientation="vertical">
 
                     <TextView
                         android:id="@+id/CurrentTimeTextView"
@@ -226,18 +224,17 @@
                         android:layout_weight="1"
 
                         android:autoSizeTextType="uniform"
-                        android:textColor="@color/white_glass_item_square"
                         android:gravity="center"
-                        />
+                        android:textColor="@color/white_glass_item_square" />
 
                     <TextView
                         android:id="@+id/durationTextView"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:textColor="@color/white_glass_item_square"
                         android:autoSizeTextType="uniform"
                         android:gravity="right"
+                        android:textColor="@color/white_glass_item_square"
 
                         />
 
@@ -247,7 +244,6 @@
                         android:layout_weight="4" />
 
                 </LinearLayout>
-
 
 
             </LinearLayout>
@@ -274,12 +270,24 @@
         android:id="@+id/btnBackEdge"
         android:layout_width="44dp"
         android:layout_height="44dp"
-        android:padding="10dp"
         android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="10dp"
         android:src="@android:drawable/ic_menu_revert"
         app:layout_constraintBottom_toBottomOf="@+id/controlLayout"
         app:layout_constraintEnd_toEndOf="@+id/bgImageView" />
 
+    <TextView
+        android:id="@+id/sleepTimerTextView"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+
+        android:autoSizeTextType="uniform"
+        android:background="@drawable/gradient4"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@+id/controlLayout"
+        app:layout_constraintTop_toTopOf="@+id/controlLayout" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

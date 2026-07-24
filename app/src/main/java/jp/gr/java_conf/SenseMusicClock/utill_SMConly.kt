@@ -6,30 +6,24 @@ import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.SharedPreferencesMigration
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.recyclerview.widget.RecyclerView
-import jp.gr.java_conf.SenseMusicClock.Music.Data.AppDataBase
+import coil.load
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
-import jp.gr.java_conf.SenseMusicClock.ui.list.ListEditAdapter
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 
@@ -40,18 +34,32 @@ val app_dir = ContentValues().apply {
     put(MediaStore.Audio.Media.MIME_TYPE, "Audio/mpeg") // ファイルタイプ
 }
 
+suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
 
+    val app = context.applicationContext as App
+    val source = BackgroundResolver.loadBackgroundSource(context, orientation)
+
+    when (source) {
+        is BackgroundResolver.ImageSource.FilePath -> {
+
+
+            this.load(source.file, app.backgroundImageLoader)
+
+        }
+
+        is BackgroundResolver.ImageSource.Res -> {
+            this.load(source.id)
+
+        }
+    }
+    return source.key
+
+
+}
 
 
 const val IDENTIFIER_INITIAL_INDEX_PROBLEM = "  ///IDENTIFIER_INITIAL_INDEX_PROBLEM"
 const val MAX_SCROLL_DISTANCE_FOR_ANIMATION = 30
-
-
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
-    name = PrefsManager.PREFS_NAME,
-    produceMigrations = { context ->
-        listOf(SharedPreferencesMigration(context, PrefsManager.PREFS_NAME))
-    })
 
 
 fun keysForTrackTopLevel(t: MediaItem): List<String> {
@@ -412,12 +420,15 @@ fun AppCompatActivity.showEditTextDialog(
     title: String,
 
     positiveButtonTitle: String = "OK",
+    initialText: String = "",
 
     onTextConfirmed: (String) -> Unit
 ) {
 
     val editText = EditText(this)
     editText.setPadding(10, 0, 10, 0)
+    editText.setText(initialText)
+    editText.selectAll()
 
 
     AlertDialog.Builder(this)
@@ -700,6 +711,5 @@ fun MediaItem.isSamePath(Item2: FileItem): Boolean {
     val name2 = Item2.fileName
     return path1 == path2 && name1 == name2
 }
-
 
 

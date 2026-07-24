@@ -1,6 +1,5 @@
 package jp.gr.java_conf.SenseMusicClock.Music.Data
 
-import ads_mobile_sdk.re
 import android.content.Context
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

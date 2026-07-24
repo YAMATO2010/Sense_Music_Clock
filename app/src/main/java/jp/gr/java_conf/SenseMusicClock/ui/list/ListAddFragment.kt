@@ -1,18 +1,17 @@
 package jp.gr.java_conf.SenseMusicClock.ui.list
 
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
-import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
@@ -36,12 +35,6 @@ class ListAddFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var listAdapter: ListAddAdapter
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -205,7 +198,8 @@ class ListAddFragment : Fragment() {
 
 
             sharedViewModel.setFileItemList(
-                DBManager.replacePlaylistContent(requireContext().applicationContext, newList).map { it.fileItem })
+                DBManager.replacePlaylistContent(requireContext().applicationContext, newList)
+                    .map { it.fileItem })
         } catch (e: Exception) {
             e.printStackTrace()
             Log.e("ListAddFragment", "Error saving playlist: ${e.message}")
@@ -235,7 +229,8 @@ class ListAddFragment : Fragment() {
                 }
 
             sharedViewModel.setFileItemList(
-                DBManager.replaceBlocklistContent(requireContext().applicationContext, newList).map { it.fileItem }
+                DBManager.replaceBlocklistContent(requireContext().applicationContext, newList)
+                    .map { it.fileItem }
             )
 
         } catch (e: Exception) {

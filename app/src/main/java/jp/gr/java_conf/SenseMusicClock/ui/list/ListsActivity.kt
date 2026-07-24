@@ -2,20 +2,14 @@ package jp.gr.java_conf.SenseMusicClock.ui.list
 
 import android.os.Bundle
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
-import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.toMediaItem
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityListsBinding
 import jp.gr.java_conf.SenseMusicClock.moveDuplicatesToBack
@@ -100,6 +94,7 @@ class ListsActivity : AppCompatActivity() {
         super.onStop()
         binding.bottomController.initialize(this)
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityListsBinding.inflate(layoutInflater)
@@ -260,7 +255,12 @@ class ListsActivity : AppCompatActivity() {
                     )
                     Log.d(
                         "LIST_/ListsActivity/observes",
-                        "fileItemList firstOrNull=${list.firstOrNull()?.fileName} secondOrNull=${list.getOrNull(1)?.fileName} thirdOrNull=${list.getOrNull(2)?.fileName} ")
+                        "fileItemList firstOrNull=${list.firstOrNull()?.fileName} secondOrNull=${
+                            list.getOrNull(
+                                1
+                            )?.fileName
+                        } thirdOrNull=${list.getOrNull(2)?.fileName} "
+                    )
                     val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
 
                     val items = LocalMusicFetcher.SafeLocalMusicFromAppDir(
@@ -269,7 +269,11 @@ class ListsActivity : AppCompatActivity() {
                     )
                     Log.d(
                         "LIST_/ListsActivity/observes",
-                        "fileItemList firstOrNull=${items.firstOrNull()?.title} secondOrNull=${items.getOrNull(1)?.title} thirdOrNull=${items.getOrNull(2)?.title}"
+                        "fileItemList firstOrNull=${items.firstOrNull()?.title} secondOrNull=${
+                            items.getOrNull(
+                                1
+                            )?.title
+                        } thirdOrNull=${items.getOrNull(2)?.title}"
                     )
                     val useItems = items.sortedBy { item ->
                         val index =
@@ -278,7 +282,11 @@ class ListsActivity : AppCompatActivity() {
                     }
                     Log.d(
                         "LIST_/ListsActivity/observes",
-                        "fileItemList after sorting firstOrNull=${useItems.firstOrNull()?.title} secondOrNull=${useItems.getOrNull(1)?.title} thirdOrNull=${useItems.getOrNull(2)?.title}"
+                        "fileItemList after sorting firstOrNull=${useItems.firstOrNull()?.title} secondOrNull=${
+                            useItems.getOrNull(
+                                1
+                            )?.title
+                        } thirdOrNull=${useItems.getOrNull(2)?.title}"
                     )
                     setlist(useItems)
                 }

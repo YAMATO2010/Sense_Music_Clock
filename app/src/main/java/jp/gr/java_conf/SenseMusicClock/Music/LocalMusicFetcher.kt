@@ -8,18 +8,15 @@ import android.os.CancellationSignal
 import android.os.OperationCanceledException
 import android.provider.MediaStore
 import android.util.Log
-import androidx.constraintlayout.widget.Placeholder
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.paging.LOG_TAG
-import androidx.room.Query
 import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
-
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlaylistItem
-import jp.gr.java_conf.SenseMusicClock.fastRandomUUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
+import java.util.concurrent.ThreadLocalRandom
 
 object LocalMusicFetcher {
     const val EXTRA_ALBUM_ID = "ALBUM_ID"
@@ -242,7 +239,7 @@ object LocalMusicFetcher {
         limit: Int,
         offset: Int,
         sortColumn: String,
-        sortDirection: Int ,
+        sortDirection: Int,
     ): Bundle {
         val args = Bundle()
 
@@ -405,7 +402,10 @@ object LocalMusicFetcher {
         val selectionArgs = queryArgs.getStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS)
         val noMediaSelection = "${MediaStore.Audio.Media.DISPLAY_NAME} NOT LIKE ?"
         val sortColumns = queryArgs.getStringArray(ContentResolver.QUERY_ARG_SORT_COLUMNS)
-        val sortDirection = queryArgs.getInt(ContentResolver.QUERY_ARG_SORT_DIRECTION, ContentResolver.QUERY_SORT_DIRECTION_ASCENDING)
+        val sortDirection = queryArgs.getInt(
+            ContentResolver.QUERY_ARG_SORT_DIRECTION,
+            ContentResolver.QUERY_SORT_DIRECTION_ASCENDING
+        )
 
         val newSelection = if (selection == null) {
             noMediaSelection
@@ -432,7 +432,6 @@ object LocalMusicFetcher {
             MediaStore.Audio.Media.ARTIST_ID,
             MediaStore.Audio.Media.RELATIVE_PATH,
             MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK
         )
 
@@ -465,7 +464,7 @@ object LocalMusicFetcher {
                     val albumIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
                     val artistIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID)
                     val trackIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
-                    val dataIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+
                     val relativePathIdx =
                         c.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH)
                     val displayNameIdx =
@@ -493,15 +492,6 @@ object LocalMusicFetcher {
                         val albumId = c.getLong(albumIdIdx)
                         val artistId = c.getLong(artistIdIdx)
                         val trackNo = c.getInt(trackIdx)
-                        val path = c.getString(dataIdx) ?: ""
-                        if (path.contains(".nomedia", ignoreCase = true)) {
-                            Log.e(
-                                "LocalMusicFetcher",
-                                "Skipping item with ID $id because data path contains .nomedia: $path"
-                            )
-
-                            continue
-                        }
 
                         val relativePath = c.getString(relativePathIdx) ?: ""
                         if (relativePath.contains(".nomedia", ignoreCase = true)) {
@@ -541,7 +531,7 @@ object LocalMusicFetcher {
                             albumId = albumId,
                             artistId = artistId,
                             trackNo = trackNo,
-                            data = path,
+
                             relativePath = relativePath,
                             displayName = displayName,
                             uri = uri,
@@ -579,7 +569,6 @@ object LocalMusicFetcher {
         val albumId: Long?,
         val artistId: Long?,
         val trackNo: Int?,
-        val data: String?,
         val relativePath: String?,
         val displayName: String?,
         val uri: Uri?,
@@ -596,7 +585,7 @@ object LocalMusicFetcher {
             putLong(EXTRA_ARTIST_ID, artistId ?: -1L)
             putString(EXTRA_RELATIVE_PATH, relativePath ?: "")
             putString(EXTRA_DISPLAY_NAME, displayName ?: "")
-            putString(EXTRA_DATA_PATH, data ?: "")
+
         }
         val metadata = MediaMetadata.Builder()
             .setTitle(title ?: "<Unknown Title>")
@@ -621,7 +610,7 @@ object LocalMusicFetcher {
     fun List<MediaItem>.withUniqueMediaIds(): List<MediaItem> {
         val seen = mutableSetOf<String>()
         return this.map { item ->
-            val originalId = item.mediaId ?: ""
+            val originalId = item.mediaId
             // mediaId が空ならランダムな基本 ID を使う（先頭に "_" を付けて区別）
             var candidateId = if (originalId.isNotEmpty()) originalId else "_${fastRandomUUID()}"
 
@@ -647,6 +636,22 @@ object LocalMusicFetcher {
             }
         }
     }
+    fun fastRandomUUID(): UUID {
+        val rnd = ThreadLocalRandom.current()
+        var msb = rnd.nextLong()
+        var lsb = rnd.nextLong()
+
+        // version (bits 12-15) を 4 にセット
+        val versionClearMask = (0xFL shl 12).inv() // 0xF000 の反転マスク
+        msb = (msb and versionClearMask) or (0x4L shl 12)
+
+        // variant (bits 62-63) を 10 にセット
+        val lower62Mask = (1L shl 62) - 1                 // 下位62ビットを保持するマスク
+        lsb = (lsb and lower62Mask) or (1L shl 63)        // bit63 = 1, bit62 = 0
+
+        return UUID(msb, lsb)
+    }
+
 
 
 }

@@ -15,11 +15,11 @@ import java.util.Date
 
 @Entity(tableName = "playlists")
 data class PlayList(
-    @PrimaryKey(autoGenerate = true) val playlistId : Long = 0,
-    val playlistName      : String,
-    val deleted : Date? = null
-){
-    companion object{
+    @PrimaryKey(autoGenerate = true) val playlistId: Long = 0,
+    val playlistName: String,
+    val deleted: Date? = null
+) {
+    companion object {
 
         const val ADDED_AT_DESC_ID = -2L
         const val CURRENT_REMOVAL_ID = -3L
@@ -27,20 +27,21 @@ data class PlayList(
 }
 
 
-
-@Entity(tableName = "playlistItems",
+@Entity(
+    tableName = "playlistItems",
     primaryKeys = ["playlistId", "index"],
     foreignKeys = [
         ForeignKey(
-            entity =   PlayList::class,
+            entity = PlayList::class,
             parentColumns = ["playlistId"],
-            childColumns =  ["playlistId"],
+            childColumns = ["playlistId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["playlistId"])])
-data class PlaylistItem (
-    val playlistId        : Long  ,
+    indices = [Index(value = ["playlistId"])]
+)
+data class PlaylistItem(
+    val playlistId: Long,
     @Embedded val fileItem: FileItem,
     val index: Int
 
@@ -57,14 +58,13 @@ interface PlaylistDao {
 
     @Query("SELECT EXISTS(SELECT 1  FROM playlists WHERE playlistName  = :playlistName)")
     suspend fun existsPlaylist(playlistName: String): Boolean
+
     @Query("DELETE FROM playlists WHERE playlistId = :playlistId")
     suspend fun deletePlaylist(playlistId: Long)
 
 
-
     @Delete
     suspend fun deletePlaylist(playlist: PlayList)
-
 
 
     @Update

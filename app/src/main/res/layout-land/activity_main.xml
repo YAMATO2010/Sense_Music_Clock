@@ -2,15 +2,14 @@
 
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    android:windowSoftInputMode="adjustNothing"
-
-
     android:layout_width="match_parent"
+
+
     android:layout_height="match_parent"
     android:clipChildren="true"
-    android:clipToPadding="true">
+    android:clipToPadding="true"
+    android:windowSoftInputMode="adjustNothing">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
@@ -26,6 +25,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintGuide_begin="73dp" />
+
     <ImageView
         android:id="@+id/bgImageView"
         android:layout_width="match_parent"
@@ -33,16 +33,10 @@
         android:scaleType="centerCrop" />
 
 
-
-
-
-
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerJackets"
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/jackets"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-
 
 
         android:background="@drawable/gradient1"
@@ -137,7 +131,6 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-
     <LinearLayout
         android:id="@+id/linearLayout3"
         android:layout_width="0dp"
@@ -198,17 +191,35 @@
                 />
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/currentAlbumArt"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@drawable/gradient1"
-            android:scaleType="fitCenter"
-            android:src="@drawable/default_album_art"
+            android:orientation="vertical">
 
-            app:layout_constraintDimensionRatio="1:1" />
+            <TextView
+                android:id="@+id/sleepTimerTextView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:autoSizeTextType="uniform"
+                android:background="@drawable/gradient4"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:visibility="visible" />
 
+            <ImageButton
+                android:id="@+id/currentAlbumArt"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="3"
+                android:background="@drawable/gradient1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/default_album_art"
+
+                app:layout_constraintDimensionRatio="1:1" />
+
+        </LinearLayout>
 
         <TextClock
             android:id="@+id/textClock"
@@ -242,7 +253,7 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="1"
-                android:text="タイマー"
+                android:text="Timer"
                 app:backgroundTint="@null"
 
                 />
@@ -267,7 +278,7 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="1"
-                android:text="アラーム"
+                android:text="Alarm"
                 app:backgroundTint="@null" />
 
             <View
@@ -289,8 +300,8 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
 
-                android:maxLines="1"
-                android:text="ストップウォッチ"
+                android:maxLines="2"
+                android:text="Stop\nWatch"
                 app:backgroundTint="@null"
 
 
@@ -349,13 +360,13 @@
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:orientation="vertical"
         android:layout_margin="10dp"
         android:background="@drawable/gradient3"
+        android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/guideline3"
         app:layout_constraintEnd_toStartOf="@+id/guideline4"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" >
+        app:layout_constraintTop_toTopOf="parent">
 
 
         <Button
@@ -386,26 +397,24 @@
 
 
         <ImageButton
-        android:id="@+id/GotoStandardPlayerButton"
+            android:id="@+id/GotoStandardPlayerButton"
 
 
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginBottom="10dp"
-        android:background="@drawable/gradient1"
-        android:padding="4dp"
-        android:scaleType="fitCenter"
-        android:layout_margin="5dp"
-        android:src="@drawable/land_standard_player_icon"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_margin="5dp"
+            android:layout_marginBottom="10dp"
+            android:layout_weight="1"
+            android:background="@drawable/gradient1"
+            android:padding="4dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/land_standard_player_icon"
 
-        app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintDimensionRatio="1:1"
 
 
-        app:layout_goneMarginBottom="5dp" />
+            app:layout_goneMarginBottom="5dp" />
     </LinearLayout>
-
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

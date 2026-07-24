@@ -2,16 +2,13 @@ package jp.gr.java_conf.SenseMusicClock.Music
 
 import android.content.ContentResolver
 import android.util.Log
-import androidx.paging.LOG_TAG
 import androidx.paging.PagingSource
-import androidx.paging.PagingSource.LoadParams
-import androidx.paging.PagingSource.LoadResult
 import androidx.paging.PagingState
 
 class AllMusicPagingSource(
     private val fetcher: LocalMusicFetcher,
     private val resolver: ContentResolver,
-    private val limit : Int = 1000
+    private val limit: Int = 1000
 ) : PagingSource<Int, LocalMusicFetcher.MediaStoreAudioSummary>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, LocalMusicFetcher.MediaStoreAudioSummary> {

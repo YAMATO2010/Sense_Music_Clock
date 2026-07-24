@@ -48,7 +48,8 @@ class SearchMusicAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val v =
-            LayoutInflater.from(parent.context).inflate(R.layout.search_result_with_image, parent, false)
+            LayoutInflater.from(parent.context)
+                .inflate(R.layout.search_result_with_image, parent, false)
         return ViewHolder(v)
     }
 
@@ -87,7 +88,7 @@ class SearchMusicAdapter(
         super.onViewRecycled(holder)
         holder.artwork.setImageDrawable(null)
         holder.artwork.setOnClickListener(null)
-        holder.title.setText(null)
+        holder.title.text = null
     }
 
 
@@ -126,7 +127,9 @@ class SearchMusicAdapter(
                         oldMetadata.albumTitle.toString() == newMetadata.albumTitle.toString() &&
                         oldMetadata.artist.toString() == newMetadata.artist.toString()
                 val localCriteria =
-                    oldMetadata.extras?.getString("RELATIVE_PATH") == newMetadata.extras?.getString("RELATIVE_PATH") &&
+                    oldMetadata.extras?.getString("RELATIVE_PATH") == newMetadata.extras?.getString(
+                        "RELATIVE_PATH"
+                    ) &&
                             oldMetadata.trackNumber == newMetadata.trackNumber
 
 

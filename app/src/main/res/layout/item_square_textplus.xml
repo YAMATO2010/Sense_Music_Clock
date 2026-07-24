@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item_square_container"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:id="@+id/item_square_container"
     android:clickable="true"
     android:padding="9dp">
 
@@ -12,21 +11,20 @@
     <FrameLayout
         android:id="@+id/squareContainer"
         android:layout_width="wrap_content"
-        android:maxWidth="160dp"
-        android:minWidth="160dp"
         android:layout_height="0dp"
         android:background="@color/white_glass_item_square"
-        app:layout_constraintTop_toTopOf="parent"
+        android:maxWidth="160dp"
+        android:minWidth="160dp"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            >
+            android:orientation="vertical">
 
 
             <ImageView
@@ -48,11 +46,11 @@
                 android:id="@+id/titleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:gravity="center"
-                android:textColor="@color/black"
                 android:layout_marginBottom="5dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:maxLines="1"
+                android:textColor="@color/black"
                 android:textSize="12sp"
 
 

@@ -6,7 +6,6 @@ data class FileItem(
 )
 
 
-
 fun FileItem.displayName(): String {
     return if (relativePath.endsWith("/")) {
         "$relativePath$fileName"

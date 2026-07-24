@@ -27,10 +27,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SenseMusicClock" >
         <receiver
-            android:name=".ui.ControlWidget"
-            android:exported="false" >
+            android:name=".ui.Widget.ControlWidgetReceiver"
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="jp.gr.java_conf.SenseMusicClock.ui.ControlWidget.clickedPlay" />
+                <action android:name="jp.gr.java_conf.SenseMusicClock.ui.ControlWidget.clickedNext" />
+                <action android:name="jp.gr.java_conf.SenseMusicClock.ui.ControlWidget.clickedPrev" />
             </intent-filter>
 
             <meta-data

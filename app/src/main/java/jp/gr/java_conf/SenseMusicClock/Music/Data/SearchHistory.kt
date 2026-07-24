@@ -2,10 +2,7 @@ package jp.gr.java_conf.SenseMusicClock.Music.Data
 
 import androidx.room.Dao
 import androidx.room.Delete
-import androidx.room.Embedded
 import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Upsert
@@ -18,8 +15,8 @@ data class SearchHistory(
     val timestamp: Date = Date(),
     val itemID: Long,
     val itemType: String
-){
-    companion object{
+) {
+    companion object {
         const val TYPE_ARTIST = "artist"
         const val TYPE_ALBUM = "album"
         const val TYPE_SONG = "song"
@@ -34,7 +31,7 @@ interface SearchHistoryDao {
     suspend fun loadAllSearchHistory(): List<SearchHistory>
 
     @Query("SELECT * FROM SearchHistory ORDER BY timestamp DESC LIMIT :limit;")
-    suspend fun loadSearchHistory(limit : Int): List<SearchHistory>
+    suspend fun loadSearchHistory(limit: Int): List<SearchHistory>
 
     @Query("SELECT * FROM SearchHistory ORDER BY timestamp DESC LIMIT :count OFFSET :startIndex")
     suspend fun loadSearchHistoryInRange(startIndex: Int, count: Int): List<SearchHistory>
@@ -54,12 +51,6 @@ interface SearchHistoryDao {
 
     @Delete
     suspend fun deleteSearchHistory(searchHistory: SearchHistory)
-
-
-
-
-
-
 
 
 }

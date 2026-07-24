@@ -16,8 +16,8 @@ import jp.gr.java_conf.SenseMusicClock.R
 
 class ListAddAdapter(
     diffCallback: DiffUtil.ItemCallback<LocalMusicFetcher.MediaStoreAudioSummary>,
-    val onChecked : (Long, Boolean) -> Unit,
-    val onBind : (AddViewHolder, LocalMusicFetcher.MediaStoreAudioSummary?, Int) -> Unit
+    val onChecked: (Long, Boolean) -> Unit,
+    val onBind: (AddViewHolder, LocalMusicFetcher.MediaStoreAudioSummary?, Int) -> Unit
 ) :
     PagingDataAdapter<LocalMusicFetcher.MediaStoreAudioSummary, ListAddAdapter.AddViewHolder>(
         diffCallback
@@ -41,7 +41,7 @@ class ListAddAdapter(
         holder.artistTextView.text = item?.artist ?: "Unknown Artist"
         holder.checkBox.isChecked = false
         onBind(holder, item, position)
-        holder.checkBox.setOnClickListener { _,->
+        holder.checkBox.setOnClickListener { _ ->
             if (item != null) {
 
                 onChecked(item.id, holder.checkBox.isChecked)
@@ -68,32 +68,33 @@ class ListAddAdapter(
         }
     }
 
-    inner class AddViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class AddViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
         val titleTextView: TextView = view.findViewById<TextView>(R.id.ItemTitleView)
         val artistTextView: TextView = view.findViewById<TextView>(R.id.ItemArtistView)
         val checkBox: CheckBox = view.findViewById<CheckBox>(R.id.listCheckBox)
 
-        val artWork : ImageView = view.findViewById<ImageView>(R.id.ITEMArtwork)
+        val artWork: ImageView = view.findViewById<ImageView>(R.id.ITEMArtwork)
 
     }
 
-    companion object{
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<LocalMusicFetcher.MediaStoreAudioSummary>() {
-            override fun areItemsTheSame(
-                oldItem: LocalMusicFetcher.MediaStoreAudioSummary,
-                newItem: LocalMusicFetcher.MediaStoreAudioSummary
-            ): Boolean {
-                return oldItem.id == newItem.id
-            }
+    companion object {
+        val DIFF_CALLBACK =
+            object : DiffUtil.ItemCallback<LocalMusicFetcher.MediaStoreAudioSummary>() {
+                override fun areItemsTheSame(
+                    oldItem: LocalMusicFetcher.MediaStoreAudioSummary,
+                    newItem: LocalMusicFetcher.MediaStoreAudioSummary
+                ): Boolean {
+                    return oldItem.id == newItem.id
+                }
 
-            override fun areContentsTheSame(
-                oldItem: LocalMusicFetcher.MediaStoreAudioSummary,
-                newItem: LocalMusicFetcher.MediaStoreAudioSummary
-            ): Boolean {
-                return oldItem == newItem
+                override fun areContentsTheSame(
+                    oldItem: LocalMusicFetcher.MediaStoreAudioSummary,
+                    newItem: LocalMusicFetcher.MediaStoreAudioSummary
+                ): Boolean {
+                    return oldItem == newItem
+                }
             }
-        }
     }
 
 

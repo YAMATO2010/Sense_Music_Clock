@@ -3,8 +3,6 @@ package jp.gr.java_conf.SenseMusicClock.Music.Data
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
-import androidx.paging.LOG_TAG
-import androidx.room.Insert
 import androidx.room.withTransaction
 import jp.gr.java_conf.SenseMusicClock.toBlocklistItem
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
@@ -12,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import java.io.File
 
 object DBManager {
 
@@ -104,7 +101,10 @@ object DBManager {
         override suspend fun upsertBlocklistNoLock(context: Context, value: BlockList) =
             _upsertBlocklist(context, value)
 
-        override suspend fun upsertBlocklistItemNoLock(context: Context, value: BlocklistItem): Boolean =
+        override suspend fun upsertBlocklistItemNoLock(
+            context: Context,
+            value: BlocklistItem
+        ): Boolean =
             _upsertBlocklistItem(context, value)
 
         override suspend fun upsertBlockListItemsNoLock(
@@ -371,7 +371,10 @@ object DBManager {
     ): List<BlocklistItem> {
         val db = AppDataBase.getInstance(context)
         if (newItems.isEmpty()) {
-            Log.d("LIST_/DBManager/replaceBlocklistContent", "replace blocklist content with empty list")
+            Log.d(
+                "LIST_/DBManager/replaceBlocklistContent",
+                "replace blocklist content with empty list"
+            )
         }
         return withContext(Dispatchers.IO) {
             db.withTransaction {
@@ -456,7 +459,8 @@ object DBManager {
         return withContext(Dispatchers.IO) {
 
             db.withTransaction {
-                val oldItems : List<FileItem> = _loadPlaylistItem(context, playlistId).sortedBy { it.index }.map { it.fileItem }
+                val oldItems: List<FileItem> =
+                    _loadPlaylistItem(context, playlistId).sortedBy { it.index }.map { it.fileItem }
                 val newItems = oldItems + fileItem
                 val newPlaylistItems = newItems.mapIndexed { index, item ->
                     PlaylistItem(
@@ -534,7 +538,12 @@ object DBManager {
 
 
     }
-    suspend fun addPlaylistAndItems(context: Context, playlistName: String, fileItems: List<FileItem>) {
+
+    suspend fun addPlaylistAndItems(
+        context: Context,
+        playlistName: String,
+        fileItems: List<FileItem>
+    ) {
         Log.d(
             "LIST_/DBManager/addPlaylistAndItems",
             "add playlist and item: playlistName=$playlistName "
@@ -685,14 +694,15 @@ object DBManager {
             db.withTransaction {
                 val fromItems: List<FileItem> = when (fromListInfo.type) {
                     ListsActivity.ListType.PLAYLIST -> {
-                        _loadPlaylistItem(context,fromListInfo.id).sortedBy { it.index }.map { it.fileItem }
+                        _loadPlaylistItem(context, fromListInfo.id).sortedBy { it.index }
+                            .map { it.fileItem }
                     }
 
                     ListsActivity.ListType.BLOCKLIST -> {
-                        _loadBlocklistItem(context,fromListInfo.id).map { it.fileItem }
+                        _loadBlocklistItem(context, fromListInfo.id).map { it.fileItem }
                     }
 
-                    else -> return@withTransaction false
+
                 }
 
                 when (toListInfo.type) {
@@ -709,7 +719,6 @@ object DBManager {
 
                     }
 
-                    else -> return@withTransaction false
                 }
                 return@withTransaction true
             }

@@ -1,8 +1,10 @@
 package jp.gr.java_conf.SenseMusicClock
 
 import android.app.Application
-import android.os.StrictMode
 import android.util.Log
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintWriter
@@ -12,27 +14,47 @@ import java.util.Date
 import java.util.Locale
 
 class App : Application() {
+    lateinit var backgroundImageLoader: ImageLoader
+        private set
 
-override fun onCreate() {
-    super.onCreate()
+    override fun onCreate() {
+        super.onCreate()
 
-    Log.d("CrashTest", "Application onCreate")
+        Log.d("CrashTest", "Application onCreate")
 
-    val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        backgroundImageLoader = ImageLoader.Builder(this.applicationContext)
 
-    Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-        Log.e("CrashTest", "Uncaught exception!", throwable)
+            .components {
+                add(ImageDecoderDecoder.Factory()) // Android 9以降のWebP/GIF用
+                add(GifDecoder.Factory())          // Android 8以前のGIF用
 
-        try {
-            saveCrashLog(throwable)
-            Log.d("CrashTest", "saveCrashLog finished")
-        } catch (e: Exception) {
-            Log.e("CrashTest", "saveCrashLog failed", e)
+            }
+            .crossfade(true)
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(this.applicationContext)
+                    .maxSizePercent(0.01) // メモリの25%までキャッシュを使用
+                    .strongReferencesEnabled(false)
+                    .weakReferencesEnabled(true)
+                    .build()
+            }
+            .build()
+
+
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Log.e("CrashTest", "Uncaught exception!", throwable)
+
+            try {
+                saveCrashLog(throwable)
+                Log.d("CrashTest", "saveCrashLog finished")
+            } catch (e: Exception) {
+                Log.e("CrashTest", "saveCrashLog failed", e)
+            }
+
+            defaultHandler?.uncaughtException(thread, throwable)
         }
-
-        defaultHandler?.uncaughtException(thread, throwable)
     }
-}
 
     private fun saveCrashLog(throwable: Throwable) {
         // 例外のスタックトレースを文字列に変換
@@ -62,7 +84,6 @@ override fun onCreate() {
             stream.write(logText.toByteArray())
         }
     }
-
 
 
 }

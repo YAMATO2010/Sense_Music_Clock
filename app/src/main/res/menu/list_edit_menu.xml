@@ -10,12 +10,11 @@
         app:showAsAction="always" />
     <item
         android:id="@+id/action_add"
-        android:title="@string/Add"
         android:icon="@android:drawable/ic_menu_add"
+        android:title="@string/Add"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_save"
         android:title="保存"
-        app:showAsAction="ifRoom"
-        />
+        app:showAsAction="ifRoom" />
 </menu>

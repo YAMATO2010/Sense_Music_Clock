@@ -1,14 +1,16 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    id("com.google.devtools.ksp") version "2.3.3"
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+
+
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
 }
 
 android {
     namespace = "jp.gr.java_conf.SenseMusicClock"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "jp.gr.java_conf.SenseMusicClock"
@@ -34,72 +36,166 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    buildFeatures{
+    buildFeatures {
         viewBinding = true
+        compose = true
     }
 
 }
 
 
-
 dependencies {
+
+    // --------------------------------------------------
+    // Firebase
+    // --------------------------------------------------
+
     implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation(libs.ads.mobile.sdk)
-    implementation(libs.androidx.glance.appwidget)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.media3.ui)
-    implementation(libs.androidx.legacy.support.v4)
     implementation("com.google.firebase:firebase-crashlytics")
-    implementation("androidx.paging:paging-runtime:3.4.2")
+
+
+    // --------------------------------------------------
+    // Jetpack Compose
+    // --------------------------------------------------
+
+    implementation(platform("androidx.compose:compose-bom:2026.06.01"))
+
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.activity:activity-compose")
+    implementation(libs.androidx.ui.tooling.preview)
+    debugImplementation(libs.androidx.ui.tooling)
+
+    // --------------------------------------------------
+    // Glance / Compose
+    // --------------------------------------------------
+
+    val glanceVersion = "1.1.1"
+    implementation("androidx.glance:glance-appwidget:$glanceVersion")
+    implementation("androidx.glance:glance-material3:$glanceVersion")
+    implementation("androidx.glance:glance-material:$glanceVersion")
+
+    // --------------------------------------------------
+    // AndroidX UI
+    // --------------------------------------------------
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation("androidx.lifecycle:lifecycle-service:2.10.0")
-    implementation("androidx.palette:palette:1.0.0")
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.preference)
-    val media3_version = "1.10.1"
-    implementation("androidx.media3:media3-exoplayer:$media3_version")
-    implementation("androidx.media3:media3-session:$media3_version")
-    implementation("androidx.media3:media3-cast:$media3_version")
-    implementation("androidx.datastore:datastore-preferences:1.2.0")
-    implementation("androidx.media3:media3-container:$media3_version")
+    implementation(libs.androidx.legacy.support.v4)
 
-    implementation("io.coil-kt:coil-gif:2.7.0")
-    implementation("androidx.work:work-runtime-ktx:2.11.1")
+    implementation(libs.material)
+    implementation("androidx.palette:palette:1.0.0")
 
-    implementation("com.google.code.gson:gson:2.13.2")
-    // Use Coil 2.x (stable) for ImageView `load` extensions
-    implementation("io.coil-kt:coil:2.7.0")
-    implementation("io.coil-kt:coil-video:2.7.0")
 
-    ksp("com.google.dagger:dagger-compiler:2.59.2")
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    implementation(libs.ksp.api)
+    // --------------------------------------------------
+    // Glance / App Widget
+    // --------------------------------------------------
+
+    implementation(libs.androidx.glance.appwidget)
+
+
+    // --------------------------------------------------
+    // Lifecycle
+    // --------------------------------------------------
+
+    implementation("androidx.lifecycle:lifecycle-service:2.11.0")
+
+
+    // --------------------------------------------------
+    // Media3
+    // --------------------------------------------------
+
+    val media3Version = "1.10.1"
+
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-session:$media3Version")
+    implementation("androidx.media3:media3-cast:$media3Version")
+    implementation("androidx.media3:media3-container:$media3Version")
+    implementation(libs.androidx.media3.ui)
+
+
+    // --------------------------------------------------
+    // Room
+    // --------------------------------------------------
+
     implementation(libs.room.runtime)
-    // If this project only uses Java source, use the Java annotationProcessor
-    // No additional plugins are necessary
+    implementation(libs.room.ktx)
+    implementation(libs.androidx.room.rxjava2)
+    implementation(libs.androidx.room.rxjava3)
+    implementation(libs.androidx.room.guava)
+    implementation(libs.androidx.room.paging)
+
     ksp(libs.room.compiler)
 
-    // optional - Kotlin Extensions and Coroutines support for Room
-    implementation(libs.room.ktx)
-
-    // optional - RxJava2 support for Room
-    implementation(libs.androidx.room.rxjava2)
-
-    // optional - RxJava3 support for Room
-    implementation(libs.androidx.room.rxjava3)
-
-    // optional - Guava support for Room, including Optional and ListenableFuture
-    implementation(libs.androidx.room.guava)
-
-    // optional - Test helpers
     testImplementation(libs.androidx.room.testing)
 
-    // optional - Paging 3 Integration
-    implementation(libs.androidx.room.paging)
+
+    // --------------------------------------------------
+    // Paging
+    // --------------------------------------------------
+
+    implementation("androidx.paging:paging-runtime:3.5.0")
+
+
+    // --------------------------------------------------
+    // DataStore
+    // --------------------------------------------------
+
+    implementation("androidx.datastore:datastore-preferences:1.2.1")
+
+
+    // --------------------------------------------------
+    // WorkManager
+    // --------------------------------------------------
+
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
+
+
+    // --------------------------------------------------
+    // Coil
+    // --------------------------------------------------
+
+    // Coil 2.x for ImageView `load` extensions
+    implementation("io.coil-kt:coil:2.7.0")
+    implementation("io.coil-kt:coil-gif:2.7.0")
+    implementation("io.coil-kt:coil-video:2.7.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.5.0")
+
+
+    // --------------------------------------------------
+    // JSON
+    // --------------------------------------------------
+
+    implementation("com.google.code.gson:gson:2.13.2")
+
+
+    // --------------------------------------------------
+    // Google Mobile Ads
+    // --------------------------------------------------
+
+    implementation(libs.ads.mobile.sdk)
+
+
+    // --------------------------------------------------
+    // Dagger / KSP
+    // --------------------------------------------------
+
+
+    ksp("com.google.dagger:dagger-compiler:2.60.1")
+
+
+    // --------------------------------------------------
+    // Tests
+    // --------------------------------------------------
+
+    testImplementation(libs.junit)
+
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

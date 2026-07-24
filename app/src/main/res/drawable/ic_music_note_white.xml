@@ -8,5 +8,5 @@
     <!-- シンプルな音符アイコン（白） -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M12,3v10.55A4,4 0 0,0 10,17a4,4 0 1,0 2,3.45V7h4V3h-6z"/>
+        android:pathData="M12,3v10.55A4,4 0 0,0 10,17a4,4 0 1,0 2,3.45V7h4V3h-6z" />
 </vector>

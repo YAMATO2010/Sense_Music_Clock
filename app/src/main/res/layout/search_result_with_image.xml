@@ -3,17 +3,17 @@
     android:id="@+id/ResultItemWithImageContainer"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
     android:orientation="horizontal"
-    android:padding="8dp"
-    android:background="?attr/selectableItemBackground">
+    android:padding="8dp">
 
     <ImageView
         android:id="@+id/resultImageView"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:scaleType="fitCenter"
+        android:layout_marginEnd="8dp"
         android:contentDescription="Result Image"
-        android:layout_marginEnd="8dp" />
+        android:scaleType="fitCenter" />
 
     <TextView
         android:id="@+id/resultTextView"
@@ -21,10 +21,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:layout_weight="1"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-
+        android:ellipsize="end"
         android:maxLines="2"
-        android:ellipsize="end" />
+
+        android:textColor="@color/white"
+        android:textSize="16sp" />
 
 </LinearLayout>

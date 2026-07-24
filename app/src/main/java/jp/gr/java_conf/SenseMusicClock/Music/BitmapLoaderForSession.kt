@@ -4,7 +4,6 @@ package jp.gr.java_conf.SenseMusicClock.Music
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.annotation.OptIn
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.BitmapLoader
@@ -59,7 +58,7 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
 
 
         scope.launch {
-            val loader = ImageLoader(context)
+            val loader = imageLoader
 
             val request = ImageRequest.Builder(context)
                 .allowHardware(false)

@@ -1,8 +1,5 @@
 package jp.gr.java_conf.SenseMusicClock.ui.list.placeholder
 
-import java.util.ArrayList
-import java.util.HashMap
-
 /**
  * Helper class for providing sample content for user interfaces created by
  * Android template wizards.

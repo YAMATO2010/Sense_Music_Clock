@@ -1,4 +1,3 @@
-
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -7,22 +6,21 @@
     <!-- 音符の旗（フラッグ） - 変更なし -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:strokeColor="#22000000"
+        android:pathData="M54,22 L54,30 C66,26 78,20 90,25 C78,30 66,28 54,34 Z"
         android:strokeWidth="0.9"
-        android:pathData="M54,22 L54,30 C66,26 78,20 90,25 C78,30 66,28 54,34 Z" />
-
+        android:strokeColor="#22000000" />
 
 
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
+        android:pathData="M54,56 L54,18"
         android:strokeWidth="6"
-        android:strokeLineCap="round"
-        android:pathData="M54,56 L54,18" />
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round" />
     <!-- 音符ヘッドの影（上へ移動） -->
     <path
-        android:fillColor="#00000000"
         android:fillAlpha="0.12"
+        android:fillColor="#00000000"
         android:pathData="M60,62a12,12 0 1,0 -24,0a12,12 0 1,0 24,0z" />
 
     <!-- 音符ヘッド（白、上へ移動） -->
@@ -33,65 +31,62 @@
     <!-- 音符ヘッド輪郭（薄め、上へ移動） -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M60,62a12,12 0 1,0 -24,0a12,12 0 1,0 24,0z"
         android:strokeWidth="0.9"
-        android:pathData="M60,62a12,12 0 1,0 -24,0a12,12 0 1,0 24,0z" />
+        android:strokeColor="#22000000" />
 
     <!-- 時計の外周（ヘッド内、輪郭、上へ移動） -->
     <path
-        android:fillColor="#00000000"
         android:fillAlpha="0.0"
-        android:strokeColor="#22000000"
+        android:fillColor="#00000000"
+        android:pathData="M54,62a6,6 0 1,0 -12,0a6,6 0 1,0 12,0z"
         android:strokeWidth="1.4"
-        android:pathData="M54,62a6,6 0 1,0 -12,0a6,6 0 1,0 12,0z" />
+        android:strokeColor="#22000000" />
 
     <!-- 時計の目盛（主要方向のみ、ヘッド中心を上へ移動） -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M48,56 L48,57"
         android:strokeWidth="1.0"
-        android:strokeLineCap="round"
-        android:pathData="M48,56 L48,57" />
+        android:strokeColor="#22000000"
+        android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M48,68 L48,67"
         android:strokeWidth="1.0"
-        android:strokeLineCap="round"
-        android:pathData="M48,68 L48,67" />
+        android:strokeColor="#22000000"
+        android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M53,62 L52,62"
         android:strokeWidth="1.0"
-        android:strokeLineCap="round"
-        android:pathData="M53,62 L52,62" />
+        android:strokeColor="#22000000"
+        android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M43,62 L44,62"
         android:strokeWidth="1.0"
-        android:strokeLineCap="round"
-        android:pathData="M43,62 L44,62" />
+        android:strokeColor="#22000000"
+        android:strokeLineCap="round" />
 
     <!-- 時計の長短針（中心を上へ移動） -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M48,62 L48,56"
         android:strokeWidth="1.2"
-        android:strokeLineCap="round"
-        android:pathData="M48,62 L48,56" />
+        android:strokeColor="#22000000"
+        android:strokeLineCap="round" />
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#22000000"
+        android:pathData="M48,62 L51.5,64.5"
         android:strokeWidth="1.2"
-        android:strokeLineCap="round"
-        android:pathData="M48,62 L51.5,64.5" />
+        android:strokeColor="#22000000"
+        android:strokeLineCap="round" />
 
     <!-- 中心の丸（時計の軸、上へ移動） -->
     <path
         android:fillColor="#22000000"
         android:pathData="M48,60.5a1.5,1.5 0 1,0 0,3a1.5,1.5 0 1,0 0,-3z" />
-
-
-
 
 
 </vector>

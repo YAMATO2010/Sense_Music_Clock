@@ -58,7 +58,7 @@ class BackgroundsImageFileAdapter(
 
         if (file == File("")) {
 
-            holder.image.load(R.drawable.outline_hide_image_24){
+            holder.image.load(R.drawable.outline_hide_image_24) {
                 crossfade(true)
                 placeholder(R.drawable.default_album_art)
                 error(R.drawable.outline_hide_image_24)
@@ -105,7 +105,7 @@ class BackgroundsImageFileAdapter(
         super.onViewRecycled(holder)
         holder.image.setImageDrawable(null)
         holder.image.setOnClickListener(null)
-        holder.fileName.setText(null)
+        holder.fileName.text = null
     }
 
     companion object {

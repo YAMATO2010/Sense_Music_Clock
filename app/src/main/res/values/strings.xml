@@ -21,8 +21,9 @@
     <string name="title_activity_standard_player">StandardPlayerActivity</string>
 
     <string name="track_count">%1$d曲</string>
-    <string name="timer_button_label">タイマー</string>
-    <string name="alarm_button_label">アラーム</string>
+    <string name="timer_button_label">Timer</string>
+    <string name="alarm_button_label">Alarm</string>
+    <string name="stop_watch_button_label">Stop\nwatch</string>
     <string name="timer_done_label">完了</string>
     <string name="morning">朝</string>
     <string name="addPlaylist">プレイリストに追加</string>

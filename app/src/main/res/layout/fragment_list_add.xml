@@ -6,12 +6,12 @@
     android:layout_height="match_parent">
 
     <Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:id="@+id/toolbar"
         android:background="@color/blue_glass"
         android:title="@string/Add"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <androidx.recyclerview.widget.RecyclerView
@@ -21,11 +21,11 @@
         android:layout_height="0dp"
         android:layout_marginLeft="16dp"
         android:layout_marginRight="16dp"
-        app:layoutManager="LinearLayoutManager"
-        android:scrollbars="vertical"
         android:fadeScrollbars="false"
-
         android:scrollbarSize="4dp"
+        android:scrollbars="vertical"
+
+        app:layoutManager="LinearLayoutManager"
 
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
