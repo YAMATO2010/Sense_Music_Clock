@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 object LocalMusicRepository {
 
 
-    private var _tracksFlow = MutableStateFlow(listOf<MediaItem>())
+    private val _tracksFlow = MutableStateFlow(listOf<MediaItem>())
 
     private var blockItems = listOf<BlocklistItem>()
 

@@ -1,9 +1,12 @@
 package jp.gr.java_conf.SenseMusicClock.Clock
 
 import android.app.AlertDialog
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.widget.EditText
@@ -33,7 +36,8 @@ class ClockUiController(
 
     private var stopWatchService: StopWatchService? = null
     private var timerService: TimerService? = null
-
+    private var isTimerBound = false
+    private var isStopWatchBound = false
 
     fun requestSetAlarm(hour: Int, minute: Int) {
         Log.d("ClockUiController", "Requesting set alarm for $hour:$minute")
@@ -111,11 +115,11 @@ class ClockUiController(
     }
 
 
-    private val timerConnection = object : android.content.ServiceConnection {
+    private val timerConnection = object : ServiceConnection {
         private var timerJob : Job? = null
         override fun onServiceConnected(
-            name: android.content.ComponentName?,
-            service: android.os.IBinder?
+            name: ComponentName?,
+            service: IBinder?
         ) {
             Log.d(
                 "ClockUiController",
@@ -150,21 +154,21 @@ class ClockUiController(
         }
 
 
-        override fun onServiceDisconnected(name: android.content.ComponentName?) {
+        override fun onServiceDisconnected(name: ComponentName?) {
             Log.d("ClockUiController", "timerConnection.onServiceDisconnected: name=$name")
 
             timerJob?.cancel()
             timerJob = null
-            binding.TimerButton.text = "Timer"
+            binding.TimerButton.text = activity.getString(R.string.timer_button_label)
             timerService = null
             // Not used
         }
     }
 
-    private val stopWatchConnection = object : android.content.ServiceConnection {
+    private val stopWatchConnection = object : ServiceConnection {
         override fun onServiceConnected(
-            name: android.content.ComponentName?,
-            service: android.os.IBinder?
+            name: ComponentName?,
+            service: IBinder?
         ) {
             Log.d(
                 "ClockUiController",
@@ -176,11 +180,11 @@ class ClockUiController(
             handler.postDelayed(timer_textOutput, 0L)
         }
 
-        override fun onServiceDisconnected(name: android.content.ComponentName?) {
+        override fun onServiceDisconnected(name: ComponentName?) {
             Log.d("ClockUiController", "stopWatchConnection.onServiceDisconnected: name=$name")
 
-            binding.stopWatchBtn.text = "StopWatch"
-            // Not used
+            binding.stopWatchBtn.text = activity.getString(R.string.stop_watch_button_label)
+
             handler.removeCallbacks(timer_textOutput)
         }
     }
@@ -223,9 +227,13 @@ class ClockUiController(
 
 
     fun BindService_StopWatch() {
+        if (isStopWatchBound) {
+            Log.d("ClockUiController", "BindService_StopWatch skipped: already bound")
+            return
+        }
         Log.d("ClockUiController", "BindService_StopWatch called")
         val intent = Intent(activity, StopWatchService::class.java)
-        activity.bindService(intent, stopWatchConnection, 0)
+        isStopWatchBound  = activity.bindService(intent, stopWatchConnection, 0)
         Log.d("ClockUiController", "bindService requested for StopWatchService")
     }
 
@@ -233,6 +241,7 @@ class ClockUiController(
         Log.d("ClockUiController", "unbindService_StopWatch called")
         try {
             activity.unbindService(stopWatchConnection)
+            isStopWatchBound = false
             Log.d("ClockUiController", "unbindService StopWatch succeeded")
         } catch (e: Exception) {
             Log.w("ClockUiController", "unbindService StopWatch failed", e)
@@ -243,6 +252,7 @@ class ClockUiController(
         Log.d("ClockUiController", "unbindService_Timer called")
         try {
             activity.unbindService(timerConnection)
+            isTimerBound = false
             Log.d("ClockUiController", "unbindService Timer succeeded")
         } catch (e: Exception) {
             Log.w("ClockUiController", "unbindService Timer failed", e)
@@ -251,9 +261,13 @@ class ClockUiController(
 
 
     fun BindService_Timer() {
+        if (isTimerBound) {
+            Log.d("ClockUiController", "BindService_Timer skipped: already bound")
+            return
+        }
         Log.d("ClockUiController", "BindService_Timer called")
         val intent = Intent(activity, TimerService::class.java)
-        activity.bindService(intent, timerConnection, 0)
+        isTimerBound = activity.bindService(intent, timerConnection, 0)
         Log.d("ClockUiController", "bindService requested for TimerService")
     }
 
@@ -286,7 +300,7 @@ class ClockUiController(
 
         // Activity shows centiseconds; use centisecond formatter for initial label
         // remove alarm button setup
-        binding.stopWatchBtn.text = "ストップウォッチ" // initial label for stop watch
+        binding.stopWatchBtn.text = activity.getString(R.string.stop_watch_button_label) // initial label for stop watch
 
         14
         // Timer
@@ -396,6 +410,7 @@ class ClockUiController(
 
     fun destroy() {
         try {
+
 
         } catch (e: Exception) {
             Log.w("ClockUiController", "unregisterReceiver failed", e)

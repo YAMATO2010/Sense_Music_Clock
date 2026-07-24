@@ -15,6 +15,9 @@ import java.time.format.DateTimeFormatter
 object BackgroundResolver {
 
 
+
+
+
     const val NOW_MORNING = 1
     const val NOW_NOON = 2
     const val NOW_EVENING = 3
@@ -35,6 +38,7 @@ object BackgroundResolver {
 
     const val ORIENTATION_OBLONG = 1
     const val ORIENTATION_LAND = 2
+
 
 
     sealed class ImageSource {
@@ -159,45 +163,14 @@ object BackgroundResolver {
     }
 
 
-}
 
 
-suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
-
-
-    val source = BackgroundResolver.loadBackgroundSource(context, orientation)
-
-    when (source) {
-        is BackgroundResolver.ImageSource.FilePath -> {
-            val imageLoader = ImageLoader.Builder(context)
-                .components {
-                    add(ImageDecoderDecoder.Factory()) // Android 9以降のWebP/GIF用
-                    add(GifDecoder.Factory())          // Android 8以前のGIF用
-
-                }
-                .crossfade(true)
-                .memoryCache {
-                    coil.memory.MemoryCache.Builder(context)
-                        .maxSizePercent(0.01) // メモリの25%までキャッシュを使用
-                        .strongReferencesEnabled(false)
-                        .weakReferencesEnabled(true)
-                        .build()
-                }
-                .build()
-
-            this.load(source.file, imageLoader)
-
-        }
-
-        is BackgroundResolver.ImageSource.Res -> {
-            this.load(source.id)
-
-        }
-    }
-    return source.key
 
 
 }
+
+
+
 
 
 

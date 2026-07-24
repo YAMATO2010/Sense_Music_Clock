@@ -1,13 +1,17 @@
 package jp.gr.java_conf.SenseMusicClock
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_EVENING
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_MORNING
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.IMAGEFILE_KEY_LAND_NIGHT
@@ -22,6 +26,7 @@ import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.NOW_NIGHT
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.NOW_NOON
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver.ORIENTATION_OBLONG
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
+import jp.gr.java_conf.SenseMusicClock.ui.Widget.WidgetState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -58,28 +63,71 @@ object PrefsManager {
     private val IS_WIDGET_BACKGROUND_KEY = booleanPreferencesKey("is_widget_background")
     private val IS_RANDOM_BACKGROUND_KEY = booleanPreferencesKey("is_random_background")
 
-    private val MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY = intPreferencesKey("max_load_tracks_added_at_Desc")
-    private val USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC = booleanPreferencesKey("useCurrentShuffleMode_added_at_Desc")
+    private val MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY =
+        intPreferencesKey("max_load_tracks_added_at_Desc")
+    private val USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC =
+        booleanPreferencesKey("useCurrentShuffleMode_added_at_Desc")
     private val IS_BLOCK_ADDED_AT_DESC = booleanPreferencesKey("isBlock_added_at_Desc")
-    private val IS_FILTER_BY_DIR_ADDED_AT_DESC = booleanPreferencesKey("isFilterByDir_added_at_Desc")
+    private val IS_FILTER_BY_DIR_ADDED_AT_DESC =
+        booleanPreferencesKey("isFilterByDir_added_at_Desc")
+
+    private val WIDGET_TITLE_KEY =
+        stringPreferencesKey("widget_title")
+
+    private val WIDGET_ARTWORK_URI_KEY =
+        stringPreferencesKey("widget_artwork_uri")
 
 
-    const val IMAGEFILE_KEY_OBLONG_MORNING_KEY= "imageFile_key_oblong_morning"
-    const val IMAGEFILE_KEY_OBLONG_NOON_KEY  = "imageFile_key_oblong_noon"
+
+    private val WIDGET_IS_PLAYING_KEY =
+        booleanPreferencesKey("widget_is_playing")
+
+
+    const val IMAGEFILE_KEY_OBLONG_MORNING_KEY = "imageFile_key_oblong_morning"
+    const val IMAGEFILE_KEY_OBLONG_NOON_KEY = "imageFile_key_oblong_noon"
     const val IMAGEFILE_KEY_OBLONG_EVENING_KEY = "imageFile_key_oblong_evening"
     const val IMAGEFILE_KEY_OBLONG_NIGHT_KEY = "imageFile_key_oblong_night"
     const val IMAGEFILE_KEY_LAND_MORNING_KEY = "imageFile_key_land_morning"
-    const val IMAGEFILE_KEY_LAND_NOON_KEY  = "imageFile_key_land_noon"
+    const val IMAGEFILE_KEY_LAND_NOON_KEY = "imageFile_key_land_noon"
     const val IMAGEFILE_KEY_LAND_EVENING_KEY = "imageFile_key_land_evening"
     const val IMAGEFILE_KEY_LAND_NIGHT_KEY = "imageFile_key_land_night"
 
+    private val IMAGEFILE_KEYS = setOf(
+        IMAGEFILE_KEY_OBLONG_MORNING_KEY,
+        IMAGEFILE_KEY_OBLONG_NOON_KEY,
+        IMAGEFILE_KEY_OBLONG_EVENING_KEY,
+        IMAGEFILE_KEY_OBLONG_NIGHT_KEY,
+        IMAGEFILE_KEY_LAND_MORNING_KEY,
+        IMAGEFILE_KEY_LAND_NOON_KEY,
+        IMAGEFILE_KEY_LAND_EVENING_KEY,
+        IMAGEFILE_KEY_LAND_NIGHT_KEY
+    )
+
+    data class SettingsProfile(
+        val currentPlaylistId: Long,
+        val currentBlocklistId: Long,
+        val musicDirRelativePaths: String,
+        val tileTitleDisplay: Boolean,
+        val playModeLoop: Boolean,
+        val isShuffle: Boolean,
+        val isWidgetBackground: Boolean,
+        val isRandomBackground: Boolean,
+        val imageFilePaths: Map<String, String>,
+        val maxLoadTracksAddedAtDesc: Int,
+        val useCurrentShuffleModeAddedAtDesc: Boolean,
+        val isBlockAddedAtDesc: Boolean,
+        val isFilterByDirAddedAtDesc: Boolean
+    )
 
 
-
-
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+        name = PREFS_NAME,
+        produceMigrations = { context ->
+            listOf(SharedPreferencesMigration(context, PREFS_NAME))
+        })
 
     //背景画像
-    fun getImageFileKey(orientation: Int, partOfDay: Int, ): String {
+    fun getImageFileKey(orientation: Int, partOfDay: Int): String {
         val key = when (orientation) {
             ORIENTATION_OBLONG -> { // oblong
                 when (partOfDay) {
@@ -121,7 +169,13 @@ object PrefsManager {
         }
         return context.getPrefsValue(stringPreferencesKey(key), default)
     }
-    suspend fun getImageFilePath(context: Context,orientation: Int, partOfDay: Int , default: String = ""): String {
+
+    suspend fun getImageFilePath(
+        context: Context,
+        orientation: Int,
+        partOfDay: Int,
+        default: String = ""
+    ): String {
         val key = getImageFileKey(orientation, partOfDay)
         if (key !in listOf(
                 IMAGEFILE_KEY_OBLONG_MORNING_KEY,
@@ -138,6 +192,7 @@ object PrefsManager {
         }
         return context.getPrefsValue(stringPreferencesKey(key), default)
     }
+
     suspend fun setImageFilePath(context: Context, key: String, value: String) {
         if (key !in listOf(
                 IMAGEFILE_KEY_OBLONG_MORNING_KEY,
@@ -152,9 +207,15 @@ object PrefsManager {
         ) {
             throw IllegalArgumentException("Invalid key: $key")
         }
-   context.setPrefsValue(stringPreferencesKey(key), value)
+        context.setPrefsValue(stringPreferencesKey(key), value)
     }
-    suspend fun setImageFilePath(context: Context,orientation: Int, partOfDay: Int , value: String){
+
+    suspend fun setImageFilePath(
+        context: Context,
+        orientation: Int,
+        partOfDay: Int,
+        value: String
+    ) {
         val key = getImageFileKey(orientation, partOfDay)
         if (key !in listOf(
                 IMAGEFILE_KEY_OBLONG_MORNING_KEY,
@@ -169,27 +230,24 @@ object PrefsManager {
         ) {
             throw IllegalArgumentException("Invalid key: $key")
         }
-       context.setPrefsValue(stringPreferencesKey(key),value)
+        context.setPrefsValue(stringPreferencesKey(key), value)
     }
-
-
-
-
-
-
 
 
     // 現在のプレイリストID
     fun getCurrentPlaylistIdFlow(context: Context, default: Long = -1): Flow<Long> {
         return context.getPrefsFlow(CURRENT_PLAYLIST_ID_KEY, default)
     }
+
     suspend fun getCurrentPlaylistId(context: Context, default: Long = -1): Long {
         return context.getPrefsValue(CURRENT_PLAYLIST_ID_KEY, default)
     }
+
     suspend fun setCurrentPlaylistId(context: Context, value: Long) {
         Log.d("LIST_/PrefsManager", "setCurrentPlaylistId() -> $value")
         context.setPrefsValue(CURRENT_PLAYLIST_ID_KEY, value)
     }
+
     suspend fun clearCurrentPlaylistId(context: Context) {
         context.clearPrefsValue(CURRENT_PLAYLIST_ID_KEY)
     }
@@ -198,12 +256,15 @@ object PrefsManager {
     fun getCurrentBlocklistIdFlow(context: Context, default: Long = -1): Flow<Long> {
         return context.getPrefsFlow(CURRENT_BLOCKLIST_ID_KEY, default)
     }
+
     suspend fun getCurrentBlocklistId(context: Context, default: Long = -1): Long {
         return context.getPrefsValue(CURRENT_BLOCKLIST_ID_KEY, default)
     }
+
     suspend fun setCurrentBlocklistId(context: Context, value: Long) {
         context.setPrefsValue(CURRENT_BLOCKLIST_ID_KEY, value)
     }
+
     suspend fun clearCurrentBlocklistId(context: Context) {
         context.clearPrefsValue(CURRENT_BLOCKLIST_ID_KEY)
     }
@@ -211,12 +272,15 @@ object PrefsManager {
     fun getLastTrackRelativePathFlow(context: Context, default: String = ""): Flow<String> {
         return context.getPrefsFlow(LAST_TRACK_RELATIVE_PATH_KEY, default)
     }
+
     suspend fun getLastTrackRelativePath(context: Context, default: String = ""): String {
         return context.getPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY, default)
     }
+
     suspend fun setLastTrackRelativePath(context: Context, value: String) {
         context.setPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY, value)
     }
+
     suspend fun clearLastTrackRelativePath(context: Context) {
         context.clearPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY)
     }
@@ -224,12 +288,15 @@ object PrefsManager {
     fun getLastTrackDisplayNameFlow(context: Context, default: String = ""): Flow<String> {
         return context.getPrefsFlow(LAST_TRACK_DISPLAY_NAME_KEY, default)
     }
+
     suspend fun getLastTrackDisplayName(context: Context, default: String = ""): String {
         return context.getPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY, default)
     }
+
     suspend fun setLastTrackDisplayName(context: Context, value: String) {
         context.setPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY, value)
     }
+
     suspend fun clearLastTrackDisplayName(context: Context) {
         context.clearPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY)
     }
@@ -237,19 +304,18 @@ object PrefsManager {
     fun getLastTrackPositionFlow(context: Context, default: Long = 0L): Flow<Long> {
         return context.getPrefsFlow(LAST_TRACK_POSITION, default)
     }
+
     suspend fun getLastTrackPosition(context: Context, default: Long = 0L): Long {
         return context.getPrefsValue(LAST_TRACK_POSITION, default)
     }
+
     suspend fun setLastTrackPosition(context: Context, value: Long) {
         context.setPrefsValue(LAST_TRACK_POSITION, value)
     }
+
     suspend fun clearLastTrackPosition(context: Context) {
         context.clearPrefsValue(LAST_TRACK_POSITION)
     }
-
-
-
-
 
 
     // 現在の音量
@@ -266,17 +332,18 @@ object PrefsManager {
     }
 
 
-
-
-
-
-
     // 音楽ディレクトリの相対パス
-    fun getMusicDirRelativePathFlow(context: Context, default: String = TargetDirectoryPrefJSONManager.UNKNOWN): Flow<String> {
+    fun getMusicDirRelativePathFlow(
+        context: Context,
+        default: String = TargetDirectoryPrefJSONManager.UNKNOWN
+    ): Flow<String> {
         return context.getPrefsFlow(MUSIC_DIR_RELATIVE_PATHS_KEY, default)
     }
 
-    suspend fun getMusicDirRelativePath(context: Context, default: String = TargetDirectoryPrefJSONManager.UNKNOWN): String {
+    suspend fun getMusicDirRelativePath(
+        context: Context,
+        default: String = TargetDirectoryPrefJSONManager.UNKNOWN
+    ): String {
         return context.getPrefsValue(MUSIC_DIR_RELATIVE_PATHS_KEY, default)
     }
 
@@ -288,11 +355,6 @@ object PrefsManager {
     suspend fun clearMusicDirRelativePath(context: Context) {
         context.clearPrefsValue(MUSIC_DIR_RELATIVE_PATHS_KEY)
     }
-
-
-
-
-
 
 
     // トラックの再読み込みフラグ
@@ -310,18 +372,12 @@ object PrefsManager {
         Log.d("PrefsManager", "setReloadTracks() -> $value")
         context.setPrefsValue(ReLoad_Tracks_KEY, value)
     }
+
     suspend fun setReloadTracks_reverse_andGet(context: Context): Boolean {
         val newValue = !(getReloadTracks(context))
         setReloadTracks(context, newValue)
         return newValue
     }
-
-
-
-
-
-
-
 
 
     // jacketAdapterでtext plusのlayout使うかフラグ
@@ -336,7 +392,6 @@ object PrefsManager {
     suspend fun setTileTitleDisplay(context: Context, value: Boolean) {
         context.setPrefsValue(TILE_TITLE_DISPLAY, value)
     }
-
 
 
     // ウィジェットの背景フラグ
@@ -365,12 +420,6 @@ object PrefsManager {
     suspend fun setRandomBackground(context: Context, value: Boolean) {
         context.setPrefsValue(IS_RANDOM_BACKGROUND_KEY, value)
     }
-
-
-
-
-
-
 
 
     // 再生モードのループフラグ
@@ -406,15 +455,9 @@ object PrefsManager {
     }
 
 
-
-
-
-
-
-
     // アラームセット時間
     fun getSetAlarmTimeFlow(context: Context): Flow<String> {
-        return context.getPrefsFlow(SET_ALARM_TIME_KEY,"" )
+        return context.getPrefsFlow(SET_ALARM_TIME_KEY, "")
     }
 
     suspend fun getSetAlarmTime(context: Context, default: String = ""): String {
@@ -453,12 +496,20 @@ object PrefsManager {
     }
 
     // 新しいモード現在のシャッフルモードを使用するかどうか
-    fun getUseCurrentShuffleModeAddedAtDescFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+    fun getUseCurrentShuffleModeAddedAtDescFlow(
+        context: Context,
+        default: Boolean = false
+    ): Flow<Boolean> {
         return context.getPrefsFlow(USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC, default)
     }
-    suspend fun getUseCurrentShuffleModeAddedAtDesc(context: Context, default: Boolean = false): Boolean {
+
+    suspend fun getUseCurrentShuffleModeAddedAtDesc(
+        context: Context,
+        default: Boolean = false
+    ): Boolean {
         return context.getPrefsValue(USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC, default)
     }
+
     suspend fun setUseCurrentShuffleModeAddedAtDesc(context: Context, value: Boolean) {
         context.setPrefsValue(USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC, value)
     }
@@ -467,9 +518,11 @@ object PrefsManager {
     fun getIsBlockAddedAtDescFlow(context: Context, default: Boolean = false): Flow<Boolean> {
         return context.getPrefsFlow(IS_BLOCK_ADDED_AT_DESC, default)
     }
+
     suspend fun getIsBlockAddedAtDesc(context: Context, default: Boolean = false): Boolean {
         return context.getPrefsValue(IS_BLOCK_ADDED_AT_DESC, default)
     }
+
     suspend fun setIsBlockAddedAtDesc(context: Context, value: Boolean) {
         context.setPrefsValue(IS_BLOCK_ADDED_AT_DESC, value)
     }
@@ -478,25 +531,132 @@ object PrefsManager {
     fun getIsFilterByDirAddedAtDescFlow(context: Context, default: Boolean = false): Flow<Boolean> {
         return context.getPrefsFlow(IS_FILTER_BY_DIR_ADDED_AT_DESC, default)
     }
+
     suspend fun getIsFilterByDirAddedAtDesc(context: Context, default: Boolean = false): Boolean {
         return context.getPrefsValue(IS_FILTER_BY_DIR_ADDED_AT_DESC, default)
     }
+
     suspend fun setIsFilterByDirAddedAtDesc(context: Context, value: Boolean) {
         context.setPrefsValue(IS_FILTER_BY_DIR_ADDED_AT_DESC, value)
     }
 
+    suspend fun getSettingsProfile(context: Context): SettingsProfile {
+        return withContext(Dispatchers.IO) {
+            mutex.withLock {
+                val prefs = context.dataStore.data.first()
+                SettingsProfile(
+                    currentPlaylistId = prefs[CURRENT_PLAYLIST_ID_KEY] ?: -1L,
+                    currentBlocklistId = prefs[CURRENT_BLOCKLIST_ID_KEY] ?: -1L,
+                    musicDirRelativePaths = prefs[MUSIC_DIR_RELATIVE_PATHS_KEY]
+                        ?: TargetDirectoryPrefJSONManager.UNKNOWN,
+                    tileTitleDisplay = prefs[TILE_TITLE_DISPLAY] ?: false,
+                    playModeLoop = prefs[PLAYMODE_LOOP_KEY] ?: false,
+                    isShuffle = prefs[IS_SHUFFLE_KEY] ?: false,
+                    isWidgetBackground = prefs[IS_WIDGET_BACKGROUND_KEY] ?: false,
+                    isRandomBackground = prefs[IS_RANDOM_BACKGROUND_KEY] ?: false,
+                    imageFilePaths = IMAGEFILE_KEYS.associateWith { key ->
+                        prefs[stringPreferencesKey(key)] ?: ""
+                    },
+                    maxLoadTracksAddedAtDesc = prefs[MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY] ?: 50,
+                    useCurrentShuffleModeAddedAtDesc =
+                        prefs[USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC] ?: false,
+                    isBlockAddedAtDesc = prefs[IS_BLOCK_ADDED_AT_DESC] ?: false,
+                    isFilterByDirAddedAtDesc = prefs[IS_FILTER_BY_DIR_ADDED_AT_DESC] ?: false
+                )
+            }
+        }
+    }
+
+    suspend fun saveSettingsProfile(context: Context, profile: SettingsProfile) {
+        val invalidImageFileKeys = profile.imageFilePaths.keys - IMAGEFILE_KEYS
+        require(invalidImageFileKeys.isEmpty()) {
+            "Invalid image file keys: $invalidImageFileKeys"
+        }
+        val missingImageFileKeys = IMAGEFILE_KEYS - profile.imageFilePaths.keys
+        require(missingImageFileKeys.isEmpty()) {
+            "Missing image file keys: $missingImageFileKeys"
+        }
+
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                Log.d("PrefsManager", "saveSettingsProfile: $profile")
+                context.dataStore.edit { prefs ->
+                    prefs[CURRENT_PLAYLIST_ID_KEY] = profile.currentPlaylistId
+                    prefs[CURRENT_BLOCKLIST_ID_KEY] = profile.currentBlocklistId
+                    prefs[MUSIC_DIR_RELATIVE_PATHS_KEY] = profile.musicDirRelativePaths
+                    prefs[TILE_TITLE_DISPLAY] = profile.tileTitleDisplay
+                    prefs[PLAYMODE_LOOP_KEY] = profile.playModeLoop
+                    prefs[IS_SHUFFLE_KEY] = profile.isShuffle
+                    prefs[IS_WIDGET_BACKGROUND_KEY] = profile.isWidgetBackground
+                    prefs[IS_RANDOM_BACKGROUND_KEY] = profile.isRandomBackground
+                    prefs[MAX_LOAD_TRACKS_ADDED_AT_DESC_KEY] = profile.maxLoadTracksAddedAtDesc
+                    prefs[USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC] =
+                        profile.useCurrentShuffleModeAddedAtDesc
+                    prefs[IS_BLOCK_ADDED_AT_DESC] = profile.isBlockAddedAtDesc
+                    prefs[IS_FILTER_BY_DIR_ADDED_AT_DESC] = profile.isFilterByDirAddedAtDesc
+
+                    profile.imageFilePaths.forEach { (key, value) ->
+                        prefs[stringPreferencesKey(key)] = value
+                    }
+                }
+            }
+        }
+    }
 
 
+    // ウィジェットの状態を保存する関数
+    suspend fun setWidgetState(
+        context: Context,
+        title: String,
+        artworkUri: Uri?,
+        isPlaying: Boolean,
+    ) {
+        withContext(Dispatchers.IO) {
+            mutex.withLock {
+                context.dataStore.edit { prefs ->
+                    prefs[WIDGET_TITLE_KEY] = title
+                    prefs[WIDGET_IS_PLAYING_KEY] = isPlaying
+
+                    if (artworkUri == null) {
+                        prefs.remove(WIDGET_ARTWORK_URI_KEY)
+                    } else {
+                        prefs[WIDGET_ARTWORK_URI_KEY] = artworkUri.toString()
+                    }
+
+                }
+            }
+        }
+    }
+
+    suspend fun getWidgetTitle(context: Context, default: String = ""): String {
+        return context.getPrefsValue(WIDGET_TITLE_KEY, default)
+    }
+
+    suspend fun getWidgetArtworkUri(context: Context): String {
+        val uriString = context.getPrefsValue(WIDGET_ARTWORK_URI_KEY, "")
+        return uriString
+    }
 
 
+    suspend fun getWidgetIsPlaying(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(WIDGET_IS_PLAYING_KEY, default)
+    }
 
-
+    fun getWidgetStateFlow(context: Context): Flow<WidgetState> {
+        return context.dataStore.data.map { prefs ->
+            WidgetState(
+                title = prefs[WIDGET_TITLE_KEY] ?: "",
+                artwork = Uri.parse(prefs[WIDGET_ARTWORK_URI_KEY] ?: ""),
+                playing = prefs[WIDGET_IS_PLAYING_KEY] ?: false
+            )
+        }.distinctUntilChanged()
+    }
 
 
     //ここら辺はDataStore用の汎用関数。
 
 
-    private fun<T> Context.getPrefsFlow(
+    private fun <T> Context.getPrefsFlow(
         key: Preferences.Key<T>,
         default: T
     ): Flow<T> {
@@ -506,7 +666,7 @@ object PrefsManager {
 
     }
 
-    private suspend fun<T> Context.getPrefsValue(
+    private suspend fun <T> Context.getPrefsValue(
         key: Preferences.Key<T>,
         default: T
     ): T {
@@ -538,8 +698,7 @@ object PrefsManager {
     }
 
 
-
-    private suspend fun <T> Context.clearPrefsValue(key: Preferences.Key<T> ) {
+    private suspend fun <T> Context.clearPrefsValue(key: Preferences.Key<T>) {
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 Log.d("PrefsManager", "clearPrefsValue: key=${key.name}")

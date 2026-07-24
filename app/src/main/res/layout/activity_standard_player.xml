@@ -273,6 +273,24 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 
+    <TextView
+        android:id="@+id/sleepTimerTextView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:autoSizeTextType="uniform"
+        android:layout_marginHorizontal="20dp"
+        android:background="@drawable/gradient4"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btnRepeat"
+        app:layout_constraintStart_toEndOf="@+id/btnBackEdge"
+        app:layout_constraintTop_toTopOf="@+id/btnRepeat" />
+
+ 
+
+
 
 
 

@@ -25,23 +25,20 @@
         android:scaleType="centerCrop" />
 
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerJackets"
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/jackets"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@drawable/gradient1"
-        android:clipToPadding="false"
-        android:orientation="vertical"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
-
+        app:layout_constraintStart_toStartOf="parent"
+        android:background="@drawable/gradient1"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/linearLayout5"
+        />
 
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
-        app:layout_constraintVertical_bias="0.0" />
 
     <LinearLayout
         android:id="@+id/linearLayout2"
@@ -89,7 +86,7 @@
 
                 android:maxLines="1"
 
-                android:text="タイマー"
+                android:text="@string/timer_button_label"
                 app:backgroundTint="@null" />
 
             <Button
@@ -101,7 +98,7 @@
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="1"
 
-                android:text="アラーム"
+                android:text="@string/alarm_button_label"
                 app:backgroundTint="@null" />
 
 
@@ -112,9 +109,9 @@
                 android:layout_weight="1"
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
-                android:maxLines="1"
+                android:maxLines="2"
 
-                android:text="ストップウォッチ"
+                android:text="@string/stop_watch_button_label"
                 app:backgroundTint="@null" />
         </LinearLayout>
 
@@ -277,7 +274,7 @@
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="@+id/SettingsButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/recyclerJackets"
+        app:layout_constraintStart_toEndOf="@+id/jackets"
         app:layout_constraintTop_toTopOf="@+id/SettingsButton">
 
         <ImageButton
@@ -357,6 +354,19 @@
             tools:layout_editor_absoluteX="201dp"
             tools:layout_editor_absoluteY="257dp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/sleepTimerTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        android:background="@drawable/gradient4"
+        android:autoSizeTextType="uniform"
+        android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout9"
+        app:layout_constraintEnd_toEndOf="@+id/linearLayout9"
+        app:layout_constraintStart_toStartOf="@+id/linearLayout9" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

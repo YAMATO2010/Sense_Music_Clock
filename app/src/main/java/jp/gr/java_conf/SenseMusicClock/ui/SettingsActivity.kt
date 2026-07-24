@@ -1,5 +1,6 @@
 package jp.gr.java_conf.SenseMusicClock.ui
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,11 +9,20 @@ import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
+import androidx.media3.session.SessionToken
 import androidx.preference.Preference
 import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SeekBarPreference
+import androidx.preference.SwitchPreference
+import com.google.gson.Gson
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
@@ -21,14 +31,19 @@ import jp.gr.java_conf.SenseMusicClock.Music.Data.FileItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.PlayList
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.toMediaItem
+import jp.gr.java_conf.SenseMusicClock.Music.SleepTimerTimes
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.Music.TargetDirectoryPrefJSONManager
+import jp.gr.java_conf.SenseMusicClock.Music.sleepTimerTimesToMinutes
+import jp.gr.java_conf.SenseMusicClock.Music.sleepTimerTimesToText
+import jp.gr.java_conf.SenseMusicClock.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.databinding.SettingsActivityBinding
 import jp.gr.java_conf.SenseMusicClock.launchClearBackgroundImageFileDialog
 import jp.gr.java_conf.SenseMusicClock.launchSelectBackgroundImageDialog
 import jp.gr.java_conf.SenseMusicClock.saveToInternalStorage
+import jp.gr.java_conf.SenseMusicClock.showEditTextDialog
 import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
 import jp.gr.java_conf.SenseMusicClock.toFileItem
@@ -106,6 +121,8 @@ class SettingsActivity : AppCompatActivity() {
 
 
     class SettingsFragment : PreferenceFragmentCompat() {
+        private val gson = Gson()
+
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // 明示的に名前付き SharedPreferences を使う（XML の属性に依存せず確実に同じ prefs を使用する）
 
@@ -250,6 +267,148 @@ class SettingsActivity : AppCompatActivity() {
                 true
 
 
+            }
+
+            val sleepTimerPref: Preference? = findPreference("action_sleepTimer")
+            sleepTimerPref?.setOnPreferenceClickListener {
+                val timerLists = listOf(
+                    SleepTimerTimes.OFF,
+                    SleepTimerTimes.MIN_5,
+                    SleepTimerTimes.MIN_15,
+                    SleepTimerTimes.MIN_30,
+                    SleepTimerTimes.HOUR_1,
+                    SleepTimerTimes.HOUR_2,
+                    SleepTimerTimes.HOUR_5
+                )
+                val timerListTexts = timerLists.map { sleepTimerTimesToText[it] ?: it.name }
+
+                val activity = requireActivity() as AppCompatActivity
+                val executor = ContextCompat.getMainExecutor(activity)
+
+                AlertDialog.Builder(activity)
+                    .setTitle("スリープタイマー")
+                    .setItems(
+                        timerListTexts.toTypedArray()
+                    ) { _, which ->
+
+                        val selectedTimer = timerLists[which]
+                        val minutes =
+                            sleepTimerTimesToMinutes[selectedTimer] ?: 0
+
+                        val token = SessionToken(
+                            activity,
+                            ComponentName(
+                                activity,
+                                MusicService::class.java
+                            )
+                        )
+
+                        val controllerFuture =
+                            MediaController.Builder(activity, token)
+                                .buildAsync()
+
+                        controllerFuture.addListener(
+                            {
+                                val mediaController = try {
+                                    controllerFuture.get()
+                                } catch (e: Exception) {
+                                    Log.e(
+                                        "SettingsFragment/SleepTimer",
+                                        "Failed to connect to MusicService",
+                                        e
+                                    )
+
+                                    Toast.makeText(
+                                        activity,
+                                        "音楽サービスへの接続に失敗しました。",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    return@addListener
+                                }
+
+                                val command = SessionCommand(
+                                    MusicService.CUSTOM_ACTION_SLEEP_TIMER_SET,
+                                    Bundle.EMPTY
+                                )
+
+                                val args =
+                                    if (minutes > 0) {
+                                        Bundle().apply {
+                                            putInt(
+                                                MusicService.SLEEP_TIMER_DURATION_MINUTES,
+                                                minutes
+                                            )
+                                        }
+                                    } else {
+                                        Bundle.EMPTY
+                                    }
+
+                                val resultFuture =
+                                    mediaController.sendCustomCommand(
+                                        command,
+                                        args
+                                    )
+
+                                resultFuture.addListener(
+                                    {
+                                        try {
+                                            val result = resultFuture.get()
+
+                                            if (
+                                                result.resultCode ==
+                                                SessionResult.RESULT_SUCCESS
+                                            ) {
+                                                val message =
+                                                    if (minutes > 0) {
+                                                        "スリープタイマーを${minutes}分に設定しました。"
+                                                    } else {
+                                                        "スリープタイマーをオフにしました。"
+                                                    }
+
+                                                Toast.makeText(
+                                                    activity,
+                                                    message,
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else {
+                                                Log.e(
+                                                    "SettingsFragment/SleepTimer",
+                                                    "Sleep timer command failed: " +
+                                                            "resultCode=${result.resultCode}"
+                                                )
+
+                                                Toast.makeText(
+                                                    activity,
+                                                    "スリープタイマーの設定に失敗しました。",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e(
+                                                "SettingsFragment/SleepTimer",
+                                                "Failed to send sleep timer command",
+                                                e
+                                            )
+
+                                            Toast.makeText(
+                                                activity,
+                                                "スリープタイマーの設定に失敗しました。",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } finally {
+                                            mediaController.release()
+                                        }
+                                    },
+                                    executor
+                                )
+                            },
+                            executor
+                        )
+                    }
+                    .setNegativeButton("キャンセル", null)
+                    .show()
+                true
             }
 
             val pickImageAddPref: Preference? = findPreference("background_add")
@@ -425,28 +584,14 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
-            val loadPlaylistPref: Preference? = findPreference("action_load_playList")
-            loadPlaylistPref?.setOnPreferenceClickListener {
-                openM3ULauncher.launch(
-                    arrayOf(
-                        "application/x-mpegurl",
-                        "audio/x-mpegurl",
-                        "application/vnd.apple.mpegurl"
-                    )
-                )
-
-
-                true
-            }
-
-            val playAddedAtDeskPref : Preference? = findPreference("action_play_added_at_Desc")
-            playAddedAtDeskPref?.setOnPreferenceClickListener{
+            val playAddedAtDeskPref: Preference? = findPreference("action_play_added_at_Desc")
+            playAddedAtDeskPref?.setOnPreferenceClickListener {
                 lifecycleScope.launch {
                     PrefsManager.setCurrentPlaylistId(requireContext(), PlayList.ADDED_AT_DESC_ID)
                 }
                 true
             }
-            val playDefaultPref : Preference? = findPreference("action_play_default")
+            val playDefaultPref: Preference? = findPreference("action_play_default")
             playDefaultPref?.setOnPreferenceClickListener {
                 lifecycleScope.launch {
                     PrefsManager.setCurrentPlaylistId(requireContext(), PlayList.CURRENT_REMOVAL_ID)
@@ -454,6 +599,189 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
+            val switchSettingsPref: Preference? = findPreference("action_switchSettings")
+            switchSettingsPref?.setOnPreferenceClickListener {
+                showSwitchSettingsDialog()
+                true
+            }
+
+            val addSettingsPref: Preference? = findPreference("action_switchSettings_add")
+            addSettingsPref?.setOnPreferenceClickListener {
+                showSaveSettingsDialog()
+                true
+            }
+
+            val deleteSettingsPref: Preference? = findPreference("action_switchSettings_delete")
+            deleteSettingsPref?.setOnPreferenceClickListener {
+                showDeleteSettingsDialog()
+                true
+            }
+
+        }
+
+        private fun showSaveSettingsDialog() {
+            val activity = requireActivity() as? AppCompatActivity ?: return
+            activity.showEditTextDialog(
+                title = "設定名",
+                positiveButtonTitle = "保存",
+                initialText = DEFAULT_SETTINGS_PROFILE_NAME
+            ) { input ->
+                val appContext = requireContext().applicationContext
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            val profile = PrefsManager.getSettingsProfile(appContext)
+                            val file = createUniqueSettingsProfileFile(appContext, input)
+                            file.writeText(gson.toJson(profile))
+                            file
+                        }
+                    }.onSuccess { file ->
+                        Toast.makeText(
+                            requireContext(),
+                            "設定を「${file.nameWithoutExtension}」として保存しました。",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }.onFailure { e ->
+                        Log.e("SettingsFragment", "Failed to save settings profile", e)
+                        Toast.makeText(
+                            requireContext(),
+                            "設定の保存に失敗しました。",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
+
+        private fun showSwitchSettingsDialog() {
+            val files = getSettingsProfileFiles(requireContext())
+            if (files.isEmpty()) {
+                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            requireContext().utilDialog(
+                "設定の切り替え",
+                files,
+                files.map { it.nameWithoutExtension }.toTypedArray()
+            ) { file ->
+                val appContext = requireContext().applicationContext
+                viewLifecycleOwner.lifecycleScope.launch {
+                    runCatching {
+                        val profile = withContext(Dispatchers.IO) {
+                            val json = file.readText()
+                            gson.fromJson(json, PrefsManager.SettingsProfile::class.java)
+                                ?: throw IllegalArgumentException("Invalid settings profile JSON")
+                        }
+                        PrefsManager.saveSettingsProfile(appContext, profile)
+                        profile
+                    }.onSuccess { profile ->
+                        applySettingsProfileToUi(profile)
+                        Toast.makeText(
+                            requireContext(),
+                            "設定を「${file.nameWithoutExtension}」に切り替えました。",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }.onFailure { e ->
+                        Log.e("SettingsFragment", "Failed to switch settings profile", e)
+                        Toast.makeText(
+                            requireContext(),
+                            "設定の切り替えに失敗しました。",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
+
+        private fun applySettingsProfileToUi(profile: PrefsManager.SettingsProfile) {
+            findPreference<SwitchPreference>("tile_title_display")?.isChecked =
+                profile.tileTitleDisplay
+            findPreference<SwitchPreference>("playMode_loop")?.isChecked = profile.playModeLoop
+            findPreference<SwitchPreference>("is_shuffle")?.isChecked = profile.isShuffle
+            findPreference<SwitchPreference>("is_widget_background")?.isChecked =
+                profile.isWidgetBackground
+            findPreference<SwitchPreference>("is_random_background")?.isChecked =
+                profile.isRandomBackground
+            findPreference<SwitchPreference>("useCurrentShuffleMode_added_at_Desc")?.isChecked =
+                profile.useCurrentShuffleModeAddedAtDesc
+            findPreference<SwitchPreference>("isBlock_added_at_Desc")?.isChecked =
+                profile.isBlockAddedAtDesc
+            findPreference<SwitchPreference>("isFilterByDir_added_at_Desc")?.isChecked =
+                profile.isFilterByDirAddedAtDesc
+
+            findPreference<SeekBarPreference>("max_load_tracks_added_at_Desc")?.value =
+                profile.maxLoadTracksAddedAtDesc
+        }
+
+        private fun showDeleteSettingsDialog() {
+            val files = getSettingsProfileFiles(requireContext())
+            if (files.isEmpty()) {
+                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            requireContext().utilDialog(
+                "設定の削除",
+                files,
+                files.map { it.nameWithoutExtension }.toTypedArray()
+            ) { file ->
+                AlertDialog.Builder(requireContext())
+                    .setTitle("設定の削除")
+                    .setMessage("「${file.nameWithoutExtension}」を削除しますか？")
+                    .setPositiveButton("削除") { _, _ ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val deleted = withContext(Dispatchers.IO) {
+                                file.isFile && file.delete()
+                            }
+                            val message = if (deleted) {
+                                "設定を削除しました。"
+                            } else {
+                                "設定の削除に失敗しました。"
+                            }
+                            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("キャンセル", null)
+                    .show()
+            }
+        }
+
+        private fun getSettingsProfileFiles(context: Context): List<File> {
+            val dir = getSettingsProfileDir(context)
+            return dir.listFiles { file ->
+                file.isFile && file.extension.equals("json", ignoreCase = true)
+            }?.sortedBy { it.nameWithoutExtension } ?: emptyList()
+        }
+
+        private fun createUniqueSettingsProfileFile(context: Context, inputName: String): File {
+            val dir = getSettingsProfileDir(context)
+            val baseName = sanitizeSettingsProfileName(inputName)
+            var file = File(dir, "$baseName.json")
+            var index = 1
+            while (file.exists()) {
+                file = File(dir, "$baseName($index).json")
+                index++
+            }
+            return file
+        }
+
+        private fun getSettingsProfileDir(context: Context): File {
+            return File(context.filesDir, SETTINGS_PROFILE_DIR).apply {
+                if (!exists()) mkdirs()
+            }
+        }
+
+        private fun sanitizeSettingsProfileName(inputName: String): String {
+            val trimmedName = inputName.trim().ifBlank { DEFAULT_SETTINGS_PROFILE_NAME }
+            val nameWithoutExtension = if (trimmedName.endsWith(".json", ignoreCase = true)) {
+                trimmedName.dropLast(".json".length).trim()
+            } else {
+                trimmedName
+            }
+            return nameWithoutExtension
+                .replace(Regex("""[\\/:*?"<>|]"""), "_")
+                .ifBlank { DEFAULT_SETTINGS_PROFILE_NAME }
         }
 
         suspend fun loadM3U_RPathAndName(uri: Uri): String? {
@@ -482,6 +810,11 @@ class SettingsActivity : AppCompatActivity() {
 
                 }
             }
+        }
+
+        companion object {
+            private const val SETTINGS_PROFILE_DIR = "profiles"
+            private const val DEFAULT_SETTINGS_PROFILE_NAME = "Prefs"
         }
     }
 

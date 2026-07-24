@@ -5,12 +5,16 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.OpenableColumns
 import android.util.DisplayMetrics
 import android.util.Log
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.withFrameNanos
 import androidx.datastore.preferences.core.Preferences
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
@@ -25,6 +29,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 // Small helpers used across services/activities to reduce duplicated boilerplate.
 
@@ -47,7 +53,7 @@ fun convertMsToTimeString(ms: Long): String {
 
     return "$minutesStr:$secondsStr"
 }
-fun Context.saveToInternalStorage(uri: android.net.Uri, childPath: String = ""): File {
+fun Context.saveToInternalStorage(uri: Uri, childPath: String = ""): File {
     val dir = File(filesDir, childPath)
     if (!dir.exists()) dir.mkdirs()
 
@@ -86,7 +92,7 @@ fun Context.saveToInternalStorage(uri: android.net.Uri, childPath: String = ""):
     return outFile
 }
 
-fun Context.getFileNameFromUri(uri: android.net.Uri): String? {
+fun Context.getFileNameFromUri(uri: Uri): String? {
     val cursor = contentResolver.query(uri, null, null, null, null)
     cursor?.use {
         if (it.moveToFirst()) {
@@ -128,6 +134,100 @@ fun Context.dpToPx(dp: Int): Int {
     return (dp * resources.displayMetrics.density + 0.5f).toInt()
 }
 
+private suspend fun LazyListState.awaitLazyListLayout() {
+    if (layoutInfo.totalItemsCount == 0) {
+        withFrameNanos { }
+    }
+}
+
+private fun LazyListState.coerceItemPosition(position: Int): Int? {
+    val itemCount = layoutInfo.totalItemsCount
+    if (itemCount <= 0) return null
+    return position.coerceIn(0, itemCount - 1)
+}
+
+private fun LazyListState.visibleItemCenterDelta(position: Int): Float? {
+    val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == position } ?: return null
+    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
+    val itemCenter = itemInfo.offset + itemInfo.size / 2f
+    return itemCenter - viewportCenter
+}
+
+private fun LazyListState.centerScrollOffset(position: Int): Int {
+    val visibleItems = layoutInfo.visibleItemsInfo
+    val itemSize = visibleItems.firstOrNull { it.index == position }?.size
+        ?: visibleItems.map { it.size }.takeIf { it.isNotEmpty() }?.average()?.toInt()
+        ?: 0
+    val viewportSize = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
+    return -((viewportSize - itemSize) / 2)
+}
+
+suspend fun LazyListState.animateScrollToItemCentered(position: Int) {
+    awaitLazyListLayout()
+    val safePosition = coerceItemPosition(position) ?: return
+
+    animateScrollToItem(safePosition, centerScrollOffset(safePosition))
+    withFrameNanos { }
+    visibleItemCenterDelta(safePosition)?.let { delta ->
+        if (abs(delta) > 1f) {
+            scrollBy(delta)
+        }
+    }
+}
+
+suspend fun LazyListState.scrollToItemCentered(position: Int) {
+    awaitLazyListLayout()
+    val safePosition = coerceItemPosition(position) ?: return
+
+    scrollToItem(safePosition, centerScrollOffset(safePosition))
+    withFrameNanos { }
+    visibleItemCenterDelta(safePosition)?.let { delta ->
+        if (abs(delta) > 1f) {
+            scrollBy(delta)
+        }
+    }
+}
+
+fun LazyListState.shouldSkipAnimation(
+    position: Int,
+    maxScrollDistanceForAnimation: Int = MAX_SCROLL_DISTANCE_FOR_ANIMATION
+): Boolean {
+    val itemCount = layoutInfo.totalItemsCount
+    if (position < 0 || position >= itemCount) return true
+
+    val distance = abs(position - firstVisibleItemIndex)
+    return distance > maxScrollDistanceForAnimation
+}
+
+suspend fun LazyListState.animateScrollToItemWithSkipCheck(
+    position: Int,
+    maxScrollDistanceForAnimation: Int = MAX_SCROLL_DISTANCE_FOR_ANIMATION
+) {
+    if (shouldSkipAnimation(position, maxScrollDistanceForAnimation)) {
+        stepScrollToItem(position)
+    } else {
+        animateScrollToItemCentered(position)
+    }
+}
+
+suspend fun LazyListState.stepScrollToItem(targetPos: Int) {
+    awaitLazyListLayout()
+    val safeTargetPos = coerceItemPosition(targetPos) ?: return
+    val currentPos = firstVisibleItemIndex
+    val distance = safeTargetPos - currentPos
+
+    if (distance == 0) {
+        animateScrollToItemCentered(safeTargetPos)
+        return
+    }
+
+    val step = if (distance > 0) 10 else -10
+    val landingPos = coerceItemPosition(safeTargetPos - step) ?: return
+    scrollToItemCentered(landingPos)
+
+    animateScrollToItemCentered(safeTargetPos)
+
+}
 // 滑らかなスクロール（アニメーション）でアイテムを表示する
 
 fun RecyclerView.smoothScrollToPositionCentered(position: Int, speedMsPerInch: Float = 150f) {
@@ -190,7 +290,7 @@ fun RecyclerView.shouldSkipAnimation(
             return true
         }
 
-        val distance = kotlin.math.abs(position - currentPos)
+        val distance = abs(position - currentPos)
 
         return distance > maxScrollDistanceForAnimation
 
@@ -200,6 +300,8 @@ fun RecyclerView.shouldSkipAnimation(
     }
 
 }
+
+
 
 suspend fun RecyclerView.smoothScrollToPositionWithSkipAnimationCheck(
     position: Int,
@@ -264,7 +366,7 @@ suspend fun RecyclerView.stepScrollToItem(targetPos: Int, speed: Float = 5f) {
 
 fun calculateScrollSpeed(from: Int, to: Int): Float {
 
-    val diff = kotlin.math.abs(from - to)
+    val diff = abs(from - to)
     val rawSpeed = (150 / (1 + diff)).toFloat()
     val speed = rawSpeed.coerceIn(1f, 300f)
     return speed
@@ -299,10 +401,9 @@ fun pendingActivityIntent(
 }
 
 fun formatMillisToTime(millis: Long): String {
-    val seconds = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-    val minutes = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(millis) % 60
-    val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis)
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
+    val hours = TimeUnit.MILLISECONDS.toHours(millis)
     return if (hours > 0) String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
     else String.format(Locale.US, "%02d:%02d", minutes, seconds)
 }
-

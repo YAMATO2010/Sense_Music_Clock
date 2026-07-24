@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Rect
@@ -18,21 +19,78 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaBrowser
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import coil3.memory.MemoryCache
+
+
 import coil.load
+
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
+import coil3.request.crossfade
+import coil3.request.maxBitmapSize
+import coil3.size.Precision
+import com.google.firebase.annotations.PreviewApi
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.IDENTIFIER_INITIAL_INDEX_PROBLEM
@@ -40,12 +98,13 @@ import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.MainViewModel
 import jp.gr.java_conf.SenseMusicClock.Music.Data.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
-import jp.gr.java_conf.SenseMusicClock.Music.JacketAdapter
+
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
 import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
+import jp.gr.java_conf.SenseMusicClock.animateScrollToItemWithSkipCheck
 import jp.gr.java_conf.SenseMusicClock.app_dir
 import jp.gr.java_conf.SenseMusicClock.calculateScrollSpeed
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityMainBinding
@@ -59,12 +118,13 @@ import jp.gr.java_conf.SenseMusicClock.smoothScrollToPositionWithSkipAnimationCh
 import jp.gr.java_conf.SenseMusicClock.toBlocklistItem
 import jp.gr.java_conf.SenseMusicClock.toFileItem
 import jp.gr.java_conf.SenseMusicClock.ui.search.SearchActivity
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
-
-
-
-
 
 
 class MainActivity : AppCompatActivity() {
@@ -76,7 +136,6 @@ class MainActivity : AppCompatActivity() {
     var storageAccessHelper: StorageAccessHelper? = null
 
     // 追加: アダプタをクラスプロパティ化
-    private var jacketAdapter: JacketAdapter? = null
 
     private lateinit var token: SessionToken
 
@@ -84,7 +143,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mainViewModel: MainViewModel
     private var musicSearcher: MusicSearcherByList? = null
 
-    private lateinit var tracks: LiveData<MutableList<MediaItem>>
+    private var sleepTimerUIJob: Job? = null
+
 
     private var orientation: Int = 1
 
@@ -100,15 +160,23 @@ class MainActivity : AppCompatActivity() {
                 // 1分経つごとに呼ばれる
                 // ロゴ背景の更新を試みる。頻度が高いので、前回と同じ背景なら更新しないようにして無駄な処理を避ける
                 lifecycleScope.launch {
+                    if (::binding.isInitialized) {
 
-                    if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
-                            context,
-                            orientation
-                        ).key != lastSourceBackGround
-                    ) {
-                        lastSourceBackGround =
-                            binding.bgImageView.load_forRoot(context, orientation)
+                        if (context != null && BackgroundResolver.loadBackgroundSource(
+                                context,
+                                orientation
+                            ).key != lastSourceBackGround
+                        ) {
+                            lastSourceBackGround =
+                                binding.bgImageView.load_forRoot(context, orientation)
+                        }
+
                     }
+
+
+
+                    loadSTEndATimeByService()
+
                 }
             }
         }
@@ -148,11 +216,27 @@ class MainActivity : AppCompatActivity() {
         )
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         orientation = resources.configuration.orientation
-        tracks = mainViewModel.tracks
+
 
         binding.textClock.setOnClickListener {
             mainViewModel.reverseIsHHmm()
 
+        }
+
+
+        binding.jackets.setContent {
+            if (orientation == BackgroundResolver.ORIENTATION_OBLONG) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    item() { }
+
+                }
+            } else {
+                LazyRow(modifier = Modifier.fillMaxSize()) {
+
+                    item() { }
+                }
+
+            }
         }
 
 
@@ -183,7 +267,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        mainViewModel.isHHmm.observe(this){ value ->
+        mainViewModel.isHHmm.observe(this) { value ->
             if (value) {
                 binding.textClock.format24Hour = "HH:mm"
                 binding.textClock.format12Hour = "hh:mm"
@@ -192,6 +276,21 @@ class MainActivity : AppCompatActivity() {
                 binding.textClock.format12Hour = "HH:mm:ss"
             }
 
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainViewModel.sleepTimerEndAtTimeFlow.collectLatest { value ->
+                    stopRemainingTimer()
+                    if (mainViewModel.isValidSleepTimerEndAtTime(value) && value != null) {
+                        startRemainingTimer(value)
+
+
+                    }
+
+                }
+
+
+            }
         }
 
 
@@ -202,13 +301,13 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
 
         if (storageAccessHelper?.isGrantedFlow?.value == true) {
-            jacketAdapterInitialize()
+
             read_music_Granted()
         } else {
             allView_onParmissionInvalid()
         }
 
-        if (mainViewModel.isHHmm.value ?: false){
+        if (mainViewModel.isHHmm.value ?: false) {
             binding.textClock.format24Hour = "HH:mm"
             binding.textClock.format12Hour = "hh:mm"
         } else {
@@ -216,21 +315,373 @@ class MainActivity : AppCompatActivity() {
             binding.textClock.format12Hour = "HH:mm:ss"
         }
 
-        lifecycleScope.launch {
 
-            storageAccessHelper?.isGrantedFlow?.collect { value ->
-                if (value) {
-                    jacketAdapterInitialize()
-                    read_music_Granted()
-                } else {
-                    allView_onParmissionInvalid()
+        lifecycleScope.run {
+            launch {
+
+                storageAccessHelper?.isGrantedFlow?.collect { value ->
+                    if (value) {
+                        read_music_Granted()
+
+                    } else {
+                        allView_onParmissionInvalid()
+                    }
+
                 }
+
+
+            }
+
+
+        }
+
+    }
+
+    @Composable
+    fun JacketsComposable(viewModel: MainViewModel) {
+
+
+        val listState = rememberLazyListState()
+        val imageLoader: ImageLoader = remember {
+            ImageLoader.Builder(this)
+                .crossfade(true)
+                .allowHardware(true)
+                .maxBitmapSize(coil3.size.Size(500, 500))
+                .precision(Precision.INEXACT)
+                .memoryCache(
+                    MemoryCache.Builder()
+                        .maxSizePercent(this, 0.05)
+                        .build()
+                )
+                .build()
+        }
+
+
+        val item by viewModel.tracks.collectAsState(initial = emptyList())
+        val isTextPlus by PrefsManager.getTileTitleDisplayFlow(this).collectAsState(initial = false)
+
+
+        LaunchedEffect(Unit) {
+
+
+            viewModel.currentIndex.collectLatest { value ->
+
+
+                listState.animateScrollToItemWithSkipCheck(value)
 
             }
 
         }
 
+        if (orientation == BackgroundResolver.ORIENTATION_OBLONG) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 5.dp),
+                state = listState,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                itemsIndexed(items = item) { index, mediaItem ->
+                    var menuExpanded by remember {
+                        mutableStateOf(false)
+                    }
 
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+
+
+                            .padding(vertical = 8.dp, horizontal = 5.dp)
+                            .combinedClickable(
+                                onClick = {
+                                    // タップ
+                                    jacketAdapter_onItemClick(mediaItem)
+                                },
+                                onLongClick = {
+                                    // 長押し
+                                    menuExpanded = true
+                                }
+                            )
+
+                    ) {
+                        if (isTextPlus) {
+
+
+                            TextPlusComposable(mediaItem, imageLoader)
+                        } else {
+                            JacketItemComposable(mediaItem, imageLoader)
+                        }
+
+
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = {
+                                menuExpanded = false
+                            }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text("プレイリストに追加")
+                                },
+                                onClick = {
+                                    addPlaylistByPopup(mediaItem) {
+                                        menuExpanded = false
+                                    }
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text("ブロックリストに追加")
+                                },
+                                onClick = {
+                                    addBlickListByPopup(mediaItem) {
+                                        menuExpanded = false
+                                    }
+
+                                }
+                            )
+                        }
+
+                    }
+                }
+            }
+        } else {
+            LazyRow(
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                itemsIndexed(items = item, key = { _, item -> item.mediaId }) { index, mediaItem ->
+                    var menuExpanded by remember {
+                        mutableStateOf(false)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(1f)
+
+
+                            .padding(10.dp)
+                            .combinedClickable(
+                                onClick = {
+                                    // タップ
+                                    jacketAdapter_onItemClick(mediaItem)
+                                },
+                                onLongClick = {
+                                    // 長押し
+                                    menuExpanded = true
+                                }
+                            )
+
+                    ) {
+
+                        if (isTextPlus) {
+
+
+                            TextPlusComposable(mediaItem, imageLoader)
+                        } else {
+                            JacketItemComposable(mediaItem, imageLoader)
+                        }
+
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = {
+                                menuExpanded = false
+                            }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text("プレイリストに追加")
+                                },
+                                onClick = {
+                                    addPlaylistByPopup(mediaItem) {
+                                        menuExpanded = false
+                                    }
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text("ブロックリストに追加")
+                                },
+                                onClick = {
+                                    addBlickListByPopup(mediaItem) {
+                                        menuExpanded = false
+                                    }
+
+                                }
+                            )
+                        }
+
+
+                    }
+                }
+            }
+        }
+
+
+    }
+
+    fun addPlaylistByPopup(mediaItem: MediaItem, menuDismiss: () -> Unit) {
+
+        menuDismiss()
+        val newItem = mediaItem.toFileItem()
+        // プレイリストに追加する処理
+
+        if (newItem?.relativePath?.isBlank()
+                ?: return
+        ) {
+            Log.e(
+                "jacketAdapter_onItemLongClick",
+                "getExtra_MediaItem for relative path returned null for track ${newItem.relativePath} / ${newItem.fileName}"
+            )
+            return
+        }
+        if (newItem.fileName.isBlank()) {
+            Log.e(
+                "jacketAdapter_onItemLongClick",
+                "getExtra_MediaItem for display name returned null for track ${newItem.relativePath} / ${newItem.fileName}"
+            )
+            return
+        }
+
+
+
+
+
+
+        lifecycleScope.launch {
+            Log.d(
+                "LIST_/MainActivity/loadPlaylist",
+                "loading playlists for jacket long click"
+            )
+            val playlists = DBManager.loadPlaylist(this@MainActivity)
+            showPlaylistSelectDialog(playlists, newItem) { playlistId ->
+                Log.d(
+                    "MainActivity",
+                    "Selected playlist ID: $playlistId"
+                )
+                lifecycleScope.launch {
+
+                    DBManager.addPlaylistItem(
+                        this@MainActivity.applicationContext,
+                        playlistId,
+                        newItem
+                    )
+                }
+
+
+            }
+        }
+        Log.d(
+            "MainActivity",
+            "Add to playlist: ${newItem.relativePath} / ${newItem.fileName}"
+        )
+    }
+
+    fun addBlickListByPopup(mediaItem: MediaItem, menuDismiss: () -> Unit) {
+
+        val newItem = mediaItem.toFileItem()
+
+        if (newItem?.relativePath?.isBlank()
+                ?: return
+        ) {
+            return
+        }
+        if (newItem.fileName.isBlank()) {
+            return
+        }
+        lifecycleScope.launch {
+            val blockLists: List<BlockList> =
+                DBManager.loadBlocklist(this@MainActivity)
+
+            showBlockSelectDialog(blockLists, newItem) { id ->
+                Log.d("MainActivity", "Selected block list ID: $id")
+                val newBlockItem = newItem.toBlocklistItem(id)
+                lifecycleScope.launch {
+                    DBManager.upsertBlocklistItem(
+                        this@MainActivity.applicationContext,
+                        newBlockItem
+                    )
+                }
+
+            }
+        }
+
+
+        // ブロックリストに追加する処理
+        Log.d(
+            "MainActivity",
+            "Add to blocklist: ${newItem.relativePath} / ${newItem.fileName}"
+        )
+
+
+    }
+
+    @Composable
+    fun JacketItemComposable(mediaItem: MediaItem, imageLoader: ImageLoader) {
+
+        val artworkUri = mediaItem.mediaMetadata.artworkUri
+
+
+        AsyncImage(
+            model = artworkUri,
+            contentDescription = title.toString(),
+            imageLoader = imageLoader,
+            placeholder = painterResource(R.drawable.default_album_art),
+            error = painterResource(R.drawable.default_album_art),
+            modifier = Modifier
+                .fillMaxSize()
+                .aspectRatio(1f), // 表示領域を正方形に
+            contentScale = ContentScale.Fit,
+
+
+            )
+
+    }
+
+
+    @Composable
+    fun TextPlusComposable(mediaItem: MediaItem, imageLoader: ImageLoader) {
+        val title = mediaItem.mediaMetadata.title ?: "Unknown Title"
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorResource(R.color.white_glass_item_square)),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            AsyncImage(
+                model = mediaItem.mediaMetadata.artworkUri,
+                contentDescription = title.toString(),
+                imageLoader = imageLoader,
+                placeholder = painterResource(R.drawable.default_album_art),
+                error = painterResource(R.drawable.default_album_art),
+                modifier = Modifier
+                    .weight(5f)
+                    .aspectRatio(1f), // 表示領域を正方形に
+                contentScale = ContentScale.Fit,
+            )
+            Text(
+                text = title.toString(),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 2.dp, horizontal = 4.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                softWrap = false,
+                autoSize = TextAutoSize.StepBased(
+                    maxFontSize = 15.sp
+                ),
+                textAlign = TextAlign.Center,
+                color = androidx.compose.ui.graphics.Color.Black
+
+            )
+
+
+        }
     }
 
     private fun allView_onParmissionInvalid(isInvalid: Boolean = true) {
@@ -266,7 +717,7 @@ class MainActivity : AppCompatActivity() {
                 set(
                     listOf(
                         alarmButton,
-                        recyclerJackets,
+                        jackets,
                         textClock,
                         TimerButton,
                         stopWatchBtn,
@@ -293,33 +744,6 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun jacketAdapterInitialize(): Boolean {
-        try {
-
-            if (jacketAdapter == null) {
-                jacketAdapter =
-                    JacketAdapter(
-                        emptyList(),
-                        R.drawable.default_album_art,
-                        this,
-                        onItemClick = { clickedTrack -> jacketAdapter_onItemClick(clickedTrack) },
-                        onItemLongClick = { clickedTrack, view ->
-                            jacketAdapter_onItemLongClick(
-                                clickedTrack,
-                                view
-                            )
-                        })
-            }
-                binding.recyclerJackets.adapter = jacketAdapter
-            return true
-        } catch (e: Exception) {
-            Log.w("MainActivity", "jacketAdapterInitialize failed", e)
-            jacketAdapter = null
-            return false
-        }
-
-
-    }
 
     private fun popupMoves(view: View) {
         val popupMenu = PopupMenu(this, view).also {
@@ -330,11 +754,9 @@ class MainActivity : AppCompatActivity() {
                         R.id.first -> {
 
                             lifecycleScope.launch {
-                                binding.recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
-                                    0,
-                                    10F
 
-                                )
+                                mainViewModel.setCurrentIndex(0)
+
                             }
 
                             true
@@ -343,11 +765,8 @@ class MainActivity : AppCompatActivity() {
                         R.id.last -> {
 
                             lifecycleScope.launch {
-                                val position = (jacketAdapter?.itemCount ?: 1) - 1
-                                binding.recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
-                                    position,
-                                    10f
-                                )
+                                mainViewModel.setCurrentIndex(mainViewModel.tracks.value.size - 1)
+
 
                             }
 
@@ -364,116 +783,6 @@ class MainActivity : AppCompatActivity() {
         }
         popupMenu.show()
     }
-
-    private fun jacketAdapter_onItemLongClick(clickedTrack: MediaItem, view: View) {
-
-        val popup = PopupMenu(this, view).also {
-            it.run {
-
-
-                menuInflater.inflate(R.menu.block_or_play_list, menu)
-                setOnMenuItemClickListener { item ->
-                    val newItem = clickedTrack.toFileItem()
-                    when (item.itemId) {
-                        R.id.playlist -> {
-                            // プレイリストに追加する処理
-
-                            if (newItem?.relativePath?.isBlank()
-                                    ?: return@setOnMenuItemClickListener false
-                            ) {
-                                Log.e(
-                                    "jacketAdapter_onItemLongClick",
-                                    "getExtra_MediaItem for relative path returned null for track ${clickedTrack.mediaMetadata.title}"
-                                )
-                                return@setOnMenuItemClickListener false
-                            }
-                            if (newItem.fileName.isBlank()) {
-                                Log.e(
-                                    "jacketAdapter_onItemLongClick",
-                                    "getExtra_MediaItem for display name returned null for track ${clickedTrack.mediaMetadata.title}"
-                                )
-                                return@setOnMenuItemClickListener false
-                            }
-
-
-
-
-
-
-                            lifecycleScope.launch {
-                                Log.d(
-                                    "LIST_/MainActivity/loadPlaylist",
-                                    "loading playlists for jacket long click"
-                                )
-                                val playlists = DBManager.loadPlaylist(this@MainActivity)
-                                showPlaylistSelectDialog(playlists, newItem) { playlistId ->
-                                    Log.d("MainActivity", "Selected playlist ID: $playlistId")
-                                    lifecycleScope.launch {
-
-                                        DBManager.addPlaylistItem(
-                                            this@MainActivity.applicationContext,
-                                            playlistId,
-                                            newItem
-                                        )
-                                    }
-
-
-                                }
-                            }
-                            Log.d(
-                                "MainActivity",
-                                "Add to playlist: ${clickedTrack.mediaMetadata.title}"
-                            )
-                            true
-                        }
-
-                        R.id.blocklist -> {
-
-
-                            if (newItem?.relativePath?.isBlank()
-                                    ?: return@setOnMenuItemClickListener false
-                            ) {
-                                return@setOnMenuItemClickListener false
-                            }
-                            if (newItem.fileName.isBlank()) {
-                                return@setOnMenuItemClickListener false
-                            }
-                            lifecycleScope.launch {
-                                val blockLists: List<BlockList> =
-                                    DBManager.loadBlocklist(this@MainActivity)
-
-                                showBlockSelectDialog(blockLists, newItem) { id ->
-                                    Log.d("MainActivity", "Selected block list ID: $it")
-                                    val newBlockItem = newItem.toBlocklistItem(id)
-                                    lifecycleScope.launch {
-                                        DBManager.upsertBlocklistItem(
-                                            this@MainActivity.applicationContext,
-                                            newBlockItem
-                                        )
-                                    }
-
-                                }
-                            }
-
-
-                            // ブロックリストに追加する処理
-                            Log.d(
-                                "MainActivity",
-                                "Add to blocklist: ${clickedTrack.mediaMetadata.title}"
-                            )
-                            true
-                        }
-
-                        else -> false
-                    }
-
-                }
-            }
-        }
-        popup.show()
-
-    }
-
 
     private fun jacketAdapter_onItemClick(clickedTrack: MediaItem) {
         val clickedTrackMetadata = clickedTrack.mediaMetadata
@@ -505,7 +814,7 @@ class MainActivity : AppCompatActivity() {
 
             // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
             if (!sent) {
-                val index = jacketAdapter?.getItemPosition(clickedTrack) ?: -1
+                val index = mainViewModel.lastIndex ?: 0
                 if (index >= 0) {
 
                     mediaBrowser?.seekTo(index, 0L)
@@ -529,27 +838,6 @@ class MainActivity : AppCompatActivity() {
 
         currentSlideTarget = SlideTarget.TITLE
         startSlideLoop()
-
-        // load album art with Coil; use clickedTrack.albumArtUri when present, otherwise fallback to default drawable
-        try {
-            val uri = clickedTrackMetadata.artworkUri
-            if (uri != null) {
-                binding.currentAlbumArt.load(uri) {
-                    placeholder(R.drawable.default_album_art)
-                    error(R.drawable.default_album_art)
-                    crossfade(true)
-                }
-            } else {
-                binding.currentAlbumArt.load(R.drawable.default_album_art)
-            }
-        } catch (e: Exception) {
-            Log.w("MainActivity", "failed to load clickedTrack album art via Coil", e)
-            try {
-                binding.currentAlbumArt.load(R.drawable.default_album_art)
-            } catch (ex: Exception) {
-                Log.w("MainActivity", "fallback load clickedTrack album art failed", ex)
-            }
-        }
 
 
     }
@@ -589,8 +877,6 @@ class MainActivity : AppCompatActivity() {
 
         mediaBrowser?.release()
         mediaBrowser = null
-        binding.recyclerJackets.adapter = null
-        jacketAdapter = null
 
 
         // stop sliding animations when activity is not visible
@@ -600,6 +886,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        stopRemainingTimer()
 
         // destroy clock controller (it unregisters its own receiver)
         try {
@@ -633,10 +921,17 @@ class MainActivity : AppCompatActivity() {
             // これでサービスと接続完了！再生操作などができるようになる
 
             mediaBrowser?.let {
+                loadSTEndATimeByService()
+                runOnUiThread {
+                    mainViewModel.clearTracks()
+                }
+                val newList = mutableListOf<MediaItem>()
+                loadAllMedias(newList, it)
 
 
                 if (mainViewModel.lastOrientation != resources.configuration.orientation) {
-                    binding.recyclerJackets.scrollToPositionCentered(it.currentMediaItemIndex)
+
+                    mainViewModel.setCurrentIndex(it.currentMediaItemIndex)
                 }
                 mainViewModel.lastOrientation = resources.configuration.orientation
 
@@ -666,22 +961,23 @@ class MainActivity : AppCompatActivity() {
                                 applyCurrentTrackToUi(mediaItem)
                             } else {
                                 stopSlideLoop()
-                                binding.currentAlbumArt.load(R.drawable.default_album_art)
+                                binding.currentAlbumArt.load(R.drawable.default_album_art) {
+                                    size(512, 512)
+                                    precision(coil.size.Precision.INEXACT)
+
+                                    crossfade(false)
+                                }
                                 binding.TitleView.text = ""
                                 binding.MusicEtcView.text = ""
                                 updateMarqueeFor(binding.TitleView)
                                 updateMarqueeFor(binding.MusicEtcView)
                             }
                         }
+
                     }
 
 
                 })
-                runOnUiThread {
-                    mainViewModel.clearTracks()
-                }
-                val newList = mutableListOf<MediaItem>()
-                loadAllMedias(newList, it)
 
 
             }
@@ -700,15 +996,7 @@ class MainActivity : AppCompatActivity() {
             profilesDir.mkdir()
         }
 
-        jacketAdapterInitialize()
-        binding.recyclerJackets.adapter = jacketAdapter
 
-
-
-
-        // RecyclerView のレイアウトは configureRecyclerForOrientation にまとめる
-
-        configureRecyclerForOrientation(orientation)
         // 初期向きを ViewModel に記録
         if (mainViewModel.lastOrientation == null) mainViewModel.lastOrientation = orientation
 
@@ -719,62 +1007,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        binding.recyclerJackets.setHasFixedSize(false)
 
 
-        // RecyclerView のアイテム間隔をレイアウトに応じて設定する ItemDecoration を追加
-        try {
-            val spacing = this.dpToPx(4)
-            // 既存のデコレーションはクリア
-            while (binding.recyclerJackets.itemDecorationCount > 0) {
-                binding.recyclerJackets.removeItemDecorationAt(0)
-            }
 
-            val lm = binding.recyclerJackets.layoutManager
-            if (lm is GridLayoutManager) {
-                val spanCount = lm.spanCount
-                binding.recyclerJackets.addItemDecoration(object : RecyclerView.ItemDecoration() {
-                    override fun getItemOffsets(
-                        outRect: Rect,
-                        view: View,
-                        parent: RecyclerView,
-                        state: RecyclerView.State
-                    ) {
-                        val position = parent.getChildAdapterPosition(view)
-                        if (position == RecyclerView.NO_POSITION) return
-                        val column = position % spanCount
-                        outRect.left = spacing - column * spacing / spanCount
-                        outRect.right = (column + 1) * spacing / spanCount
-                        outRect.top = spacing
-                        outRect.bottom = spacing
-                    }
-                })
-            } else if (lm is LinearLayoutManager && lm.orientation == LinearLayoutManager.HORIZONTAL) {
-                // 横スクロール用の間隔（左右に small gap、上下は少し）
-                binding.recyclerJackets.addItemDecoration(object : RecyclerView.ItemDecoration() {
-                    override fun getItemOffsets(
-                        outRect: Rect,
-                        view: View,
-                        parent: RecyclerView,
-                        state: RecyclerView.State
-                    ) {
-                        val position = parent.getChildAdapterPosition(view)
-                        if (position == RecyclerView.NO_POSITION) return
-                        // 左右とも spacing / 2 を入れて均等に見せる。先頭と末尾に余白を多めにする。
-                        outRect.top = spacing / 2
-                        outRect.bottom = spacing / 2
-                        outRect.left = if (position == 0) spacing else spacing / 2
-                        outRect.right = spacing / 2
-                        // 最後尾には右マージンを与える
-                        if (position == parent.adapter?.itemCount?.minus(1)) {
-                            outRect.right = spacing
-                        }
-                    }
-                })
-            }
-        } catch (e: Exception) {
-            Log.w("MainActivity", "addItemDecoration failed", e)
-        }
 
         binding.currentAlbumArt.run {
 
@@ -814,6 +1049,9 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.w("MainActivity", "failed to initialize nowLoading views", e)
         }
+        binding.jackets.setContent {
+            JacketsComposable(mainViewModel)
+        }
     }
 
     private fun loadAllMedias(list: MutableList<MediaItem>, browser: MediaBrowser, page: Int = 0) {
@@ -832,7 +1070,10 @@ class MainActivity : AppCompatActivity() {
                 loadAllMedias(list, browser, page + 1)
             } else {
                 // すべてのアイテムを取得し終わった後の処理
-                Log.d("MainActivity", "All media items loaded: total=${tracks.value?.size ?: 0}")
+                Log.d(
+                    "MainActivity",
+                    "All media items loaded: total=${mainViewModel.tracks.value.size ?: 0}"
+                )
                 loadAllMediasComplete(list, browser)
 
             }
@@ -847,7 +1088,7 @@ class MainActivity : AppCompatActivity() {
         setLoadingVisible(false)
 
 
-        val tracks = tracks.value ?: emptyList()
+        val tracks = mainViewModel.tracks.value ?: emptyList()
         Log.d("track viewmodel", "tracks Size:${tracks.size}, tracksHash:${tracks.hashCode()}")
 
 
@@ -856,66 +1097,10 @@ class MainActivity : AppCompatActivity() {
             val current = browser.currentMediaItem
             val currentIndex = getIndexById(current)
 
-            // adapter にリストを渡し、コミット後に現在トラックへスクロールする
-            jacketAdapter?.let {
-
-
-                it.setItems(tracks) {
-                    // commit完了後に呼ばれる。adapter に要素が入っていればローディングを消す
-                    val hasItems = it.getItems().isNotEmpty()
-                    Log.d(
-                        "MainActivity",
-                        "commitCallback after setItems: hasItems=$hasItems, tracksSize=${tracks.size}"
-                    )
-                    val jacketAdaptertracks = it.getItems()
-                    Log.d(
-                        "track viewmodel/adapter",
-                        "viewmodel : [${tracks[1].mediaMetadata.title} ,${tracks[2].mediaMetadata.title}, ${tracks[3].mediaMetadata.title}], adapter : [${jacketAdaptertracks[1].mediaMetadata.title} ,${jacketAdaptertracks[2].mediaMetadata.title} ,${jacketAdaptertracks[3].mediaMetadata.title} ]"
-                    )
-
-                    // commit 完了後に現在再生トラックがあればリスト上で追従してスクロールする
-                    if (hasItems) {
-                        if (currentIndex != null) {
-                            // If orientation changed since last known by ViewModel, ensure instant scroll
-                            val curOrient = resources.configuration.orientation
-                            if (mainViewModel.lastOrientation != null && mainViewModel.lastOrientation != curOrient) {
-                                Log.d(
-                                    "MainActivity",
-                                    "commitCallback: orientation change detected (${mainViewModel.lastOrientation} -> $curOrient) -> instant scroll"
-                                )
-                                scrollToTrack()
-                                mainViewModel.pendingInstantScroll = false
-                                mainViewModel.lastOrientation = curOrient
-                            } else if (mainViewModel.pendingInstantScroll) {
-                                Log.d(
-                                    "MainActivity",
-                                    "commitCallback: performing pending instant scroll"
-                                )
-                                scrollToTrack()
-                                mainViewModel.pendingInstantScroll = false
-                            } else {
-                                scrollToTrack()
-                            }
-                        }
-                    }
-                }
-            }
-            // If a pending instant-scroll is still set after the initial adapter commit, start retry scheduler
-            if (mainViewModel.pendingInstantScroll) {
-                Log.d(
-                    "MainActivity",
-                    "onServiceConnected: pendingInstantScroll detected -> scheduling retries"
-                )
-                schedulePendingInstantScrollTry()
-            }
+            scrollToTrack()
 
             // tracksFlow を監視して差分更新（コミット後に現在再生トラックがあれば追従）
             lifecycleScope.launch {
-
-
-                PrefsManager.getTileTitleDisplayFlow(this@MainActivity).collect {
-                    jacketAdapter?.notifyItemChanged(0, jacketAdapter?.itemCount)
-                }
 
 
             }
@@ -937,7 +1122,9 @@ class MainActivity : AppCompatActivity() {
             this@MainActivity,
             binding.SearchResultView,
             binding.searchKeywordInput,
-            binding.recyclerJackets
+            onSearch = { index ->
+                mainViewModel.setCurrentIndex(index)
+            }
         )
         musicSearcher?.ini()
 
@@ -1056,223 +1243,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scrollToTrack(
-        recyclerView: RecyclerView? = binding.recyclerJackets,
         track: MediaItem? = mediaBrowser?.currentMediaItem
     ) {
-        val adapter = recyclerView?.adapter as? JacketAdapter
 
-
-        if (adapter == null) return
-        if (track == null) return
-        val layoutManager = recyclerView.layoutManager as LinearLayoutManager
-        val firstVisible = layoutManager.findFirstVisibleItemPosition()
-
-        val scrollPos = adapter.getItemPosition(track)
-
-        //70ぐらい違うと結構速い
-        val speed = calculateScrollSpeed(firstVisible, scrollPos ?: (firstVisible - 70))
-        lifecycleScope.launch {
-            if (scrollPos != null) recyclerView.smoothScrollToPositionWithSkipAnimationCheck(
-                scrollPos,
-                speed
-            )
-        }
-
-
-    }
-
-    // Configure recycler / padding depending on orientation
-    private fun configureRecyclerForOrientation(orientation: Int) {
-        try {
-            if (orientation == 1) {
-                // portrait: 1 列表示
-
-                binding.recyclerJackets.layoutManager =
-                    LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-                binding.recyclerJackets.setPadding(this.dpToPx(8), 0, this.dpToPx(8), 0)
-                binding.recyclerJackets.clipToPadding = false
+        LocalMusicRepository.getIndexById(track?.mediaId ?: "")?.let { index ->
+            if (index >= 0) {
+                mainViewModel.setCurrentIndex(index)
             } else {
-                // landscape: 横一列でスクロールするレイアウトにする
-                val linear = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-                binding.recyclerJackets.layoutManager = linear
-                binding.recyclerJackets.setPadding(
-                    this.dpToPx(4),
-                    this.dpToPx(4),
-                    this.dpToPx(4),
-                    this.dpToPx(4)
-                )
-                binding.recyclerJackets.clipToPadding = false
-            }
-            // 背景は既存ロジックに任せる（別箇所で更新されるためここでは無害）
-        } catch (e: Exception) {
-            Log.w("MainActivity", "configureRecyclerForOrientation failed", e)
-        }
-    }
+                mediaBrowser?.currentMediaItemIndex?.let {
 
-    // Find position of a track in the adapter with fallbacks (id match -> metadata match)
-    private fun getPositionForTrack(adapter: JacketAdapter, track: MediaItem?): Int? {
-        // Prefer adapter's getItemPosition (handles localTrack/SpotifyTrack ids)
-        val byId = adapter.getItemPosition(track)
-        if (byId != null) return byId
-        if (track == null) return null
-        val metadata = track.mediaMetadata
-
-        // Fallback: match by title/artist/album (loose)
-        val title = metadata.title
-        val artist = metadata.artist
-        val album = metadata.albumTitle
-        val idx = adapter.getItems().indexOfFirst {
-            val itMetadata = it.mediaMetadata
-
-            itMetadata.title == title && itMetadata.artist == artist && itMetadata.albumTitle == album
-        }
-
-
-        Log.d("positionForTrack", "getPositionForTrack: fallback by metadata idx=$idx")
-        return if (idx >= 0) idx else null
-    }
-
-    // Instant scroll to current track without animation
-    private fun scrollToTrackInstant(
-        adapter: JacketAdapter? =
-            if (jacketAdapter != null) jacketAdapter else (binding.recyclerJackets.adapter as? JacketAdapter),
-        track: MediaItem? = mediaBrowser?.currentMediaItem
-    ) {
-
-        if (adapter == null) return
-        if (track == null) return
-        val pos = getPositionForTrack(adapter, track)
-        Log.d(
-            "MainActivity",
-            "scrollToTrackInstant: resolved position=$pos for track='${track.mediaMetadata.title}'"
-        )
-        if (pos != null) {
-            // Attempt to center the item instantly.
-            binding.recyclerJackets.post {
-                try {
-                    val lm = binding.recyclerJackets.layoutManager
-                    if (lm is LinearLayoutManager) {
-                        // Try to get actual item view to compute exact offset
-                        val child =
-                            binding.recyclerJackets.findViewHolderForAdapterPosition(pos)?.itemView
-                        if (child != null) {
-                            val offset = if (lm.canScrollHorizontally()) {
-                                // center horizontally
-                                (binding.recyclerJackets.width / 2) - (child.width / 2)
-                            } else {
-                                // center vertically
-                                (binding.recyclerJackets.height / 2) - (child.height / 2)
-                            }
-                            // scrollToPositionWithOffset expects offset from start edge to child start
-                            try {
-                                lm.scrollToPositionWithOffset(pos, offset)
-                            } catch (e: Exception) {
-                                Log.w("MainActivity", "lm.scrollToPositionWithOffset failed", e)
-                                binding.recyclerJackets.scrollToPosition(pos)
-                            }
-                        } else {
-                            // Child not yet laid out. Do a best-effort center then retry shortly to refine.
-                            val initialOffset =
-                                if (lm.canScrollHorizontally()) binding.recyclerJackets.width / 2 else binding.recyclerJackets.height / 2
-                            try {
-                                lm.scrollToPositionWithOffset(pos, initialOffset)
-                            } catch (e: Exception) {
-                                Log.w(
-                                    "MainActivity",
-                                    "lm.scrollToPositionWithOffset initialOffset failed",
-                                    e
-                                ); binding.recyclerJackets.scrollToPosition(pos)
-                            }
-                            // Retry once after short delay to compute exact offset when the view holder is created
-                            binding.recyclerJackets.postDelayed({
-                                try {
-                                    val child2 =
-                                        binding.recyclerJackets.findViewHolderForAdapterPosition(pos)?.itemView
-                                    if (child2 != null) {
-                                        val offset2 =
-                                            if (lm.canScrollHorizontally()) (binding.recyclerJackets.width / 2) - (child2.width / 2) else (binding.recyclerJackets.height / 2) - (child2.height / 2)
-                                        try {
-                                            lm.scrollToPositionWithOffset(pos, offset2)
-                                        } catch (e: Exception) {
-                                            Log.w(
-                                                "MainActivity",
-                                                "lm.scrollToPositionWithOffset offset2 failed",
-                                                e
-                                            )
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    Log.w(
-                                        "MainActivity",
-                                        "scrollToTrackInstant post retry failed",
-                                        e
-                                    )
-                                }
-                            }, 50L)
-                        }
-                    } else {
-                        // layout manager not linear (unexpected) -> fallback
-                        binding.recyclerJackets.scrollToPosition(pos)
-                    }
-                } catch (e: Exception) {
-                    // final fallback
-                    try {
-                        binding.recyclerJackets.scrollToPosition(pos)
-                    } catch (e: Exception) {
-                        Log.w("MainActivity", "final scrollToPosition failed", e)
-                    }
+                    mainViewModel.setCurrentIndex(it)
                 }
             }
         }
+
+
     }
+
 
     // retry state for pending instant scroll
-    private var pendingScrollAttempts = 0
-    private val PENDING_SCROLL_MAX_ATTEMPTS = 6
-    private val PENDING_SCROLL_DELAY_MS = 200L
 
-    private fun attemptConsumePendingInstantScroll() {
-        if (!mainViewModel.pendingInstantScroll) return
-        if (jacketAdapter == null) {
-            Log.d("MainActivity", "attemptConsume: adapter not initialized yet")
-        }
-        val hasItems = jacketAdapter != null && (jacketAdapter?.itemCount ?: 0) > 0
-        val currentTrack = mediaBrowser?.currentMediaItem
-        Log.d(
-            "MainActivity",
-            "attemptConsumePendingInstantScroll: attempt=$pendingScrollAttempts hasItems=$hasItems currentTrackPresent=${currentTrack != null}"
-        )
-        if (hasItems && currentTrack != null) {
-            Log.d(
-                "MainActivity",
-                "attemptConsumePendingInstantScroll: conditions met -> performing instant scroll"
-            )
-            scrollToTrackInstant()
-            mainViewModel.pendingInstantScroll = false
-            pendingScrollAttempts = 0
-            return
-        }
-
-        // otherwise schedule retry if attempts remain
-        pendingScrollAttempts++
-        if (pendingScrollAttempts < PENDING_SCROLL_MAX_ATTEMPTS) {
-            binding.recyclerJackets.postDelayed({
-                attemptConsumePendingInstantScroll()
-            }, PENDING_SCROLL_DELAY_MS)
-        } else {
-            Log.w(
-                "MainActivity",
-                "attemptConsumePendingInstantScroll: max attempts reached, giving up"
-            )
-            mainViewModel.pendingInstantScroll = false
-            pendingScrollAttempts = 0
-        }
-    }
-
-    private fun schedulePendingInstantScrollTry() {
-        pendingScrollAttempts = 0
-        attemptConsumePendingInstantScroll()
-    }
 
     // Helper: apply current track to the UI (title, etc, album art) and reset marquee/slide state
     private fun applyCurrentTrackToUi(track: MediaItem?) {
@@ -1318,7 +1308,12 @@ class MainActivity : AppCompatActivity() {
             } else {
                 stopSlideLoop()
                 try {
-                    binding.currentAlbumArt.load(R.drawable.default_album_art)
+                    binding.currentAlbumArt.load(R.drawable.default_album_art) {
+                        size(512, 512)
+                        precision(coil.size.Precision.INEXACT)
+
+                        crossfade(false)
+                    }
                 } catch (e: Exception) {
                     Log.w(
                         "MainActivity",
@@ -1337,5 +1332,96 @@ class MainActivity : AppCompatActivity() {
                 updateMarqueeFor(binding.MusicEtcView)
             }
         }
+    }
+
+    private fun startRemainingTimer(endAtMillis: Long) {
+        sleepTimerUIJob?.cancel()
+
+        sleepTimerUIJob = lifecycleScope.launch {
+            while (isActive) {
+                val remaining =
+                    (endAtMillis - System.currentTimeMillis())
+                        .coerceAtLeast(0L)
+
+                binding.sleepTimerTextView.run {
+
+                    text = "${remaining / 60_000}分後に停止"
+                    visibility = if (remaining > 0) View.VISIBLE else View.GONE
+                }
+
+                if (remaining == 0L) break
+
+                delay(1000)
+            }
+        }
+    }
+
+    private fun stopRemainingTimer() {
+        sleepTimerUIJob?.cancel()
+        sleepTimerUIJob = null
+        binding.sleepTimerTextView.run {
+
+            text = ""
+            visibility = View.GONE
+        }
+    }
+
+
+    fun loadSTEndATimeByService() {
+        mediaBrowser?.let {
+
+            val future = it.sendCustomCommand(
+                SessionCommand(
+                    MusicService.CUSTOM_ACTION_SLEEP_TIMER_GET,
+                    Bundle.EMPTY
+                ),
+                Bundle.EMPTY,
+            )
+
+            future.addListener(
+                {
+                    val result = future.get()
+
+                    if (result.resultCode != SessionResult.RESULT_SUCCESS) {
+                        Log.w(
+                            "MainActivity",
+                            "Failed to get sleep timer end time: ${result.resultCode}"
+                        )
+                        return@addListener
+                    }
+
+                    val endAtMillis = result.extras.getLong(
+                        MusicService.SLEEP_TIMER_END_AT_MILLIS,
+                        -1L
+                    )
+                    if (endAtMillis == -1L) {
+
+                        mainViewModel.clearSleepTimerEndAtTime()
+
+                        return@addListener
+                    } else if (endAtMillis < 0) {
+                        Log.w(
+                            "MainActivity",
+                            "Sleep timer end time is negative: $endAtMillis"
+                        )
+                        mainViewModel.clearSleepTimerEndAtTime()
+                        return@addListener
+
+                    } else if (endAtMillis < System.currentTimeMillis()) {
+                        Log.w(
+                            "MainActivity",
+                            "Sleep timer end time is in the past: $endAtMillis"
+                        )
+                        mainViewModel.clearSleepTimerEndAtTime()
+                        return@addListener
+                    }
+
+                    mainViewModel.setSleepTimerIfNeeded(endAtMillis)
+                },
+                ContextCompat.getMainExecutor(this@MainActivity)
+            )
+        }
+
+
     }
 }

@@ -59,7 +59,7 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
 
 
         scope.launch {
-            val loader = ImageLoader(context)
+            val loader = imageLoader
 
             val request = ImageRequest.Builder(context)
                 .allowHardware(false)

@@ -280,6 +280,20 @@
         app:layout_constraintBottom_toBottomOf="@+id/controlLayout"
         app:layout_constraintEnd_toEndOf="@+id/bgImageView" />
 
+    <TextView
+        android:id="@+id/sleepTimerTextView"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+
+        android:autoSizeTextType="uniform"
+        android:background="@drawable/gradient4"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@+id/controlLayout"
+        app:layout_constraintTop_toTopOf="@+id/controlLayout" />
+
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

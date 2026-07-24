@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.SeekBar
@@ -23,6 +24,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
 import coil.load
 import coil.request.CachePolicy
@@ -34,6 +37,10 @@ import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.convertMsToTimeString
 import jp.gr.java_conf.SenseMusicClock.databinding.ActivityStandardPlayerBinding
 import jp.gr.java_conf.SenseMusicClock.load_forRoot
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.w3c.dom.Text
 import kotlin.time.Duration
@@ -55,6 +62,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
 
     private var progressUpdaterScheduled = false
+    private var sleepTimerUIJob: Job? = null
 
     val timeTickReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -62,15 +70,18 @@ class StandardPlayerActivity : AppCompatActivity() {
                 // 1分経つごとに呼ばれる
                 lifecycleScope.launch {
 
-                    if (::binding.isInitialized && context != null && BackgroundResolver.loadBackgroundSource(
-                            context,
-                            resources.configuration.orientation
-                        ).key != lastSourceBackGround
-                    ) {
-                        lastSourceBackGround = binding.bgImageView.load_forRoot(
-                            context,
-                            resources.configuration.orientation
-                        )
+                    if (::binding.isInitialized) {
+                        if (context != null && BackgroundResolver.loadBackgroundSource(
+                                context,
+                                resources.configuration.orientation
+                            ).key != lastSourceBackGround
+                        ) {
+                            lastSourceBackGround = binding.bgImageView.load_forRoot(
+                                context,
+                                resources.configuration.orientation
+                            )
+                        }
+                        loadSTEndATimeByService()
                     }
                 }
             }
@@ -144,7 +155,7 @@ class StandardPlayerActivity : AppCompatActivity() {
         controllerFuture.addListener({
             mediaController = controllerFuture.get()
             mediaController?.let {
-
+                loadSTEndATimeByService()
 
 
                 runOnUiThread {
@@ -360,10 +371,11 @@ class StandardPlayerActivity : AppCompatActivity() {
     }
 
 
-    private fun setDurationText(durationMs : Long) {
+    private fun setDurationText(durationMs: Long) {
         binding.durationTextView.text = "/" + convertMsToTimeString(durationMs)
 
     }
+
     override fun onPause() {
         super.onPause()
         unregisterReceiver(timeTickReceiver)
@@ -379,6 +391,7 @@ class StandardPlayerActivity : AppCompatActivity() {
                     resources.configuration.orientation
                 )
         }
+
         registerReceiver(timeTickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
 
     }
@@ -387,7 +400,9 @@ class StandardPlayerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         // cleanup
+        stopRemainingTimer()
         //stopProgressUpdates()
+        uiHandler.removeCallbacks(progressUpdateRunnable)
 
         try {
 
@@ -411,5 +426,96 @@ class StandardPlayerActivity : AppCompatActivity() {
             crossfade(true)
                 .memoryCachePolicy(CachePolicy.DISABLED)
         }
+    }
+
+    private fun startRemainingTimer(endAtMillis: Long) {
+        sleepTimerUIJob?.cancel()
+
+        sleepTimerUIJob = lifecycleScope.launch {
+            while (isActive) {
+                val remaining =
+                    (endAtMillis - System.currentTimeMillis())
+                        .coerceAtLeast(0L)
+
+                binding.sleepTimerTextView.run {
+
+                    text = "${remaining / 60_000}分後に停止"
+                    visibility = if (remaining > 0) View.VISIBLE else View.GONE
+                }
+
+                if (remaining == 0L) break
+
+                delay(1000)
+            }
+        }
+    }
+
+    private fun stopRemainingTimer() {
+        sleepTimerUIJob?.cancel()
+        sleepTimerUIJob = null
+        binding.sleepTimerTextView.run {
+
+            text = ""
+            visibility = View.GONE
+        }
+    }
+
+
+    fun loadSTEndATimeByService() {
+        mediaController?.let {
+
+            val future = it.sendCustomCommand(
+                SessionCommand(
+                    MusicService.CUSTOM_ACTION_SLEEP_TIMER_GET,
+                    Bundle.EMPTY
+                ),
+                Bundle.EMPTY,
+            )
+
+            future.addListener(
+                {
+                    val result = future.get()
+
+                    if (result.resultCode != SessionResult.RESULT_SUCCESS) {
+                        Log.w(
+                            "MainActivity",
+                            "Failed to get sleep timer end time: ${result.resultCode}"
+                        )
+                        return@addListener
+                    }
+
+                    val endAtMillis = result.extras.getLong(
+                        MusicService.SLEEP_TIMER_END_AT_MILLIS,
+                        -1L
+                    )
+                    if (endAtMillis == -1L) {
+                        Log.w(
+                            "MainActivity",
+                            "Sleep timer end time not found in extras"
+                        )
+                        return@addListener
+                    } else if (endAtMillis < 0) {
+                        Log.w(
+                            "MainActivity",
+                            "Sleep timer end time is negative: $endAtMillis"
+                        )
+                        return@addListener
+
+                    }
+                    if (isValidSleepTimerEndAtTime(endAtMillis)) {
+                        startRemainingTimer(endAtMillis)
+                    } else {
+                        stopRemainingTimer()
+                    }
+                },
+                ContextCompat.getMainExecutor(this)
+            )
+        }
+
+
+    }
+
+    fun isValidSleepTimerEndAtTime(endAtTime: Long?): Boolean {
+        return endAtTime != null && endAtTime >= System.currentTimeMillis()
     }
 }

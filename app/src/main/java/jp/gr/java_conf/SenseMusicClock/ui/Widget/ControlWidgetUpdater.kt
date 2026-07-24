@@ -1,20 +1,19 @@
-package jp.gr.java_conf.SenseMusicClock.ui
+package jp.gr.java_conf.SenseMusicClock.ui.Widget
 
-
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
 import android.util.Log
-import android.widget.RemoteViews
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
+import androidx.glance.GlanceId
+import androidx.glance.appwidget.AppWidgetId
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.updateAll
 import coil.ImageLoader
-import coil.executeBlocking
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.ImageResult
@@ -22,26 +21,16 @@ import coil.request.SuccessResult
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
+import kotlinx.coroutines.flow.Flow
 
 object ControlWidgetUpdater {
 
-    private var title: String = "Title"
-    private var artworkUri: Uri? = null
-    private var playing: Boolean = false
-
-    private fun <T> CreateAction(context: Context, action: String, cls: Class<T>): PendingIntent {
-        val intent = Intent(context, cls).apply {
-            this.action = action
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            action.hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+    fun isTall(height : Float, width: Float): Boolean {
+        return height > width * 0.8
     }
 
-    private suspend fun resolveArtworkBitmap(context: Context, artworkUri: Uri?): Bitmap? {
+
+    suspend fun resolveArtworkBitmap(context: Context, artworkUri: Uri?): Bitmap? {
         if (artworkUri == null || artworkUri == "".toUri()) return null
 
         return runCatching {
@@ -62,74 +51,13 @@ object ControlWidgetUpdater {
 
     }
 
-    private suspend fun updateControlWidget(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetId: Int,
-        title: String = "Title",
-        artworkUri: Uri? = null,
-        playing: Boolean = false,
-        BackgroundBitmap: Bitmap? = null,
-        isTall: Boolean = false
-    ) {
 
-
-
-        val layoutId = if (isTall) R.layout.control_widget_tall else R.layout.control_widget
-
-        Log.d(
-            "ControlWidgetUpdater",
-            "Updating widget (ID: $appWidgetId) with title: $title, artworkUri: $artworkUri, playing: $playing, isTall: $isTall"
-        )
-        // Construct the RemoteViews object
-        val views = RemoteViews(context.packageName, layoutId)
-        views.setTextViewText(R.id.widget_title, title)
-
-        val artworkBitmap = resolveArtworkBitmap(context, artworkUri)
-        if (artworkBitmap == null) {
-            views.setImageViewResource(R.id.widget_albumArt, R.drawable.default_album_art)
-        } else {
-            views.setImageViewBitmap(R.id.widget_albumArt, artworkBitmap)
-        }
-        if (playing) {
-            views.setImageViewResource(R.id.widget_btnPlayPause, android.R.drawable.ic_media_pause)
-        } else {
-            views.setImageViewResource(R.id.widget_btnPlayPause, android.R.drawable.ic_media_play)
-        }
-        if (BackgroundBitmap != null) {
-            views.setImageViewBitmap(R.id.widget_background, BackgroundBitmap)
-        } else {
-            views.setImageViewResource(R.id.widget_background, R.drawable.gradient2)
-        }
-
-        val containerIntent =
-            CreateAction(context, ControlWidget.clixkedContainer, ControlWidget::class.java)
-        val prevIntent = CreateAction(context, ControlWidget.clickedPrev, ControlWidget::class.java)
-        val playIntent = CreateAction(context, ControlWidget.clickedPlay, ControlWidget::class.java)
-        val nextIntent = CreateAction(context, ControlWidget.clickedNext, ControlWidget::class.java)
-
-        views.setOnClickPendingIntent(android.R.id.background, containerIntent)
-        views.setOnClickPendingIntent(R.id.widget_btnPrev, prevIntent)
-        views.setOnClickPendingIntent(R.id.widget_btnPlayPause, playIntent)
-        views.setOnClickPendingIntent(R.id.widget_btnNext, nextIntent)
-
-
-        // Instruct the widget manager to update the widget
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
-            val widgetIds =
-                appWidgetManager.getAppWidgetIds(ComponentName(context, ControlWidget::class.java))
-            if (widgetIds.isNotEmpty()) {
-                appWidgetManager.updateAppWidget(widgetIds, views)
-            }
-        } else {
-            appWidgetManager.updateAppWidget(appWidgetId, views)
-        }
-    }
-
-    private suspend fun resolveBackground(context: Context, isTall: Boolean): ImageResult? {
+    suspend fun resolveBackground(context: Context, isTall: Boolean): ImageResult? {
         val orientation =
             if (isTall) BackgroundResolver.ORIENTATION_OBLONG else BackgroundResolver.ORIENTATION_LAND
-        val result = if (PrefsManager.getWidgetBackground(context)) {
+        val isBackgroundEnabled = PrefsManager.getWidgetBackground(context)
+        Log.d("ControlWidget", "[WidgetTrace] resolveBackground isTall=$isTall orientation=$orientation isBackgroundEnabled=$isBackgroundEnabled")
+        val result = if (isBackgroundEnabled) {
             val loader = ImageLoader(context)
             val source = BackgroundResolver.loadBackgroundSource(
                 context,
@@ -157,20 +85,36 @@ object ControlWidgetUpdater {
 
     }
 
+    suspend fun updateAllWidgets(context: Context, newState: WidgetState) {
+        Log.d("ControlWidget", "[WidgetTrace] updateAllWidgets start state=$newState")
+        WidgetStateManager.updateWidgetState(context, newState)
+        Log.d("ControlWidget", "[WidgetTrace] updateAllWidgets state saved")
+        val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(ControlWidget::class.java)
+        Log.d(
+            "ControlWidget",
+            "[WidgetTrace] updateAllWidgets glanceIds count=${glanceIds.size} ids=$glanceIds"
+        )
+        ControlWidget().updateAll(context)
+        Log.d("ControlWidget", "[WidgetTrace] updateAllWidgets updateAll requested")
+    }
+
+/*
 
     internal suspend fun update(
         context: Context,
-        newTitle: String? = null,
-        newArtworkUri: Uri? = null,
-        newIsPlaying: Boolean? = null,
         appWidgetManager: AppWidgetManager? = null,
         changedAppWidgetId: Int? = null
 
     ) {
 
-        if (newTitle != null) title = newTitle
-        if (newArtworkUri != null) artworkUri = newArtworkUri
-        if (newIsPlaying != null) playing = newIsPlaying
+        val WidgetState = WidgetStateManager.getWidgetState(context)
+        val title = WidgetState.title
+        val artworkUri = WidgetState.artwork
+        val playing = WidgetState.playing
+
+
+
+
 
         val appWidgetManager = appWidgetManager ?: AppWidgetManager.getInstance(context)
         val appWidgetId = changedAppWidgetId ?: AppWidgetManager.INVALID_APPWIDGET_ID
@@ -243,4 +187,6 @@ object ControlWidgetUpdater {
 
     }
 
+
+ */
 }

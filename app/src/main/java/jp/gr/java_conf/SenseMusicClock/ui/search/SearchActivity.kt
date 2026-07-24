@@ -170,6 +170,8 @@ class SearchActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+
         mediaController?.release()
         mediaController = null
     }
@@ -589,7 +591,6 @@ class SearchActivity : AppCompatActivity() {
                     album = null,
                     artistId = null,
                     trackNo = null,
-                    data = null,
                     relativePath = null,
                     displayName = null,
                     uri = null

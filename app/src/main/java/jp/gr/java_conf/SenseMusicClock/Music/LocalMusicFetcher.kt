@@ -432,7 +432,6 @@ object LocalMusicFetcher {
             MediaStore.Audio.Media.ARTIST_ID,
             MediaStore.Audio.Media.RELATIVE_PATH,
             MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TRACK
         )
 
@@ -465,7 +464,7 @@ object LocalMusicFetcher {
                     val albumIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
                     val artistIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID)
                     val trackIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
-                    val dataIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+
                     val relativePathIdx =
                         c.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH)
                     val displayNameIdx =
@@ -493,15 +492,6 @@ object LocalMusicFetcher {
                         val albumId = c.getLong(albumIdIdx)
                         val artistId = c.getLong(artistIdIdx)
                         val trackNo = c.getInt(trackIdx)
-                        val path = c.getString(dataIdx) ?: ""
-                        if (path.contains(".nomedia", ignoreCase = true)) {
-                            Log.e(
-                                "LocalMusicFetcher",
-                                "Skipping item with ID $id because data path contains .nomedia: $path"
-                            )
-
-                            continue
-                        }
 
                         val relativePath = c.getString(relativePathIdx) ?: ""
                         if (relativePath.contains(".nomedia", ignoreCase = true)) {
@@ -541,7 +531,7 @@ object LocalMusicFetcher {
                             albumId = albumId,
                             artistId = artistId,
                             trackNo = trackNo,
-                            data = path,
+
                             relativePath = relativePath,
                             displayName = displayName,
                             uri = uri,
@@ -579,7 +569,6 @@ object LocalMusicFetcher {
         val albumId: Long?,
         val artistId: Long?,
         val trackNo: Int?,
-        val data: String?,
         val relativePath: String?,
         val displayName: String?,
         val uri: Uri?,
@@ -596,7 +585,7 @@ object LocalMusicFetcher {
             putLong(EXTRA_ARTIST_ID, artistId ?: -1L)
             putString(EXTRA_RELATIVE_PATH, relativePath ?: "")
             putString(EXTRA_DISPLAY_NAME, displayName ?: "")
-            putString(EXTRA_DATA_PATH, data ?: "")
+
         }
         val metadata = MediaMetadata.Builder()
             .setTitle(title ?: "<Unknown Title>")

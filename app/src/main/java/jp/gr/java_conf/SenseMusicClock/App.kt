@@ -3,6 +3,10 @@ package jp.gr.java_conf.SenseMusicClock
 import android.app.Application
 import android.os.StrictMode
 import android.util.Log
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import com.google.firebase.annotations.concurrent.Background
 import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintWriter
@@ -12,11 +16,31 @@ import java.util.Date
 import java.util.Locale
 
 class App : Application() {
+    lateinit var backgroundImageLoader: ImageLoader
+        private set
 
 override fun onCreate() {
     super.onCreate()
 
     Log.d("CrashTest", "Application onCreate")
+
+    backgroundImageLoader = ImageLoader.Builder(this.applicationContext)
+
+        .components {
+            add(ImageDecoderDecoder.Factory()) // Android 9以降のWebP/GIF用
+            add(GifDecoder.Factory())          // Android 8以前のGIF用
+
+        }
+        .crossfade(true)
+        .memoryCache {
+            coil.memory.MemoryCache.Builder(this.applicationContext)
+                .maxSizePercent(0.01) // メモリの25%までキャッシュを使用
+                .strongReferencesEnabled(false)
+                .weakReferencesEnabled(true)
+                .build()
+        }
+        .build()
+
 
     val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
 

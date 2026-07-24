@@ -1,3 +1,5 @@
+/*
+
 package jp.gr.java_conf.SenseMusicClock.ui
 
 import android.app.PendingIntent
@@ -89,7 +91,7 @@ class ControlWidget : AppWidgetProvider() {
             }
 
             clickedNext -> {
-                context.startService(
+                context.startForegroundService(
 
                     Intent(context, MusicService::class.java).apply {
                         action = STARTSERVICE
@@ -101,7 +103,7 @@ class ControlWidget : AppWidgetProvider() {
             }
 
             clickedPlay -> {
-                context.startService(
+                context.startForegroundService(
 
                     Intent(context, MusicService::class.java).apply {
                         action = STARTSERVICE
@@ -113,7 +115,7 @@ class ControlWidget : AppWidgetProvider() {
             }
 
             clickedPrev -> {
-                context.startService(
+                context.startForegroundService(
 
                     Intent(context, MusicService::class.java).apply {
                         action = STARTSERVICE
@@ -155,3 +157,4 @@ class ControlWidget : AppWidgetProvider() {
         // There m
     }
 }
+*/

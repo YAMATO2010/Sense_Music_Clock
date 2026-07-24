@@ -41,7 +41,7 @@ class MusicSearcherByList(
     private val activity: AppCompatActivity,
     private val recyclerView: RecyclerView,
     private val editText: EditText,
-    private val recyclerJackets: RecyclerView? = null
+    private val onSearch : (index: Int) -> Unit,
 
 
 ) {
@@ -150,16 +150,7 @@ class MusicSearcherByList(
                                                 "fallback onItemClick: clicked=${track.mediaMetadata.title}  resolvedOriginalPos=$originalPosition2"
                                             )
 
-                                            if (recyclerJackets != null) recyclerJackets.post {
-                                                if (originalPosition2 != null) {
-                                                    activity.lifecycleScope.launch {
-                                                        recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
-                                                            originalPosition2,
-                                                            5f
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                           onSearch(originalPosition2 ?: 0)
                                         }
                                     )
                                 }
@@ -191,51 +182,8 @@ class MusicSearcherByList(
                             // visual feedback to confirm click was received
 
                             // diagnostic: log recyclerJackets state
-                            try {
-                                val hasRJ = recyclerJackets != null
-                                val rjCount = recyclerJackets?.adapter?.itemCount ?: -1
-                                Log.d(
-                                    "MusicSearcher",
-                                    "onItemClick: recyclerJackets_present=$hasRJ recyclerJackets_adapter_count=$rjCount"
-                                )
-                            } catch (e: Exception) {
-                                android.util.Log.w("MusicSearcher", "onItemClick diagnostic failed", e)
-                            }
-                            if (recyclerJackets != null) {
-                                recyclerJackets.post {
-                                    if (originalPosition != null) {
-                                        activity.lifecycleScope.launch {
-                                            recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
-                                                originalPosition,
-                                                5f
-                                            )
-                                        }
-                                    } else {
-                                        Log.w(
-                                            "MusicSearcher",
-                                            "originalPosition is null for clicked track; attempting fallback search by metadata"
-                                        )
-                                        // fallback: try metadata key
-                                        val fallbackIndex =
-                                            LocalMusicRepository.tracksFlow.value.indexOfFirst {
 
-                                                val metadata_iniList = it.mediaMetadata
-                                                val metadata_clicked = track.mediaMetadata
-                                                metadata_iniList.title == metadata_clicked.title && metadata_iniList.artist == metadata_clicked.artist && metadata_iniList.albumTitle == metadata_clicked.albumTitle }
-                                        Log.d("MusicSearcher", "fallbackIndex=$fallbackIndex")
-
-
-                                        if (fallbackIndex >= 0) {
-                                            activity.lifecycleScope.launch {
-                                                recyclerJackets.smoothScrollToPositionWithSkipAnimationCheck(
-                                                    fallbackIndex,
-                                                    5f
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            onSearch(originalPosition ?: 0)
                         }
                     )
                 }
