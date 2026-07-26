@@ -31,7 +31,13 @@ object LocalMusicFetcher {
 
 
     fun selection(UserRelativePaths: List<String> = emptyList()): Pair<String, Array<String>> {
+
+        if (UserRelativePaths.isEmpty()) {
+            return Pair("", emptyArray())
+        }
         val relativePaths = listOf("Music/SMC") + UserRelativePaths
+
+
 
         val parts = mutableListOf<String>()
         val args = mutableListOf<String>()
@@ -185,7 +191,7 @@ object LocalMusicFetcher {
 
         args.run {
 
-            if (selection != null && !selectionArgs.isNullOrEmpty()) {
+            if (!selection.isNullOrBlank() && !selectionArgs.isNullOrEmpty()) {
                 putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
                 putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
 
@@ -215,7 +221,7 @@ object LocalMusicFetcher {
 
         args.run {
 
-            if (selection != null && !selectionArgs.isNullOrEmpty()) {
+            if (!selection.isNullOrBlank() && !selectionArgs.isNullOrEmpty()) {
                 putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
                 putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
 
@@ -245,7 +251,7 @@ object LocalMusicFetcher {
 
         args.apply {
 
-            if (selection != null && !selectionArgs.isNullOrEmpty()) {
+            if (!selection.isNullOrBlank() && !selectionArgs.isNullOrEmpty()) {
                 putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
                 putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
 
@@ -266,7 +272,6 @@ object LocalMusicFetcher {
         return args
     }
 
-    //todo プレースホルダ対応クエリの実装。MediaStore のクエリは一度に大量の条件を指定できないため、分割して複数回クエリを実行する
 
     suspend fun SafeLocalMusicFromAppDir(
         resolver: ContentResolver,
