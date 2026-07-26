@@ -340,17 +340,13 @@ class MainActivity : AppCompatActivity() {
         val isTextPlus by PrefsManager.getTileTitleDisplayFlow(this).collectAsState(initial = false)
 
 
+
         LaunchedEffect(Unit) {
-
-
-            viewModel.currentIndex.collectLatest { value ->
-
-
+            viewModel.currentJacketsIndex.collectLatest { value ->
                 listState.animateScrollToItemWithSkipCheck(value)
-
             }
-
         }
+
 
         if (orientation == BackgroundResolver.ORIENTATION_OBLONG) {
             LazyColumn(
@@ -936,6 +932,7 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             if (mediaItem != null) {
                                 applyCurrentTrackToUi(mediaItem)
+                                scrollToTrack(mediaItem)
                             } else {
                                 stopSlideLoop()
                                 binding.currentAlbumArt.load(R.drawable.default_album_art) {
@@ -1217,16 +1214,15 @@ class MainActivity : AppCompatActivity() {
         track: MediaItem? = mediaBrowser?.currentMediaItem
     ) {
 
-        LocalMusicRepository.getIndexById(track?.mediaId ?: "")?.let { index ->
-            if (index >= 0) {
-                mainViewModel.setCurrentIndex(index)
-            } else {
-                mediaBrowser?.currentMediaItemIndex?.let {
-
-                    mainViewModel.setCurrentIndex(it)
-                }
-            }
+        val index = getIndexById(track)
+        if (index != null && index >= 0) {
+            mainViewModel.setCurrentIndex(index)
+            return
         }
+
+        mediaBrowser?.currentMediaItemIndex
+            ?.takeIf { it >= 0 }
+            ?.let { mainViewModel.setCurrentIndex(it) }
 
 
     }

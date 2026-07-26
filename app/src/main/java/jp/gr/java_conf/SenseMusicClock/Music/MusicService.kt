@@ -39,6 +39,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -76,7 +77,6 @@ class MusicService : MediaLibraryService() {
     private lateinit var player: ExoPlayer
 
     private var session: MediaLibrarySession? = null
-
 
     // サービス用コルーチンスコープ
     private val serviceJob = SupervisorJob()
@@ -236,7 +236,6 @@ class MusicService : MediaLibraryService() {
                                 this@MusicService,
                                 albumId
                             )
-
                         }
                     }
 
@@ -500,13 +499,13 @@ class MusicService : MediaLibraryService() {
             scope.launch {
 
                 launch {
-                    PrefsManager.getIsShuffleFlow(this@MusicService).collect { value ->
+                    PrefsManager.getIsShuffleFlow(this@MusicService).drop(1).collect { value ->
                         LocalMusicRepository.setShuffle(value, this@MusicService::class.simpleName)
                         repoLoadMusicAndCreateMap()
                     }
                 }
                 launch {
-                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).collect { value ->
+                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).drop(1).collect { value ->
                         Log.d("LIST_/MusicService/loadBlocklistItem", "collect blocklistId=$value")
                         val blocklistItems = DBManager.loadBlocklistItem(this@MusicService, value)
                         Log.d(
@@ -521,7 +520,7 @@ class MusicService : MediaLibraryService() {
 
                 launch {
 
-                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).collect { value ->
+                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).drop(1).collect { value ->
                         repoLoadMusicAndCreateMap(value)
                     }
 
@@ -554,7 +553,7 @@ class MusicService : MediaLibraryService() {
                 // ディレクトリリストの監視
                 launch {
 
-                    PrefsManager.getMusicDirRelativePathFlow(this@MusicService).collect { value ->
+                    PrefsManager.getMusicDirRelativePathFlow(this@MusicService).drop(1).collect { value ->
                         if (PrefsManager.getCurrentPlaylistId(this@MusicService) < 0) {
                             Log.d(
                                 "MusicService",
@@ -567,7 +566,7 @@ class MusicService : MediaLibraryService() {
 
                 launch {
 
-                    PrefsManager.getReloadTracksFlow(this@MusicService).collect {
+                    PrefsManager.getReloadTracksFlow(this@MusicService).drop(1).collect {
                         Log.d(
                             "MusicService",
                             "reload music directory requested  "
@@ -579,7 +578,14 @@ class MusicService : MediaLibraryService() {
 
                 launch {
                     LocalMusicRepository.tracksFlow.collect { value ->
-                        player.setSafeMediaItems(value, isFirst = !isPlayerFirstItemSeted)
+                        if (value.isEmpty()) {
+                            Log.w("MusicService", "Tracks list is empty, skipping setSafeMediaItems")
+                            return@collect
+                        }
+                        player.setSafeMediaItems(
+                            value,
+                            isFirst = !isPlayerFirstItemSeted
+                        )
                         isPlayerFirstItemSeted = true
                     }
                 }
@@ -667,9 +673,8 @@ class MusicService : MediaLibraryService() {
     suspend fun Player.setSafeMediaItems(List: List<MediaItem>, isFirst: Boolean = false) {
         val wasPlayWhenReady = withContext(Dispatchers.Main) { playWhenReady }
 
-
-        val lastIndex = findLastIndexByRepo()
-        val lastPosition = PrefsManager.getLastTrackPosition(this@MusicService)
+        val restoreIndex = if (isFirst) findLastIndexByRepo() else 0
+        val restorePosition = if (isFirst) PrefsManager.getLastTrackPosition(this@MusicService) else 0L
         withContext(Dispatchers.Main) {
             this@setSafeMediaItems.clearMediaItems()
         }
@@ -696,10 +701,13 @@ class MusicService : MediaLibraryService() {
         }
         withContext(Dispatchers.Main) {
             prepare()
-            if (isFirst) {
-                seekTo(lastIndex, lastPosition)
+            if (restoreIndex >= 0) {
+                seekTo(restoreIndex, restorePosition)
             }
             playWhenReady = wasPlayWhenReady
+        }
+        if (!isFirst) {
+            List.getOrNull(restoreIndex)?.setLastInfos(0L)
         }
 
     }

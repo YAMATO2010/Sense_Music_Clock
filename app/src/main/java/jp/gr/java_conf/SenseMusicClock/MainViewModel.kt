@@ -32,12 +32,12 @@ class MainViewModel : ViewModel() {
         get() = _tracks
 
 
-    private val _currentIndex: MutableSharedFlow<Int> = MutableSharedFlow<Int>(
+    private val _currentJacketsIndex: MutableSharedFlow<Int> = MutableSharedFlow<Int>(
         replay = 0, // 過去のイベントは再送しない
         extraBufferCapacity = 1
     )
-    val currentIndex: SharedFlow<Int>
-        get() = _currentIndex
+    val currentJacketsIndex: SharedFlow<Int>
+        get() = _currentJacketsIndex
 
     var lastIndex: Int? = null
         private set
@@ -72,7 +72,7 @@ class MainViewModel : ViewModel() {
 
     fun setCurrentIndex(newIndex: Int) {
         viewModelScope.launch {
-            _currentIndex.emit(newIndex)
+            _currentJacketsIndex.emit(newIndex)
             lastIndex = newIndex
         }
     }
@@ -93,4 +93,3 @@ class MainViewModel : ViewModel() {
 
 
 }
-

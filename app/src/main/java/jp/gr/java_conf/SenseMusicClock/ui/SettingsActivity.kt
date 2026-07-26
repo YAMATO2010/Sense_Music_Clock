@@ -544,6 +544,7 @@ class SettingsActivity : AppCompatActivity() {
                                             requireContext(),
                                             PlayList.CURRENT_REMOVAL_ID
                                         )
+
                                     }
 
                                     return@showBlockSelectDialog

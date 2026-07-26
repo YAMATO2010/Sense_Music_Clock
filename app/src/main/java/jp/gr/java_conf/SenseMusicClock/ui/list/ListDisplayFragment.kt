@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -254,6 +255,7 @@ class ListDisplayFragment : Fragment() {
                                         requireContext(),
                                         sharedViewModel.listId.value ?: -1L
                                     )
+                                    PrefsManager.setReloadTracks_reverse_andGet(requireContext())
                                 }
 
                             }
@@ -266,6 +268,8 @@ class ListDisplayFragment : Fragment() {
                                         requireContext(),
                                         sharedViewModel.listId.value ?: -1L
                                     )
+                                    PrefsManager.setReloadTracks_reverse_andGet(requireContext())
+
                                 }
 
                             }
@@ -276,7 +280,10 @@ class ListDisplayFragment : Fragment() {
                                     "Unknown list type: ${sharedViewModel.listType.value}"
                                 )
                             }
+
                         }
+
+
 
                         true
                     }
