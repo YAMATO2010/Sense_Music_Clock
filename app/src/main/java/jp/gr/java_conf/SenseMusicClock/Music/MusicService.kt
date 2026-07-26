@@ -39,6 +39,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -505,7 +507,7 @@ class MusicService : MediaLibraryService() {
                     }
                 }
                 launch {
-                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).drop(1).collect { value ->
+                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).distinctUntilChanged().drop(1).collect { value ->
                         Log.d("LIST_/MusicService/loadBlocklistItem", "collect blocklistId=$value")
                         val blocklistItems = DBManager.loadBlocklistItem(this@MusicService, value)
                         Log.d(
@@ -520,7 +522,7 @@ class MusicService : MediaLibraryService() {
 
                 launch {
 
-                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).drop(1).collect { value ->
+                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).drop(1).distinctUntilChanged().collect{ value ->
                         repoLoadMusicAndCreateMap(value)
                     }
 
@@ -566,7 +568,7 @@ class MusicService : MediaLibraryService() {
 
                 launch {
 
-                    PrefsManager.getReloadTracksFlow(this@MusicService).drop(1).collect {
+                    PrefsManager.getReloadTracksFlow(this@MusicService).drop(1).distinctUntilChanged().collect {
                         Log.d(
                             "MusicService",
                             "reload music directory requested  "
@@ -670,7 +672,7 @@ class MusicService : MediaLibraryService() {
 
     }
 
-    suspend fun Player.setSafeMediaItems(List: List<MediaItem>, isFirst: Boolean = false) {
+    suspend fun Player.setSafeMediaItems(List: List<MediaItem>, isFirst: Boolean = !isPlayerFirstItemSeted) {
         val wasPlayWhenReady = withContext(Dispatchers.Main) { playWhenReady }
 
         val restoreIndex = if (isFirst) findLastIndexByRepo() else 0
@@ -701,13 +703,13 @@ class MusicService : MediaLibraryService() {
         }
         withContext(Dispatchers.Main) {
             prepare()
-            if (restoreIndex >= 0) {
+
+            if (isFirst){
+                Log.d("MusicService", "Seeking to last known position: index=$restoreIndex, position=$restorePosition")
                 seekTo(restoreIndex, restorePosition)
             }
+            isPlayerFirstItemSeted = true
             playWhenReady = wasPlayWhenReady
-        }
-        if (!isFirst) {
-            List.getOrNull(restoreIndex)?.setLastInfos(0L)
         }
 
     }

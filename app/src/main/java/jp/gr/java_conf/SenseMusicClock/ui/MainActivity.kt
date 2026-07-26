@@ -329,7 +329,7 @@ class MainActivity : AppCompatActivity() {
                 .precision(Precision.INEXACT)
                 .memoryCache(
                     MemoryCache.Builder()
-                        .maxSizePercent(this, 0.05)
+                        .maxSizePercent(this, 0.2)
                         .build()
                 )
                 .build()
@@ -356,7 +356,7 @@ class MainActivity : AppCompatActivity() {
                 state = listState,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                itemsIndexed(items = item) { index, mediaItem ->
+                itemsIndexed(items = item, key = { _, item -> item.mediaId }) { index, mediaItem ->
                     var menuExpanded by remember {
                         mutableStateOf(false)
                     }
@@ -647,7 +647,7 @@ class MainActivity : AppCompatActivity() {
                 overflow = TextOverflow.Ellipsis,
                 softWrap = false,
                 autoSize = TextAutoSize.StepBased(
-                    maxFontSize = 15.sp
+                    minFontSize = 11.sp, maxFontSize = 13.sp, stepSize = 1.sp
                 ),
                 textAlign = TextAlign.Center,
                 color = androidx.compose.ui.graphics.Color.Black
@@ -932,7 +932,7 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             if (mediaItem != null) {
                                 applyCurrentTrackToUi(mediaItem)
-                                scrollToTrack(mediaItem)
+
                             } else {
                                 stopSlideLoop()
                                 binding.currentAlbumArt.load(R.drawable.default_album_art) {
