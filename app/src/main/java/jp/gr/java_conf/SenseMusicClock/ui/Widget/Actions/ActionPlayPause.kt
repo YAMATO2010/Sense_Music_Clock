@@ -2,11 +2,13 @@ package jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.Bundle
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import androidx.media3.session.SessionCommand
 import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.await
@@ -36,7 +38,10 @@ class ActionPlayPause : ActionCallback {
                 if (controller.playWhenReady) {
                     controller.pause()
                 } else {
-                    controller.play()
+                    controller.sendCustomCommand(
+                        SessionCommand(MusicService.CUSTOM_ACTION_WIDGET_PLAY, Bundle.EMPTY),
+                        Bundle.EMPTY
+                    ).await()
                 }
             } finally {
                 MediaController.releaseFuture(controllerFuture)

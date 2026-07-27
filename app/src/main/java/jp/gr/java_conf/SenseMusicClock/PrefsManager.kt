@@ -55,12 +55,6 @@ object PrefsManager {
 
     private val IS_SHUFFLE_KEY = booleanPreferencesKey("is_shuffle")
 
-    private val LAST_TRACK_RELATIVE_PATH_KEY = stringPreferencesKey("last_track_relative_path")
-
-    private val LAST_TRACK_DISPLAY_NAME_KEY = stringPreferencesKey("last_track_display_name")
-
-    private val LAST_TRACK_POSITION = longPreferencesKey("last_track_position")
-
     private val IS_WIDGET_BACKGROUND_KEY = booleanPreferencesKey("is_widget_background")
     private val IS_RANDOM_BACKGROUND_KEY = booleanPreferencesKey("is_random_background")
 
@@ -268,55 +262,6 @@ object PrefsManager {
     suspend fun clearCurrentBlocklistId(context: Context) {
         context.clearPrefsValue(CURRENT_BLOCKLIST_ID_KEY)
     }
-
-    fun getLastTrackRelativePathFlow(context: Context, default: String = ""): Flow<String> {
-        return context.getPrefsFlow(LAST_TRACK_RELATIVE_PATH_KEY, default)
-    }
-
-    suspend fun getLastTrackRelativePath(context: Context, default: String = ""): String {
-        return context.getPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY, default)
-    }
-
-    suspend fun setLastTrackRelativePath(context: Context, value: String) {
-        context.setPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY, value)
-    }
-
-    suspend fun clearLastTrackRelativePath(context: Context) {
-        context.clearPrefsValue(LAST_TRACK_RELATIVE_PATH_KEY)
-    }
-
-    fun getLastTrackDisplayNameFlow(context: Context, default: String = ""): Flow<String> {
-        return context.getPrefsFlow(LAST_TRACK_DISPLAY_NAME_KEY, default)
-    }
-
-    suspend fun getLastTrackDisplayName(context: Context, default: String = ""): String {
-        return context.getPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY, default)
-    }
-
-    suspend fun setLastTrackDisplayName(context: Context, value: String) {
-        context.setPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY, value)
-    }
-
-    suspend fun clearLastTrackDisplayName(context: Context) {
-        context.clearPrefsValue(LAST_TRACK_DISPLAY_NAME_KEY)
-    }
-
-    fun getLastTrackPositionFlow(context: Context, default: Long = 0L): Flow<Long> {
-        return context.getPrefsFlow(LAST_TRACK_POSITION, default)
-    }
-
-    suspend fun getLastTrackPosition(context: Context, default: Long = 0L): Long {
-        return context.getPrefsValue(LAST_TRACK_POSITION, default)
-    }
-
-    suspend fun setLastTrackPosition(context: Context, value: Long) {
-        context.setPrefsValue(LAST_TRACK_POSITION, value)
-    }
-
-    suspend fun clearLastTrackPosition(context: Context) {
-        context.clearPrefsValue(LAST_TRACK_POSITION)
-    }
-
 
     // 現在の音量
     fun getVolumeAdjustmentFlow(context: Context, default: Int = 0): Flow<Int> {

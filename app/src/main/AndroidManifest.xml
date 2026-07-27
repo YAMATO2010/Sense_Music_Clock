@@ -38,6 +38,16 @@
                 android:resource="@xml/control_widget_info" />
         </receiver>
 
+        <receiver
+            android:name="androidx.media3.session.MediaButtonReceiver"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+
         <activity
             android:name=".ui.search.SearchActivity"
             android:exported="false" />
