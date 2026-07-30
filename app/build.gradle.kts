@@ -111,6 +111,7 @@ dependencies {
     // --------------------------------------------------
 
     implementation("androidx.lifecycle:lifecycle-service:2.11.0")
+    implementation(libs.kotlinx.coroutines.guava)
 
 
     // --------------------------------------------------
@@ -180,12 +181,6 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.13.2")
 
-
-    // --------------------------------------------------
-    // Google Mobile Ads
-    // --------------------------------------------------
-
-    implementation(libs.ads.mobile.sdk)
 
 
     // --------------------------------------------------
