@@ -264,11 +264,11 @@ object PrefsManager {
     }
 
     // 現在の音量
-    fun getVolumeAdjustmentFlow(context: Context, default: Int = 0): Flow<Int> {
+    fun getVolumeAdjustmentFlow(context: Context, default: Int = 100): Flow<Int> {
         return context.getPrefsFlow(VOLUME_ADJUSTMENT, default)
     }
 
-    suspend fun getVolumeAdjustment(context: Context, default: Int = 0): Int {
+    suspend fun getVolumeAdjustment(context: Context, default: Int = 100): Int {
         return context.getPrefsValue(VOLUME_ADJUSTMENT, default)
     }
 
