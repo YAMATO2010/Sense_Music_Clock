@@ -672,7 +672,6 @@ class MusicService : MediaLibraryService() {
                             player.setSafeMediaItems(LocalMusicRepository.getTracks())
                         }
                         if (player.mediaItemCount > 0) {
-                            player.seekTo(0, 0L)
                             player.play()
                         }
                     }
