@@ -120,12 +120,16 @@ object DBManager {
         override suspend fun replacePlaylistContentNoLock(
             context: Context,
             newItems: List<PlaylistItem>
-        ) = _replacePlaylistContent(context, newItems)
+        ) = newItems.firstOrNull()?.playlistId?.let { playlistId ->
+            _replacePlaylistContent(context, playlistId, newItems)
+        } ?: emptyList()
 
         override suspend fun replaceBlocklistContentNoLock(
             context: Context,
             newItems: List<BlocklistItem>
-        ) = _replaceBlocklistContent(context, newItems)
+        ) = newItems.firstOrNull()?.blocklistId?.let { blocklistId ->
+            _replaceBlocklistContent(context, blocklistId, newItems)
+        } ?: emptyList()
 
         override suspend fun addPlaylistItemSingleNoLock(
             context: Context,
@@ -340,17 +344,18 @@ object DBManager {
 
     private suspend fun _replacePlaylistContent(
         context: Context,
+        playlistId: Long,
         newItems: List<PlaylistItem>
     ): List<PlaylistItem> {
         val db = AppDataBase.getInstance(context)
-        if (newItems.isEmpty()) return emptyList()
         return withContext(Dispatchers.IO) {
             db.withTransaction {
                 val playlistItemDao = db.playListItemDao()
-                val playlistId = newItems.first().playlistId
                 val inserted: List<PlaylistItem> = playlistItemDao.run {
                     deleteItemsForPlaylist(playlistId)
-                    upsertPlaylistItems(newItems)
+                    if (newItems.isNotEmpty()) {
+                        upsertPlaylistItems(newItems)
+                    }
                     return@run loadItemsForPlaylist(playlistId)
                 }
                 return@withTransaction inserted
@@ -366,27 +371,36 @@ object DBManager {
             "LIST_/DBManager/replacePlaylistContent",
             "replace playlist content size=${newItems.size} firstPlaylistId=${newItems.firstOrNull()?.playlistId}"
         )
-        return mutex.withLock { _replacePlaylistContent(context, newItems) }
+        val playlistId = newItems.firstOrNull()?.playlistId ?: return emptyList()
+        return mutex.withLock { _replacePlaylistContent(context, playlistId, newItems) }
+    }
+
+    suspend fun replacePlaylistContent(
+        context: Context,
+        playlistId: Long,
+        newItems: List<PlaylistItem>
+    ): List<PlaylistItem> {
+        Log.d(
+            "LIST_/DBManager/replacePlaylistContent",
+            "replace playlist content size=${newItems.size} playlistId=$playlistId"
+        )
+        return mutex.withLock { _replacePlaylistContent(context, playlistId, newItems) }
     }
 
     private suspend fun _replaceBlocklistContent(
         context: Context,
+        blocklistId: Long,
         newItems: List<BlocklistItem>
     ): List<BlocklistItem> {
         val db = AppDataBase.getInstance(context)
-        if (newItems.isEmpty()) {
-            Log.d(
-                "LIST_/DBManager/replaceBlocklistContent",
-                "replace blocklist content with empty list"
-            )
-        }
         return withContext(Dispatchers.IO) {
             db.withTransaction {
                 val blocklistItemDao = db.blockListItemDao()
-                val blocklistId = newItems.first().blocklistId
                 val inserted: List<BlocklistItem> = blocklistItemDao.run {
                     deleteItemsForBlocklist(blocklistId)
-                    upsertBlocklistItems(newItems)
+                    if (newItems.isNotEmpty()) {
+                        upsertBlocklistItems(newItems)
+                    }
                     return@run loadItemsForBlocklist(blocklistId)
                 }
 
@@ -403,7 +417,20 @@ object DBManager {
             "LIST_/DBManager/replaceBlocklistContent",
             "replace blocklist content size=${newItems.size} firstBlocklistId=${newItems.firstOrNull()?.blocklistId}"
         )
-        return mutex.withLock { _replaceBlocklistContent(context, newItems) }
+        val blocklistId = newItems.firstOrNull()?.blocklistId ?: return emptyList()
+        return mutex.withLock { _replaceBlocklistContent(context, blocklistId, newItems) }
+    }
+
+    suspend fun replaceBlocklistContent(
+        context: Context,
+        blocklistId: Long,
+        newItems: List<BlocklistItem>
+    ): List<BlocklistItem> {
+        Log.d(
+            "LIST_/DBManager/replaceBlocklistContent",
+            "replace blocklist content size=${newItems.size} blocklistId=$blocklistId"
+        )
+        return mutex.withLock { _replaceBlocklistContent(context, blocklistId, newItems) }
     }
 
     // addPlaylistItem single
@@ -423,7 +450,7 @@ object DBManager {
                     index = index ?: items.size
                 )
                 items.add(newItem)
-                _replacePlaylistContent(context, items)
+                _replacePlaylistContent(context, playlistId, items)
                 return@withTransaction true
             }
         }
@@ -474,7 +501,7 @@ object DBManager {
                     )
                 }
 
-                _replacePlaylistContent(context, newPlaylistItems)
+                _replacePlaylistContent(context, playlistId, newPlaylistItems)
 
 
 
@@ -779,7 +806,7 @@ object DBManager {
 
                 val originalItems: List<BlocklistItem> = _loadBlocklistItem(context, blockListId)
                 val newItems = originalItems.map { it.copy(blocklistId = newBlocklistId) }
-                _replaceBlocklistContent(context, newItems)
+                _replaceBlocklistContent(context, newBlocklistId, newItems)
                 return@withTransaction true
             }
             return@withContext isSuccess

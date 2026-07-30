@@ -198,7 +198,7 @@ class ListAddFragment : Fragment() {
 
 
             sharedViewModel.setFileItemList(
-                DBManager.replacePlaylistContent(requireContext().applicationContext, newList)
+                DBManager.replacePlaylistContent(requireContext().applicationContext, listID, newList)
                     .map { it.fileItem })
         } catch (e: Exception) {
             Log.e("ListAddFragment", "Error saving playlist", e)
@@ -228,7 +228,7 @@ class ListAddFragment : Fragment() {
                 }
 
             sharedViewModel.setFileItemList(
-                DBManager.replaceBlocklistContent(requireContext().applicationContext, newList)
+                DBManager.replaceBlocklistContent(requireContext().applicationContext, listID, newList)
                     .map { it.fileItem }
             )
 

@@ -11,11 +11,8 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.media3.common.MediaItem
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
-import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.R
 
 
@@ -24,22 +21,14 @@ class ListEditAdapter(
     private val ItemType: LIST_TYPE,
     private val onStartDrag: (RecyclerView.ViewHolder) -> Unit,
     private val onCheckedChange: (Int, Boolean) -> Unit
+) : RecyclerView.Adapter<ListEditAdapter.EditAdapterViewHolder>() {
 
-) : ListAdapter<ListEditAdapter.MediaItemWithChecked, ListEditAdapter.EditAdapterViewHolder>(DIFF) {
+    private val items = values.toMutableList()
 
-
-
-
-    init {
-
-
-        submitList(values.toList())
-
-
-    }
+    val currentList: List<MediaItemWithChecked>
+        get() = items.toList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EditAdapterViewHolder {
-
         return when (viewType) {
             TYPE_PLAY -> {
                 val view = LayoutInflater.from(parent.context)
@@ -50,43 +39,25 @@ class ListEditAdapter(
             else -> {
                 val view = LayoutInflater.from(parent.context)
                     .inflate(R.layout.fragment_list_add_item, parent, false)
-                return BlockHolder(view)
+                BlockHolder(view)
             }
-
         }
-
-
     }
 
     override fun getItemViewType(position: Int): Int {
-
         return when (ItemType) {
             LIST_TYPE.TYPE_BLOCK -> TYPE_BLOCK
             LIST_TYPE.TYPE_PLAY -> TYPE_PLAY
-
             LIST_TYPE.TYPE_ETC -> TYPE_ETC
         }
     }
 
-    private var recyclerView: RecyclerView? = null
-
-    override fun onAttachedToRecyclerView(rv: RecyclerView) {
-        super.onAttachedToRecyclerView(rv)
-
-        recyclerView = rv
-    }
-
-    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        super.onDetachedFromRecyclerView(recyclerView)
-    }
-
     override fun onBindViewHolder(holder: EditAdapterViewHolder, position: Int) {
-        val item = getItem(position)
+        val item = items[position]
 
         holder.titleTextView.text = item.mediaItem.mediaMetadata.title ?: "Unknown Title"
         holder.artistTextView.text = item.mediaItem.mediaMetadata.artist ?: "Unknown Artist"
         if (holder is PlayHolder) {
-
             @SuppressLint("ClickableViewAccessibility")
             holder.moveButton.setOnTouchListener { _, event ->
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
@@ -94,10 +65,15 @@ class ListEditAdapter(
                 }
                 true
             }
+            holder.itemView.setOnLongClickListener {
+                onStartDrag(holder)
+                true
+            }
+        } else {
+            holder.itemView.setOnLongClickListener(null)
         }
 
         holder.artWork.load(item.mediaItem.mediaMetadata.artworkUri) {
-
             crossfade(true)
             memoryCachePolicy(coil.request.CachePolicy.DISABLED)
             diskCachePolicy(coil.request.CachePolicy.ENABLED)
@@ -108,105 +84,72 @@ class ListEditAdapter(
                     Log.w("ListEditAdapter", "Failed to load artwork", result.throwable)
                 }
             )
-
-
         }
 
-        holder.checkBox.setOnCheckedChangeListener { view, isChecked ->
-            val position = holder.bindingAdapterPosition
-            val currentItem = getItem(position)
-            currentItem.isChecked = isChecked
-            onCheckedChange(position, isChecked)
+        holder.checkBox.setOnCheckedChangeListener(null)
+        holder.checkBox.isChecked = item.isChecked
+        holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
+            val itemPosition = holder.bindingAdapterPosition
+            if (itemPosition == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
+            items[itemPosition].isChecked = isChecked
+            onCheckedChange(itemPosition, isChecked)
         }
-
     }
 
+    override fun getItemCount(): Int = items.size
 
-    override fun getItemCount(): Int = currentList.size
+    fun submitList(newItems: List<MediaItemWithChecked>) {
+        items.clear()
+        items.addAll(newItems)
+        notifyDataSetChanged()
+    }
 
     fun setItems(newItems: List<MediaItemWithChecked>, commitCallback: (() -> Unit)?) {
-        submitList(newItems.toList(), {
-            try {
-                commitCallback?.invoke()
-            } catch (_: Exception) {
-            }
-        })
+        submitList(newItems.toList())
+        try {
+            commitCallback?.invoke()
+        } catch (_: Exception) {
+        }
+    }
+
+    fun moveItem(fromPos: Int, toPos: Int): Boolean {
+        if (fromPos == RecyclerView.NO_POSITION || toPos == RecyclerView.NO_POSITION) return false
+        if (fromPos !in items.indices || toPos !in items.indices) return false
+        if (fromPos == toPos) return false
+
+        val item = items.removeAt(fromPos)
+        items.add(toPos, item)
+        notifyItemMoved(fromPos, toPos)
+        return true
     }
 
     abstract class EditAdapterViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val titleTextView: TextView = view.findViewById<TextView>(R.id.ItemTitleView)
-        val artistTextView: TextView = view.findViewById<TextView>(R.id.ItemArtistView)
-        val checkBox: CheckBox = view.findViewById<CheckBox>(R.id.listCheckBox)
-
-        val artWork: ImageView = view.findViewById<ImageView>(R.id.ITEMArtwork)
+        val titleTextView: TextView = view.findViewById(R.id.ItemTitleView)
+        val artistTextView: TextView = view.findViewById(R.id.ItemArtistView)
+        val checkBox: CheckBox = view.findViewById(R.id.listCheckBox)
+        val artWork: ImageView = view.findViewById(R.id.ITEMArtwork)
     }
 
     class PlayHolder(view: View) : EditAdapterViewHolder(view) {
-        val moveButton: ImageButton = view.findViewById<ImageButton>(R.id.moveButton)
-
+        val moveButton: ImageButton = view.findViewById(R.id.moveButton)
     }
 
     class BlockHolder(view: View) : EditAdapterViewHolder(view)
 
-
     enum class LIST_TYPE {
         TYPE_BLOCK,
         TYPE_PLAY,
-
         TYPE_ETC,
     }
 
     companion object {
         const val TYPE_BLOCK = 0
         const val TYPE_PLAY = 1
-
         const val TYPE_ETC = 3
-        private val DIFF = object : DiffUtil.ItemCallback<MediaItemWithChecked>() {
-            override fun areItemsTheSame(
-                oldItem: MediaItemWithChecked,
-                newItem: MediaItemWithChecked
-            ): Boolean {
-                val oldId = oldItem.mediaItem.mediaId
-
-                val newId = newItem.mediaItem.mediaId
-                return oldId == newId
-            }
-
-            override fun areContentsTheSame(
-                oldItem: MediaItemWithChecked,
-                newItem: MediaItemWithChecked
-            ): Boolean {
-                if (oldItem::class != newItem::class) return false
-                val oldItemMediaMetadata = oldItem.mediaItem.mediaMetadata
-                val newItemMediaMetadata = newItem.mediaItem.mediaMetadata
-                val oldMetadataExtras = oldItemMediaMetadata.extras
-                val newMetadataExtras = newItemMediaMetadata.extras
-
-                val commonCriteria =
-                    oldItemMediaMetadata.title.toString() == newItemMediaMetadata.title.toString() &&
-                            oldItemMediaMetadata.albumTitle.toString() == newItemMediaMetadata.albumTitle.toString() &&
-                            oldItemMediaMetadata.artist.toString() == newItemMediaMetadata.artist.toString()
-
-                val localCriteria =
-                    oldMetadataExtras?.getString(LocalMusicFetcher.EXTRA_RELATIVE_PATH) == newMetadataExtras?.getString(
-                        LocalMusicFetcher.EXTRA_RELATIVE_PATH
-                    ) && oldMetadataExtras?.getString(LocalMusicFetcher.EXTRA_DISPLAY_NAME) == newMetadataExtras?.getString(
-                        LocalMusicFetcher.EXTRA_DISPLAY_NAME
-                    ) &&
-                            oldItemMediaMetadata.trackNumber == newItemMediaMetadata.trackNumber
-
-
-
-                return commonCriteria && localCriteria
-            }
-        }
-
-
     }
 
     data class MediaItemWithChecked(
         val mediaItem: MediaItem,
         var isChecked: Boolean = false
     )
-
 }

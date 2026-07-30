@@ -533,6 +533,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
                                     "プレイリスト「$playlistName」を作成しました",
                                     Toast.LENGTH_SHORT
                                 ).show()
+                                onPlaylistSelected(newId)
                             } else {
 
                                 DBManager.addPlaylistAndItem(
@@ -606,6 +607,7 @@ fun AppCompatActivity.showBlockSelectDialog(
                                     "ブロックリスト「$blockListName」を作成しました",
                                     Toast.LENGTH_SHORT
                                 ).show()
+                                onBlockSelected(newId)
                             } else {
                                 DBManager.addBlocklistAndItem(
                                     this@showBlockSelectDialog.applicationContext,

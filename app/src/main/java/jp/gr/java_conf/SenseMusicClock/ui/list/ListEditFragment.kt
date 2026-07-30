@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,26 +32,21 @@ class ListEditFragment : Fragment() {
     private val binding get() = _binding!!
 
 
-    private lateinit var listadapter: ListEditAdapter
+    private lateinit var listAdapter: ListEditAdapter
 
 
     private val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
         ItemTouchHelper.UP or ItemTouchHelper.DOWN, // 上下のドラッグを許可
         0 // スワイプ（左右）は今回は使わないので 0
     ) {
-        private var fromPos: Int? = null
-        private var toPos: Int? = null
         override fun onMove(
             recyclerView: RecyclerView,
             viewHolder: RecyclerView.ViewHolder,
             target: RecyclerView.ViewHolder
         ): Boolean {
-            fromPos = viewHolder.bindingAdapterPosition
-            toPos = target.bindingAdapterPosition
-
-            // 1. アダプター内のリストを入れ替える（UI上の反映）
-            moveItem(fromPos ?: return false, toPos ?: return false)
-            return true
+            val fromPos = viewHolder.bindingAdapterPosition
+            val toPos = target.bindingAdapterPosition
+            return moveItem(fromPos, toPos)
         }
 
         override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
@@ -61,9 +56,6 @@ class ListEditFragment : Fragment() {
         // ドラッグが終わった（指を離した）タイミングで呼ばれる
         override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
             super.clearView(recyclerView, viewHolder)
-
-            fromPos = null
-            toPos = null
         }
     })
 
@@ -99,7 +91,6 @@ class ListEditFragment : Fragment() {
                     R.id.action_save -> {
 
                         save()
-                        parentFragmentManager.popBackStack()
 
                         true
                     }
@@ -118,7 +109,7 @@ class ListEditFragment : Fragment() {
             sharedViewModel.list.value?.map { it.toMediaItem() } ?: emptyList(),
             isChecked = true
         )
-        sharedViewModel.list.observe(requireActivity()) { list ->
+        sharedViewModel.list.observe(viewLifecycleOwner) { list ->
             adapterSetListByMediaItems(list.map { it.toMediaItem() }, isChecked = true)
 
         }
@@ -131,24 +122,28 @@ class ListEditFragment : Fragment() {
     }
 
     fun save() {
+        val appContext = requireContext().applicationContext
+        val listId = sharedViewModel.listId.value ?: return
+        val listType = sharedViewModel.listType.value
+        val checkedItems = getCheckedList()
 
         Log.d(
             "ListEditFragment",
-            "Saving list with ${listadapter.currentList.size} items, checked count: ${getCheckedList().size}"
+            "Saving list with ${listAdapter.currentList.size} items, checked count: ${getCheckedList().size}"
         )
         Log.d(
             "ListEditFragment",
             "Saving list items: ${getCheckedList().map { it.mediaMetadata.title }}"
         )
 
-        sharedViewModel.viewModelScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
 
-            when (sharedViewModel.listType.value) {
+            when (listType) {
                 ListsActivity.ListType.PLAYLIST -> {
-                    val listId = sharedViewModel.listId.value ?: return@launch
                     val newItems = DBManager.replacePlaylistContent(
-                        requireContext().applicationContext,
-                        getCheckedList().toPlaylistItems(listId),
+                        appContext,
+                        listId,
+                        checkedItems.toPlaylistItems(listId),
                     )
                     Log.d(
                         "ListEditFragment",
@@ -160,10 +155,10 @@ class ListEditFragment : Fragment() {
 
                 ListsActivity.ListType.BLOCKLIST -> {
 
-                    val listId = sharedViewModel.listId.value ?: return@launch
                     val newItems = DBManager.replaceBlocklistContent(
-                        requireContext().applicationContext,
-                        getCheckedList().toBlockListItems(listId)
+                        appContext,
+                        listId,
+                        checkedItems.toBlockListItems(listId)
                     )
                     sharedViewModel.setFileItemListByListItems(newItems)
 
@@ -172,9 +167,13 @@ class ListEditFragment : Fragment() {
                 else -> {
                     Log.e(
                         "ListEditFragment",
-                        "Unknown list type: ${sharedViewModel.listType.value}"
+                        "Unknown list type: $listType"
                     )
+                    return@launch
                 }
+            }
+            if (isAdded) {
+                parentFragmentManager.popBackStack()
             }
         }
     }
@@ -208,7 +207,7 @@ class ListEditFragment : Fragment() {
 
                     }
                 ).also {
-                    listadapter = it
+                    listAdapter = it
                 }
             }
 
@@ -224,36 +223,42 @@ class ListEditFragment : Fragment() {
 
                     }
                 ).also {
-                    listadapter = it
+                    listAdapter = it
                 }
 
             }
         }
     }
 
-    fun moveItem(fromPos: Int, toPos: Int) {
-        val currentList = listadapter.currentList.toMutableList()
-        val item = currentList.removeAt(fromPos)
-        currentList.add(toPos, item)
-        listadapter.submitList(currentList.toList()) // submitList に新しいリストを渡す
-
-
+    fun moveItem(fromPos: Int, toPos: Int): Boolean {
+        return listAdapter.moveItem(fromPos, toPos)
     }
 
     fun MediaItem.toMediaItemWithChecked(isChecked: Boolean = true) =
         ListEditAdapter.MediaItemWithChecked(this, isChecked)
 
     fun adapterSetListByMediaItems(list: List<MediaItem>, isChecked: Boolean = true) {
-        val items = list.map {
-            ListEditAdapter.MediaItemWithChecked(it, isChecked)
+        val currentItems = if (::listAdapter.isInitialized) {
+            listAdapter.currentList
+        } else {
+            emptyList()
         }
-        listadapter.submitList(items.toList())
+        val items = list.mapIndexed { index, mediaItem ->
+            val checked = currentItems.getOrNull(index)?.isChecked ?: isChecked
+            ListEditAdapter.MediaItemWithChecked(mediaItem, checked)
+        }
+        listAdapter.submitList(items.toList())
     }
 
 
     fun getCheckedList(): List<MediaItem> {
-        return listadapter.currentList.filter { it.isChecked }.map { it.mediaItem }
+        return listAdapter.currentList.filter { it.isChecked }.map { it.mediaItem }
     }
 
+    override fun onDestroyView() {
+        itemTouchHelper.attachToRecyclerView(null)
+        _binding = null
+        super.onDestroyView()
+    }
 
 }
