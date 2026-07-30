@@ -545,6 +545,8 @@ class MainActivity : AppCompatActivity() {
                         playlistId,
                         newItem
                     )
+
+                    toastOnListAddedByPopup(newItem.fileName)
                 }
 
 
@@ -579,7 +581,9 @@ class MainActivity : AppCompatActivity() {
                         this@MainActivity.applicationContext,
                         newBlockItem
                     )
+                    toastOnListAddedByPopup(newItem.fileName)
                 }
+
 
             }
         }
@@ -592,6 +596,16 @@ class MainActivity : AppCompatActivity() {
         )
 
 
+    }
+
+    fun toastOnListAddedByPopup(item : String) {
+
+        val  text = "「$item」が追加されました"
+        Toast.makeText(
+            this,
+            text,
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     @Composable
