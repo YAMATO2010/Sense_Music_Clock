@@ -16,8 +16,8 @@ android {
         applicationId = "jp.gr.java_conf.SenseMusicClock"
         minSdk = 32
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0_beta2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -31,7 +31,7 @@ android {
                 "proguard-rules.pro"
             )
 
-                signingConfig = signingConfigs.getByName("debug")
+
 
         }
     }
