@@ -384,12 +384,12 @@ object PrefsManager {
     }
 
     // シャッフルするかしないか
-    fun getIsShuffleFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+    fun getIsShuffleFlow(context: Context, default: Boolean = true): Flow<Boolean> {
 
         return context.getPrefsFlow(IS_SHUFFLE_KEY, default)
     }
 
-    suspend fun getIsShuffle(context: Context, default: Boolean = false): Boolean {
+    suspend fun getIsShuffle(context: Context, default: Boolean = true): Boolean {
 
 
         return context.getPrefsValue(IS_SHUFFLE_KEY, default)
