@@ -67,7 +67,7 @@ object DBManager {
             index: Int? = null
         ): Boolean
 
-        suspend fun copyPlaylistNoLock(context: Context, playlistId: Long)
+        suspend fun copyPlaylistNoLock(context: Context, playlistId: Long): Boolean
         suspend fun copyListContentNoLock(
             context: Context,
             fromListInfo: ListInfo,
@@ -334,12 +334,24 @@ object DBManager {
         return isSuccess
     }
 
-    suspend fun upsertBlocklistItem(context: Context, value: BlocklistItem) {
+    suspend fun upsertBlocklistItem(
+        context: Context,
+        value: BlocklistItem,
+        DoToast: Boolean = true
+    ) {
         Log.d(
             "LIST_/DBManager/upsertBlocklistItem",
             "upsert blocklistItem: blocklistId=${value.blocklistId}"
         )
-        return mutex.withLock { _upsertBlocklistItem(context, value) }
+        val isSuccess = mutex.withLock { _upsertBlocklistItem(context, value) }
+        withContext(Dispatchers.Main) {
+            if (isSuccess && DoToast) {
+                Toast.makeText(context, "ブロックリストに追加しました ", Toast.LENGTH_SHORT).show()
+            } else if (DoToast) {
+                Toast.makeText(context, "ブロックリストへの追加に失敗しました ", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
     }
 
     private suspend fun _replacePlaylistContent(
@@ -682,24 +694,22 @@ object DBManager {
     }
 
 
-    private suspend fun _copyPlaylist(context: Context, playlistId: Long) {
+    private suspend fun _copyPlaylist(context: Context, playlistId: Long): Boolean {
         val db = AppDataBase.getInstance(context)
-        withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.IO) {
             db.withTransaction {
                 val playlistDao = db.playListDao()
                 val playlistItemDao = db.playListItemDao()
 
-                val existingPlaylists = playlistDao.loadPlaylistById(playlistId)
+                val originalPlaylist =
+                    playlistDao.loadPlaylistById(playlistId) ?: return@withTransaction false
 
                 var copyNumber = 0
-                while (playlistDao.existsPlaylist("${existingPlaylists?.playlistName ?: "Unknown Playlist"} - Copy $copyNumber")) {
+                while (playlistDao.existsPlaylist("${originalPlaylist.playlistName} - Copy $copyNumber")) {
                     copyNumber++
                 }
 
-                val newName =
-                    "${existingPlaylists?.playlistName ?: "Unknown Playlist"} - Copy $copyNumber"
-                val originalPlaylist =
-                    playlistDao.loadPlaylistById(playlistId) ?: return@withTransaction
+                val newName = "${originalPlaylist.playlistName} - Copy $copyNumber"
                 val newPlaylistId = playlistDao.upsertPlaylist(
                     originalPlaylist.copy(playlistId = 0L, playlistName = newName)
                 )
@@ -707,13 +717,21 @@ object DBManager {
                 val originalItems = playlistItemDao.loadItemsForPlaylist(playlistId)
                 val newItems = originalItems.map { it.copy(playlistId = newPlaylistId) }
                 playlistItemDao.upsertPlaylistItems(newItems)
+                return@withTransaction true
             }
         }
     }
 
     suspend fun copyPlaylist(context: Context, playlistId: Long) {
         Log.d("LIST_/DBManager/copyPlaylist", "copy playlistId=$playlistId")
-        return mutex.withLock { _copyPlaylist(context, playlistId) }
+        val isSuccess = mutex.withLock { _copyPlaylist(context, playlistId) }
+        withContext(Dispatchers.Main) {
+            if (isSuccess) {
+                Toast.makeText(context, "プレイリストをコピーしました ", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "プレイリストのコピーに失敗しました ", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private suspend fun _copylistContent(

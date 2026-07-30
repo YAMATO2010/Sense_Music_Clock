@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -77,35 +78,47 @@ class ListDisplayFragment : Fragment() {
 
 
                     R.id.action_delete -> {
+                        val appContext = requireActivity().applicationContext
+                        val activity = requireActivity()
                         sharedViewModel.viewModelScope.launch {
 
                             Log.d(
                                 "LIST_/ListDisplayFragment/delete",
                                 "requested delete for playlist id=${sharedViewModel.listId.value}"
                             )
-                            when (sharedViewModel.listType.value) {
-                                ListType.PLAYLIST -> DBManager.deletePlaylist(
-                                    requireActivity().applicationContext,
-                                    sharedViewModel.listId.value
-                                        ?: -1L
-                                )
+                            val message = when (sharedViewModel.listType.value) {
+                                ListType.PLAYLIST -> {
+                                    DBManager.deletePlaylist(
+                                        appContext,
+                                        sharedViewModel.listId.value
+                                            ?: -1L
+                                    )
+                                    "プレイリストを削除しました"
+                                }
 
-                                ListType.BLOCKLIST -> DBManager.deleteBlocklist(
-                                    requireActivity().applicationContext,
-                                    sharedViewModel.listId.value
-                                        ?: -1L
-                                )
+                                ListType.BLOCKLIST -> {
+                                    DBManager.deleteBlocklist(
+                                        appContext,
+                                        sharedViewModel.listId.value
+                                            ?: -1L
+                                    )
+                                    "ブロックリストを削除しました"
+                                }
 
                                 else -> {
                                     Log.d(
                                         "ListDisplayFragment",
                                         "Unknown list type: ${sharedViewModel.listType.value}"
                                     )
+                                    null
                                 }
 
                             }
+                            message?.let {
+                                Toast.makeText(appContext, it, Toast.LENGTH_SHORT).show()
+                            }
+                            activity.finish()
                         }
-                        requireActivity().finish()
                         true
                     }
 
@@ -197,20 +210,22 @@ class ListDisplayFragment : Fragment() {
 
 
                         val activity: AppCompatActivity = requireActivity() as AppCompatActivity
+                        val appContext = requireContext().applicationContext
                         activity.showEditTextDialog(getString(R.string.name_change)) { value ->
                             sharedViewModel.viewModelScope.launch {
 
-                                when (sharedViewModel.listType.value) {
+                                val message = when (sharedViewModel.listType.value) {
                                     ListType.PLAYLIST -> {
                                         val newPlaylist: PlayList = PlayList(
                                             playlistId = sharedViewModel.listId.value ?: -1L,
                                             playlistName = value,
                                         )
-                                        DBManager.upsertPlaylist(requireContext(), newPlaylist)
+                                        DBManager.upsertPlaylist(appContext, newPlaylist)
                                         Log.d(
                                             "LIST_/ListDisplayFragment/rename",
                                             "rename playlist id=${sharedViewModel.listId.value} newName=$value"
                                         )
+                                        "プレイリスト名を変更しました"
 
                                     }
 
@@ -219,11 +234,12 @@ class ListDisplayFragment : Fragment() {
                                             blockListID = sharedViewModel.listId.value ?: -1L,
                                             blockListName = value
                                         )
-                                        DBManager.upsertBlocklist(requireContext(), newBlocklist)
+                                        DBManager.upsertBlocklist(appContext, newBlocklist)
                                         Log.d(
                                             "LIST_/ListDisplayFragment/rename",
                                             "rename blocklist id=${sharedViewModel.listId.value} newName=$value"
                                         )
+                                        "ブロックリスト名を変更しました"
                                     }
 
                                     else -> {
@@ -231,8 +247,12 @@ class ListDisplayFragment : Fragment() {
                                             "ListDisplayFragment",
                                             "Unknown list type: ${sharedViewModel.listType.value}"
                                         )
+                                        null
                                     }
 
+                                }
+                                message?.let {
+                                    Toast.makeText(appContext, it, Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
@@ -244,6 +264,7 @@ class ListDisplayFragment : Fragment() {
 
                     R.id.action_change_set -> {
 
+                        val appContext = requireContext().applicationContext
                         when (sharedViewModel.listType.value) {
 
                             ListType.PLAYLIST -> {
@@ -252,10 +273,15 @@ class ListDisplayFragment : Fragment() {
 
 
                                     PrefsManager.setCurrentPlaylistId(
-                                        requireContext(),
+                                        appContext,
                                         sharedViewModel.listId.value ?: -1L
                                     )
-                                    PrefsManager.setReloadTracks_reverse_andGet(requireContext())
+                                    PrefsManager.setReloadTracks_reverse_andGet(appContext)
+                                    Toast.makeText(
+                                        appContext,
+                                        "使用するプレイリストに設定しました",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
 
                             }
@@ -265,10 +291,15 @@ class ListDisplayFragment : Fragment() {
                                 sharedViewModel.viewModelScope.launch {
 
                                     PrefsManager.setCurrentBlocklistId(
-                                        requireContext(),
+                                        appContext,
                                         sharedViewModel.listId.value ?: -1L
                                     )
-                                    PrefsManager.setReloadTracks_reverse_andGet(requireContext())
+                                    PrefsManager.setReloadTracks_reverse_andGet(appContext)
+                                    Toast.makeText(
+                                        appContext,
+                                        "使用するブロックリストに設定しました",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
 
                                 }
 

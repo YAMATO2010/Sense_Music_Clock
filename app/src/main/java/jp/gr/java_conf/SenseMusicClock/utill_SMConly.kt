@@ -571,7 +571,7 @@ fun AppCompatActivity.showBlockSelectDialog(
     onBlockSelected: (Long) -> Unit
 ) {
     val dialog = AlertDialog.Builder(this)
-        .setTitle("プレイリストを選択")
+        .setTitle("ブロックリストを選択")
         .setItems(blockList.map { it.blockListName }.toTypedArray(), { dialog, which ->
 
             onBlockSelected(blockList[which].blockListID)

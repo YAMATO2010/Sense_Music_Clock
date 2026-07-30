@@ -38,5 +38,6 @@
     <string name="play">再生</string>
     <string name="appwidget_text">EXAMPLE</string>
     <string name="add_widget">Add widget</string>
-    <string name="app_widget_description">This is an app widget description</string>
+    <string name="app_widget_description">音楽の再生・一時停止や曲送りができます。背景画像もつけられます</string>
+
 </resources>

@@ -581,7 +581,6 @@ class MainActivity : AppCompatActivity() {
                         this@MainActivity.applicationContext,
                         newBlockItem
                     )
-                    toastOnListAddedByPopup(newItem.fileName)
                 }
 
 

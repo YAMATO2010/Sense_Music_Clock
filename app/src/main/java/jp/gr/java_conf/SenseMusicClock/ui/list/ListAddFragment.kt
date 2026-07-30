@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -95,6 +96,7 @@ class ListAddFragment : Fragment() {
                         }
 
 
+                        val appContext = requireContext().applicationContext
                         sharedViewModel.viewModelScope.launch {
 
 
@@ -117,7 +119,7 @@ class ListAddFragment : Fragment() {
 
 
 
-                            when (sharedViewModel.listType.value) {
+                            val saveSucceeded = when (sharedViewModel.listType.value) {
                                 ListsActivity.ListType.PLAYLIST -> {
                                     Log.d(
                                         "LIST_/ListAddFragment/save",
@@ -140,8 +142,22 @@ class ListAddFragment : Fragment() {
                                     )
                                 }
 
-                                else -> {}
+                                else -> false
                             }
+                            val message = when (sharedViewModel.listType.value) {
+                                ListsActivity.ListType.PLAYLIST -> {
+                                    if (saveSucceeded) "プレイリストに追加しました" else "プレイリストへの追加に失敗しました"
+                                }
+
+                                ListsActivity.ListType.BLOCKLIST -> {
+                                    if (saveSucceeded) "ブロックリストに追加しました" else "ブロックリストへの追加に失敗しました"
+                                }
+
+                                else -> {
+                                    if (saveSucceeded) "リストを保存しました" else "リストの保存に失敗しました"
+                                }
+                            }
+                            Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()
 
 
 

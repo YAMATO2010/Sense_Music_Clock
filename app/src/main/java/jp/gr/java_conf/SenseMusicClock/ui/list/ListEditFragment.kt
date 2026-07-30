@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -138,7 +139,7 @@ class ListEditFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
 
-            when (listType) {
+            val message = when (listType) {
                 ListsActivity.ListType.PLAYLIST -> {
                     val newItems = DBManager.replacePlaylistContent(
                         appContext,
@@ -150,6 +151,7 @@ class ListEditFragment : Fragment() {
                         "Saving list items: ${newItems.map { it.fileItem.fileName }}"
                     )
                     sharedViewModel.setFileItemListByListItems(newItems)
+                    "プレイリストを保存しました"
 
                 }
 
@@ -161,6 +163,7 @@ class ListEditFragment : Fragment() {
                         checkedItems.toBlockListItems(listId)
                     )
                     sharedViewModel.setFileItemListByListItems(newItems)
+                    "ブロックリストを保存しました"
 
                 }
 
@@ -172,6 +175,7 @@ class ListEditFragment : Fragment() {
                     return@launch
                 }
             }
+            Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()
             if (isAdded) {
                 parentFragmentManager.popBackStack()
             }
