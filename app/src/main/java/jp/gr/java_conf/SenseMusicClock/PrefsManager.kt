@@ -326,11 +326,11 @@ object PrefsManager {
 
 
     // jacketAdapterでtext plusのlayout使うかフラグ
-    fun getTileTitleDisplayFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+    fun getTileTitleDisplayFlow(context: Context, default: Boolean = true): Flow<Boolean> {
         return context.getPrefsFlow(TILE_TITLE_DISPLAY, default)
     }
 
-    suspend fun getTileTitleDisplay(context: Context, default: Boolean = false): Boolean {
+    suspend fun getTileTitleDisplay(context: Context, default: Boolean = true): Boolean {
         return context.getPrefsValue(TILE_TITLE_DISPLAY, default)
     }
 
@@ -494,9 +494,9 @@ object PrefsManager {
                     currentBlocklistId = prefs[CURRENT_BLOCKLIST_ID_KEY] ?: -1L,
                     musicDirRelativePaths = prefs[MUSIC_DIR_RELATIVE_PATHS_KEY]
                         ?: TargetDirectoryPrefJSONManager.UNKNOWN,
-                    tileTitleDisplay = prefs[TILE_TITLE_DISPLAY] ?: false,
+                    tileTitleDisplay = prefs[TILE_TITLE_DISPLAY] ?: true,
                     playModeLoop = prefs[PLAYMODE_LOOP_KEY] ?: false,
-                    isShuffle = prefs[IS_SHUFFLE_KEY] ?: false,
+                    isShuffle = prefs[IS_SHUFFLE_KEY] ?: true,
                     isWidgetBackground = prefs[IS_WIDGET_BACKGROUND_KEY] ?: false,
                     isRandomBackground = prefs[IS_RANDOM_BACKGROUND_KEY] ?: false,
                     imageFilePaths = IMAGEFILE_KEYS.associateWith { key ->

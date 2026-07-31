@@ -208,10 +208,10 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-
+            android:scaleType="fitCenter"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="play_pause"
-            android:src="@android:drawable/ic_media_play" />
+            android:src="@drawable/ic_play" />
 
         <ImageButton
             android:id="@+id/btnNext"

@@ -23,7 +23,7 @@
             app:updatesContinuously="true" />
     </PreferenceCategory>
     <SwitchPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="tile_title_display"
         android:title="タイルのタイトル表示" />
     <SwitchPreference
@@ -148,5 +148,20 @@
 
 
     </PreferenceCategory>
+
+    <PreferenceCategory app:title="その他">
+
+        <Preference
+            android:key="action_openSource"
+            android:selectable="true"
+            android:title="オープンソースライセンス" />
+
+
+
+
+
+
+    </PreferenceCategory>
+
 
 </PreferenceScreen>
