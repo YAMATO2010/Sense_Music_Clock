@@ -350,7 +350,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
     private fun animatePlayButton(playing: Boolean) {
         val resId =
-            if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+            if (playing)  R.drawable.ic_pause else R.drawable.ic_play
         binding.btnPlayPause.setImageResource(resId)
     }
 
