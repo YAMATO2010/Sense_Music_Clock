@@ -360,13 +360,21 @@
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_margin="10dp"
+        android:layout_margin="1dp"
         android:background="@drawable/gradient3"
         android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/guideline3"
         app:layout_constraintEnd_toStartOf="@+id/guideline4"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/playPauseButton"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+
+            />
 
 
         <Button
@@ -385,35 +393,45 @@
             app:iconTintMode="src_in"
             app:layout_constraintDimensionRatio="1:1" />
 
-        <ImageButton
-            android:id="@+id/GoSearchButton"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:background="@null"
-            android:padding="6dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/outline_manage_search_24" />
+            android:orientation="horizontal">
 
 
-        <ImageButton
-            android:id="@+id/GotoStandardPlayerButton"
+            <ImageButton
+                android:id="@+id/GoSearchButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@null"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/outline_manage_search_24" />
 
 
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_margin="5dp"
-            android:layout_marginBottom="10dp"
-            android:layout_weight="1"
-            android:background="@drawable/gradient1"
-            android:padding="4dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/land_standard_player_icon"
-
-            app:layout_constraintDimensionRatio="1:1"
+            <ImageButton
+                android:id="@+id/GotoStandardPlayerButton"
 
 
-            app:layout_goneMarginBottom="5dp" />
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_margin="5dp"
+                android:layout_marginBottom="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/gradient1"
+                android:padding="4dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/land_standard_player_icon"
+
+                app:layout_constraintDimensionRatio="1:1"
+
+
+                app:layout_goneMarginBottom="5dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 
