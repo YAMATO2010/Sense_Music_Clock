@@ -609,6 +609,14 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
+            val actionOpenSourcePref: Preference? = findPreference("action_openSource")
+
+            actionOpenSourcePref?.setOnPreferenceClickListener {
+                val intent = Intent(requireContext(), OpenSourceLicensesActivity::class.java)
+                startActivity(intent)
+                true
+            }
+
         }
 
         private fun showSaveSettingsDialog() {
@@ -643,6 +651,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
             }
+
         }
 
         private fun showSwitchSettingsDialog() {

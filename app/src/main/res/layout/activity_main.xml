@@ -81,10 +81,11 @@
                 android:layout_weight="1"
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
-
                 android:maxLines="1"
 
                 android:text="@string/timer_button_label"
+
+                android:textColor="@color/white"
                 app:backgroundTint="@null" />
 
             <Button
@@ -95,8 +96,8 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="1"
-
                 android:text="@string/alarm_button_label"
+                android:textColor="@color/white"
                 app:backgroundTint="@null" />
 
 
@@ -108,27 +109,13 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="2"
-
                 android:text="@string/stop_watch_button_label"
+                android:textColor="@color/white"
                 app:backgroundTint="@null" />
         </LinearLayout>
 
     </LinearLayout>
 
-    <Button
-        android:id="@+id/SettingsButton"
-        android:layout_width="55dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/black_overlay"
-        app:icon="@drawable/baseline_settings_24"
-        app:iconGravity="textEnd"
-        app:iconPadding="0dp"
-        app:iconSize="35dp"
-        app:iconTintMode="src_in"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/linearLayout5"
@@ -266,29 +253,24 @@
     <LinearLayout
         android:id="@+id/linearLayout9"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="?attr/actionBarSize"
         android:layout_marginHorizontal="8dp"
+        android:layout_marginTop="5dp"
         android:background="@drawable/gradient1"
         android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="@+id/SettingsButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/jackets"
-        app:layout_constraintTop_toTopOf="@+id/SettingsButton">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout5">
 
-        <ImageButton
-            android:id="@+id/currentAlbumArt"
+
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/SettingsButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-
             android:layout_weight="1"
-
-
-            android:background="@null"
-
-            android:padding="4dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/default_album_art" />
-
+            android:padding="5dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
         <ImageButton
             android:id="@+id/GoSearchButton"
             android:layout_width="0dp"
@@ -355,16 +337,44 @@
             tools:layout_editor_absoluteY="257dp" />
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/playPauseButton"
-        android:layout_width="80dp"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="80dp"
-
-
-        app:layout_constraintBottom_toTopOf="@+id/linearLayout9"
+        android:background="@drawable/gradient1"
         app:layout_constraintEnd_toEndOf="@+id/linearLayout9"
         app:layout_constraintStart_toStartOf="@+id/linearLayout9"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout9">
+
+
+
+
+        <ImageButton
+            android:id="@+id/currentAlbumArt"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+
+            android:layout_weight="1"
+
+
+            android:background="@null"
+
+            android:padding="4dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/default_album_art" />
+        <ImageButton
+            android:id="@+id/playPauseButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:backgroundTint="@null"
+            android:scaleType="fitCenter"
+            app:layout_constraintBottom_toBottomOf="@+id/SettingsButton"
+            app:layout_constraintEnd_toEndOf="@+id/linearLayout9"
+            app:layout_constraintStart_toStartOf="@+id/linearLayout9"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout9" />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/sleepTimerTextView"

@@ -32,9 +32,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -82,8 +86,8 @@ import jp.gr.java_conf.SenseMusicClock.MainViewModel
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.MusicSearcherByList
-import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.Music.MusicService
+import jp.gr.java_conf.SenseMusicClock.Music.StorageAccessHelper
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.animateScrollToItemWithSkipCheck
@@ -212,6 +216,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.SettingsButton.setContent {
+            SettingsButtonComposable { }
+        }
+
 
 
 
@@ -314,6 +322,32 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+    }
+
+    @Composable
+    fun SettingsButtonComposable(onClick: () -> Unit) {
+
+        IconButton(
+            onClick = { onClick() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+                .then(
+                    if(orientation == BackgroundResolver.ORIENTATION_OBLONG) {
+                        Modifier.clip(CircleShape)
+                            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
+                    }
+                    else Modifier
+                )
+
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.settings_icon),
+                contentDescription = "Settings",
+                tint = colorResource(id = R.color.white),
+
+            )
+        }
     }
 
     @Composable
@@ -597,9 +631,9 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun toastOnListAddedByPopup(item : String) {
+    fun toastOnListAddedByPopup(item: String) {
 
-        val  text = "「$item」が追加されました"
+        val text = "「$item」が追加されました"
         Toast.makeText(
             this,
             text,
@@ -943,6 +977,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+
                     override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                         super.onTimelineChanged(timeline, reason)
 
@@ -1009,9 +1044,15 @@ class MainActivity : AppCompatActivity() {
 
 
 
-        binding.SettingsButton.setOnClickListener {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+
+        binding.SettingsButton.setContent {
+            SettingsButtonComposable {
+
+
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
+
+            }
         }
 
 
@@ -1140,6 +1181,7 @@ class MainActivity : AppCompatActivity() {
 
 
     }
+
 
     private fun createAppFolderIfNeeded() {
         val resolver = contentResolver
