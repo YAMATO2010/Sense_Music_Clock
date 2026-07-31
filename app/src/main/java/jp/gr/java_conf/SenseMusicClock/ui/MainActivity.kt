@@ -1039,6 +1039,13 @@ class MainActivity : AppCompatActivity() {
         binding.jackets.setContent {
             JacketsComposable(mainViewModel)
         }
+
+        binding.playPauseButton.setOnClickListener {
+
+            mediaBrowser?.let {
+                it.playWhenReady = !it.playWhenReady
+            }
+        }
     }
 
     private fun loadAllMedias(list: MutableList<MediaItem>, browser: MediaBrowser, page: Int = 0) {
