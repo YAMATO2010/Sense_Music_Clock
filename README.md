@@ -7,14 +7,14 @@ Sense Music Clock は、時計・タイマー・アラーム・ストップウ�
 ## Screenshots
 
 <p>
-  <img src="Screenshots/Screenshot_20260730_111342.png" alt="メイン画面" width="220">
-  <img src="Screenshots/Screenshot_20260730_111650.png" alt="設定画面" width="220">
-  <img src="Screenshots/Screenshot_20260730_111825.png" alt="検索画面" width="220">
+  <img src="Screenshots/main_display.png" alt="メイン画面" width="220">
+  <img src="Screenshots/standard.png" alt="設定画面" width="220">
+  <img src="Screenshots/search.png" alt="検索画面" width="220">
 </p>
 
 <p>
-  <img src="Screenshots/Screenshot_20260730_132935.png" alt="標準プレイヤー 横画面" width="520">
-  <img src="Screenshots/Screenshot_20260730_111935.png" alt="ホーム画面ウィジェット" width="220">
+  <img src="Screenshots/land_main.png" alt="標準プレイヤー 横画面" width="520">
+  <img src="Screenshots/widget.png" alt="ホーム画面ウィジェット" width="220">
 </p>
 
 ## Features
