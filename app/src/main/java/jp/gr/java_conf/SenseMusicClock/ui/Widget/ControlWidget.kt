@@ -358,9 +358,9 @@ class ControlWidget : GlanceAppWidget() {
             )
             Image(
                 provider = if (playing) {
-                    ImageProvider(androidx.media3.session.R.drawable.media3_icon_pause)
+                    ImageProvider(R.drawable.ic_pause)
                 } else {
-                    ImageProvider(androidx.media3.session.R.drawable.media3_icon_play)
+                    ImageProvider(R.drawable.ic_play)
                 },
                 contentDescription = null,
                 modifier = GlanceModifier

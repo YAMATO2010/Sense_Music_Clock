@@ -137,7 +137,7 @@
         android:backgroundTint="@null"
         android:contentDescription="play_pause"
         android:scaleType="fitCenter"
-        android:src="@android:drawable/ic_media_play"
+        android:src="@drawable/ic_play"
         app:layout_constraintBottom_toBottomOf="parent"
 
         app:layout_constraintLeft_toLeftOf="@id/guideline9915"

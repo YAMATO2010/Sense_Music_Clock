@@ -916,6 +916,15 @@ class MainActivity : AppCompatActivity() {
                 loadAllMedias(newList, it)
 
 
+
+                runOnUiThread {
+                    if (it.playWhenReady) {
+                        binding.playPauseButton.load(R.drawable.ic_pause)
+                    } else {
+                        binding.playPauseButton.load(R.drawable.ic_play)
+                    }
+                }
+
                 if (mainViewModel.lastOrientation != resources.configuration.orientation) {
 
                     mainViewModel.setCurrentIndex(it.currentMediaItemIndex)
@@ -923,6 +932,17 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.lastOrientation = resources.configuration.orientation
 
                 it.addListener(object : Player.Listener {
+                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                        super.onPlayWhenReadyChanged(playWhenReady, reason)
+
+                        runOnUiThread {
+                            if (playWhenReady) {
+                                binding.playPauseButton.load(R.drawable.ic_pause)
+                            } else {
+                                binding.playPauseButton.load(R.drawable.ic_play)
+                            }
+                        }
+                    }
                     override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                         super.onTimelineChanged(timeline, reason)
 

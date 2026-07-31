@@ -128,6 +128,7 @@ class BottomController @JvmOverloads constructor(
 
 
                 it.addListener(object : Player.Listener {
+
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
 
                     }
@@ -199,7 +200,7 @@ class BottomController @JvmOverloads constructor(
 
     private fun animatePlayButton(playing: Boolean) {
         val resId =
-            if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+            if (playing) R.drawable.ic_pause else R.drawable.ic_play
         playBtn.load(resId)
     }
 
