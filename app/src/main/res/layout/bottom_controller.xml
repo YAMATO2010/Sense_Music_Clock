@@ -118,7 +118,7 @@
 
         android:backgroundTint="@null"
         android:scaleType="fitCenter"
-        android:src="@android:drawable/ic_media_previous"
+        android:src="@drawable/icon_prev"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="@id/guideline9914"
 
@@ -138,6 +138,7 @@
         android:contentDescription="play_pause"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_play"
+        android:padding="3dp"
         app:layout_constraintBottom_toBottomOf="parent"
 
         app:layout_constraintLeft_toLeftOf="@id/guideline9915"
@@ -155,7 +156,7 @@
         android:backgroundTint="@null"
         android:contentDescription="next"
         android:scaleType="fitCenter"
-        android:src="@android:drawable/ic_media_next"
+        android:src="@drawable/icon_next"
         app:layout_constraintBottom_toBottomOf="parent"
 
         app:layout_constraintLeft_toLeftOf="@id/guideline9916"

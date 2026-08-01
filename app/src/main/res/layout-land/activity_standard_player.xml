@@ -187,9 +187,11 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_margin="10dp"
+                    android:padding="5dp"
+                    android:scaleType="fitCenter"
                     android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_media_previous" />
+                    android:src="@drawable/icon_prev" />
 
                 <ImageButton
                     android:id="@+id/btnPlayPause"
@@ -203,13 +205,14 @@
 
                 <ImageButton
                     android:id="@+id/btnNext"
-
+                    android:scaleType="fitCenter"
                     android:layout_width="0dp"
+                    android:padding="5dp"
                     android:layout_height="match_parent"
                     android:layout_margin="10dp"
                     android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_media_next" />
+                    android:src="@drawable/icon_next" />
 
                 <LinearLayout
                     android:layout_width="0dp"

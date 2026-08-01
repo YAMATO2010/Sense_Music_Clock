@@ -345,13 +345,15 @@ class ControlWidget : GlanceAppWidget() {
                 modifier = GlanceModifier.width(oneWeight)
             )
             Image(
-                provider = ImageProvider(androidx.media3.session.R.drawable.media3_icon_previous),
+                provider = ImageProvider(R.drawable.icon_prev),
                 contentDescription = null,
                 modifier = GlanceModifier
                     .clickable(
                         onClick = actionRunCallback<ActionPrev>()
                     )
-                    .size(iconSize)
+                    .size(iconSize),
+                contentScale = ContentScale.Fit
+
             )
             Spacer(
                 modifier = GlanceModifier.width(oneWeight)
@@ -367,18 +369,21 @@ class ControlWidget : GlanceAppWidget() {
 
                     .clickable(
                         onClick = actionRunCallback<ActionPlayPause>()
-                    ).size(iconSize)
+                    ).size(iconSize),
+                contentScale = ContentScale.Fit
+
             )
             Spacer(
                 modifier = GlanceModifier.width(oneWeight)
             )
             Image(
-                provider = ImageProvider(androidx.media3.session.R.drawable.media3_icon_next),
+                provider = ImageProvider(R.drawable.icon_next),
                 contentDescription = null,
                 modifier = GlanceModifier
                     .clickable(
                         onClick = actionRunCallback<ActionNext>()
-                    ).size(iconSize)
+                    ).size(iconSize),
+                contentScale = ContentScale.Fit
             )
             Spacer(
                 modifier = GlanceModifier.width(oneWeight)

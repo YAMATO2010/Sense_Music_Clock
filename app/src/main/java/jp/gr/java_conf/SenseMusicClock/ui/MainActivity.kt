@@ -342,7 +342,7 @@ class MainActivity : AppCompatActivity() {
 
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.settings_icon),
+                painter = painterResource(id = R.drawable.icon_settings),
                 contentDescription = "Settings",
                 tint = colorResource(id = R.color.white),
 
