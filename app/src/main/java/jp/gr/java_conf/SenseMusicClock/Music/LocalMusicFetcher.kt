@@ -28,7 +28,7 @@ object LocalMusicFetcher {
     const val EXTRA_DATA_PATH = "DATA_PATH"
 
     const val OR = " OR "
-    private const val DEFAULT_RELATIVE_PATH = "Music/SMC"
+
 
     private data class ParsedRelativePath(
         val volumeName: String?,
@@ -46,7 +46,7 @@ object LocalMusicFetcher {
         if (UserRelativePaths.isEmpty()) {
             return Pair("", emptyArray())
         }
-        val relativePaths = (listOf(DEFAULT_RELATIVE_PATH) + UserRelativePaths)
+        val relativePaths = UserRelativePaths
             .mapNotNull { parseRelativePath(it)?.relativePath }
 
         return selectionForRelativePaths(relativePaths)
@@ -98,7 +98,7 @@ object LocalMusicFetcher {
             return listOf(DirectoryQuery(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, emptyList()))
         }
 
-        return (listOf(DEFAULT_RELATIVE_PATH) + UserRelativePaths)
+        return UserRelativePaths
             .mapNotNull { parseRelativePath(it) }
             .groupBy { it.volumeName }
             .map { (volumeName, paths) ->
