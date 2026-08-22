@@ -11,7 +11,6 @@ import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlaylistItem
 import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.playlist_selection
-import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.selection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,27 +81,28 @@ object LocalMusicRepository {
         )
         val isShuffle = if (useCurrentShuffleMode) this.isShuffle else false
 
-        val (selection, selectionArgs) = if (isFilterByDir) {
-            selection(UserRelativePaths)
-        } else {
-            Pair(null, null)
-        }
-
-        val queryArgs = LocalMusicFetcher.createQueryArgs(
-            selection = selection,
-            selectionArgs = selectionArgs,
-            limit = limit,
-            offset = 0,
-            sortColumn = MediaStore.Audio.Media.DATE_ADDED,
-            sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
-        )
-
         return withContext(Dispatchers.IO) {
-            val tracks = LocalMusicFetcher
-                .loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
-                .let { tracks ->
-                    if (isShuffle) tracks.shuffled() else tracks
-                }
+            val tracks = if (isFilterByDir) {
+                LocalMusicFetcher.loadMediaItemsFromDirectories(
+                    resolver = context.contentResolver,
+                    UserRelativePaths = UserRelativePaths,
+                    limit = limit,
+                    sortColumn = MediaStore.Audio.Media.DATE_ADDED,
+                    sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+                )
+            } else {
+                val queryArgs = LocalMusicFetcher.createQueryArgs(
+                    selection = null,
+                    selectionArgs = null,
+                    limit = limit,
+                    offset = 0,
+                    sortColumn = MediaStore.Audio.Media.DATE_ADDED,
+                    sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+                )
+                LocalMusicFetcher.loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
+            }.let { tracks ->
+                if (isShuffle) tracks.shuffled() else tracks
+            }
             Log.d(
                 "LocalMusicRepository",
                 "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}"
@@ -263,12 +263,11 @@ object LocalMusicRepository {
         UserRelativePaths: List<String> = emptyList(),
         isBlock: Boolean = true
     ) {
-        val (selection, selectionArgs) = selection(UserRelativePaths)
-
-        val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
-
         val localTracks =
-            LocalMusicFetcher.loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
+            LocalMusicFetcher.loadMediaItemsFromDirectories(
+                resolver = context.contentResolver,
+                UserRelativePaths = UserRelativePaths
+            )
 
         withContext(Dispatchers.Default) {
             localTracks.let { value ->

@@ -28,6 +28,17 @@ object LocalMusicFetcher {
     const val EXTRA_DATA_PATH = "DATA_PATH"
 
     const val OR = " OR "
+    private const val DEFAULT_RELATIVE_PATH = "Music/SMC"
+
+    private data class ParsedRelativePath(
+        val volumeName: String?,
+        val relativePath: String
+    )
+
+    private data class DirectoryQuery(
+        val contentUri: Uri,
+        val relativePaths: List<String>
+    )
 
 
     fun selection(UserRelativePaths: List<String> = emptyList()): Pair<String, Array<String>> {
@@ -35,10 +46,13 @@ object LocalMusicFetcher {
         if (UserRelativePaths.isEmpty()) {
             return Pair("", emptyArray())
         }
-        val relativePaths = listOf("Music/SMC") + UserRelativePaths
+        val relativePaths = (listOf(DEFAULT_RELATIVE_PATH) + UserRelativePaths)
+            .mapNotNull { parseRelativePath(it)?.relativePath }
 
+        return selectionForRelativePaths(relativePaths)
+    }
 
-
+    private fun selectionForRelativePaths(relativePaths: List<String>): Pair<String, Array<String>> {
         val parts = mutableListOf<String>()
         val args = mutableListOf<String>()
         for (p in relativePaths) {
@@ -50,6 +64,72 @@ object LocalMusicFetcher {
         val selection = parts.joinToString(OR)
 
         return Pair(selection, args.toTypedArray())
+    }
+
+    private fun parseRelativePath(path: String): ParsedRelativePath? {
+        val normalized = path.trim().removePrefix("/").trimEnd('/')
+        if (normalized.isBlank()) return null
+
+        val separatorIndex = normalized.indexOf(':')
+        if (separatorIndex <= 0) {
+            return ParsedRelativePath(
+                volumeName = null,
+                relativePath = normalized
+            )
+        }
+
+        val volumeName = normalized.substring(0, separatorIndex).trim()
+        val relativePath = normalized.substring(separatorIndex + 1)
+            .removePrefix("/")
+            .trimEnd('/')
+
+        if (relativePath.isBlank()) return null
+
+        return ParsedRelativePath(
+            volumeName = volumeName.takeUnless {
+                it.isBlank() || it == "primary" || it == MediaStore.VOLUME_EXTERNAL_PRIMARY
+            },
+            relativePath = relativePath
+        )
+    }
+
+    private fun directoryQueries(UserRelativePaths: List<String>): List<DirectoryQuery> {
+        if (UserRelativePaths.isEmpty()) {
+            return listOf(DirectoryQuery(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, emptyList()))
+        }
+
+        return (listOf(DEFAULT_RELATIVE_PATH) + UserRelativePaths)
+            .mapNotNull { parseRelativePath(it) }
+            .groupBy { it.volumeName }
+            .map { (volumeName, paths) ->
+                val contentUri = if (volumeName == null) {
+                    MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                } else {
+                    MediaStore.Audio.Media.getContentUri(volumeName)
+                }
+                DirectoryQuery(
+                    contentUri = contentUri,
+                    relativePaths = paths.map { it.relativePath }.distinct()
+                )
+            }
+    }
+
+    private fun sortMediaStoreAudioSummaries(
+        items: List<MediaStoreAudioSummary>,
+        sortColumn: String,
+        sortDirection: Int
+    ): List<MediaStoreAudioSummary> {
+        val sorted = when (sortColumn) {
+            MediaStore.Audio.Media.DATE_ADDED -> items.sortedBy { it.dateAdded ?: 0L }
+            MediaStore.Audio.Media.TITLE -> items.sortedBy { it.title.orEmpty() }
+            else -> items
+        }
+
+        return if (sortDirection == ContentResolver.QUERY_SORT_DIRECTION_DESCENDING) {
+            sorted.asReversed()
+        } else {
+            sorted
+        }
     }
 
     fun path_selection_RPath_LIKE(fileItems: List<FileItem>): Pair<String, Array<String>> {
@@ -280,7 +360,8 @@ object LocalMusicFetcher {
         // 一度に投げる「曲（条件）」の数。安全のため 100 くらいがベスト
         chunkSize: Int = 100,
         argsPerItem: Int = 2,
-        singleCondition: String = "(${MediaStore.Audio.Media.RELATIVE_PATH} = ? AND ${MediaStore.Audio.Media.DISPLAY_NAME} = ?)"
+        singleCondition: String = "(${MediaStore.Audio.Media.RELATIVE_PATH} = ? AND ${MediaStore.Audio.Media.DISPLAY_NAME} = ?)",
+        queryUri: Uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
     ): List<MediaStoreAudioSummary> {
 
         val fullSelection = queryArgs.getString(ContentResolver.QUERY_ARG_SQL_SELECTION)
@@ -289,7 +370,7 @@ object LocalMusicFetcher {
 
         // プレースホルダがない、または引数が少なければそのまま実行
         if (fullSelection == null || fullSelectionArgs == null || fullSelectionArgs.size <= chunkSize) {
-            return loadLocalMusicFromAppDir(resolver, queryArgs, cancellationSignal)
+            return loadLocalMusicFromAppDir(resolver, queryArgs, cancellationSignal, queryUri)
         }
 
         val list = mutableListOf<MediaStoreAudioSummary>()
@@ -318,7 +399,12 @@ object LocalMusicFetcher {
                 offset = 0
             )
 
-            val pageResults = loadLocalMusicFromAppDir(resolver, pagedQueryArgs, cancellationSignal)
+            val pageResults = loadLocalMusicFromAppDir(
+                resolver,
+                pagedQueryArgs,
+                cancellationSignal,
+                queryUri
+            )
             list.addAll(pageResults)
         }
 
@@ -329,17 +415,91 @@ object LocalMusicFetcher {
         resolver: ContentResolver, queryArgs: Bundle,
 
         cancellationSignal: CancellationSignal? = null,
+        queryUri: Uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
     ): List<MediaItem> {
 
         return withContext(Dispatchers.IO) {
             loadLocalMusicFromAppDir(
                 resolver,
                 queryArgs,
-                cancellationSignal
+                cancellationSignal,
+                queryUri
             ).map { it.toMediaItem() }.withUniqueMediaIds()
         }
 
 
+    }
+
+    suspend fun loadMediaItemsFromDirectories(
+        resolver: ContentResolver,
+        UserRelativePaths: List<String>,
+        limit: Int = -1,
+        offset: Int = 0,
+        sortColumn: String = MediaStore.Audio.Media.TITLE,
+        sortDirection: Int = ContentResolver.QUERY_SORT_DIRECTION_ASCENDING,
+        cancellationSignal: CancellationSignal? = null,
+    ): List<MediaItem> {
+        return loadLocalMusicFromDirectories(
+            resolver = resolver,
+            UserRelativePaths = UserRelativePaths,
+            limit = limit,
+            offset = offset,
+            sortColumn = sortColumn,
+            sortDirection = sortDirection,
+            cancellationSignal = cancellationSignal
+        ).map { it.toMediaItem() }.withUniqueMediaIds()
+    }
+
+    private suspend fun loadLocalMusicFromDirectories(
+        resolver: ContentResolver,
+        UserRelativePaths: List<String>,
+        limit: Int,
+        offset: Int,
+        sortColumn: String,
+        sortDirection: Int,
+        cancellationSignal: CancellationSignal? = null,
+    ): List<MediaStoreAudioSummary> {
+        val queries = directoryQueries(UserRelativePaths)
+        if (queries.size == 1) {
+            val query = queries.first()
+            val (selection, selectionArgs) = selectionForRelativePaths(query.relativePaths)
+            val queryArgs = createQueryArgs(
+                selection = selection,
+                selectionArgs = selectionArgs,
+                limit = limit,
+                offset = offset,
+                sortColumn = sortColumn,
+                sortDirection = sortDirection
+            )
+            return loadLocalMusicFromAppDir(
+                resolver = resolver,
+                queryArgs = queryArgs,
+                cancellationSignal = cancellationSignal,
+                queryUri = query.contentUri
+            )
+        }
+
+        val loaded = queries.flatMap { query ->
+            val (selection, selectionArgs) = selectionForRelativePaths(query.relativePaths)
+            val queryArgs = createQueryArgs(
+                selection = selection,
+                selectionArgs = selectionArgs,
+                limit = -1,
+                offset = 0,
+                sortColumn = sortColumn,
+                sortDirection = sortDirection
+            )
+            loadLocalMusicFromAppDir(
+                resolver = resolver,
+                queryArgs = queryArgs,
+                cancellationSignal = cancellationSignal,
+                queryUri = query.contentUri
+            )
+        }.distinctBy { it.uri }
+
+        val sorted = sortMediaStoreAudioSummaries(loaded, sortColumn, sortDirection)
+        val dropped = sorted.drop(offset.coerceAtLeast(0))
+        return if (limit >= 0) dropped.take(limit) else dropped
     }
 
     suspend fun safeLoadMediaItemFromMediaStore(
@@ -349,6 +509,7 @@ object LocalMusicFetcher {
         argsPerItem: Int = 2,
         singleCondition: String = "(${MediaStore.Audio.Media.RELATIVE_PATH} = ? AND ${MediaStore.Audio.Media.DISPLAY_NAME} = ?)",
         cancellationSignal: CancellationSignal? = null,
+        queryUri: Uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
 
         ): List<MediaItem> {
 
@@ -359,7 +520,8 @@ object LocalMusicFetcher {
                 cancellationSignal,
                 chunkSize,
                 argsPerItem,
-                singleCondition
+                singleCondition,
+                queryUri
             ).map { it.toMediaItem() }.withUniqueMediaIds()
         }
 
@@ -398,7 +560,7 @@ object LocalMusicFetcher {
         resolver: ContentResolver,
         queryArgs: Bundle,
         cancellationSignal: CancellationSignal? = null,
-
+        queryUri: Uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
 
         ): List<MediaStoreAudioSummary> {
 
@@ -437,12 +599,13 @@ object LocalMusicFetcher {
             MediaStore.Audio.Media.ARTIST_ID,
             MediaStore.Audio.Media.RELATIVE_PATH,
             MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.TRACK
+            MediaStore.Audio.Media.TRACK,
+            MediaStore.Audio.Media.DATE_ADDED
         )
 
         Log.d(
             "LocalMusicFetcher",
-            "loadLocalMusicFromAppDir: executing query with selection=$newSelection, ,argsFirst=${newSelectionArgs.first()} argsCount=${newSelectionArgs.size}, limit=${
+            "loadLocalMusicFromAppDir: executing query with uri=$queryUri, selection=$newSelection, ,argsFirst=${newSelectionArgs.first()} argsCount=${newSelectionArgs.size}, limit=${
                 queryArgs.getInt(
                     ContentResolver.QUERY_ARG_LIMIT,
                     -1
@@ -455,7 +618,7 @@ object LocalMusicFetcher {
             // クエリとカーソル走査を IO コンテキストで行う（カーソルが開いている間は同じスレッドで処理）
             withContext(Dispatchers.IO) {
                 val cursor = resolver.query(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    queryUri,
                     projection,
                     newQueryArgs,
                     cancellationSignal
@@ -469,6 +632,7 @@ object LocalMusicFetcher {
                     val albumIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
                     val artistIdIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID)
                     val trackIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+                    val dateAddedIdx = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
 
                     val relativePathIdx =
                         c.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH)
@@ -497,6 +661,7 @@ object LocalMusicFetcher {
                         val albumId = c.getLong(albumIdIdx)
                         val artistId = c.getLong(artistIdIdx)
                         val trackNo = c.getInt(trackIdx)
+                        val dateAdded = c.getLong(dateAddedIdx)
 
                         val relativePath = c.getString(relativePathIdx) ?: ""
                         if (relativePath.contains(".nomedia", ignoreCase = true)) {
@@ -520,7 +685,7 @@ object LocalMusicFetcher {
 
                         val uri =
                             ContentUris.withAppendedId(
-                                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                queryUri,
                                 id
                             )
 
@@ -540,7 +705,8 @@ object LocalMusicFetcher {
                             relativePath = relativePath,
                             displayName = displayName,
                             uri = uri,
-                            albumArtUri = albumArtUri
+                            albumArtUri = albumArtUri,
+                            dateAdded = dateAdded
                         )
 
 
@@ -577,7 +743,8 @@ object LocalMusicFetcher {
         val relativePath: String?,
         val displayName: String?,
         val uri: Uri?,
-        val albumArtUri: Uri?
+        val albumArtUri: Uri?,
+        val dateAdded: Long? = null
 
     )
 

@@ -105,6 +105,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.random.Random
 
 
 class MainActivity : AppCompatActivity() {
@@ -989,6 +990,8 @@ class MainActivity : AppCompatActivity() {
                             }
                             val newList = mutableListOf<MediaItem>()
                             loadAllMedias(newList, it)
+
+
                         }
 
 
@@ -1150,11 +1153,7 @@ class MainActivity : AppCompatActivity() {
 
             scrollToTrack()
 
-            // tracksFlow を監視して差分更新（コミット後に現在再生トラックがあれば追従）
-            lifecycleScope.launch {
 
-
-            }
             if (current != null) {
 
                 applyCurrentTrackToUi(current)
@@ -1167,7 +1166,6 @@ class MainActivity : AppCompatActivity() {
 
         }
         // scrolling was moved into the adapter commit callback; avoid duplicate calls here
-
 
         musicSearcher = MusicSearcherByList(
             this@MainActivity,

@@ -66,7 +66,7 @@ class MainViewModel : ViewModel() {
     }
 
 
-    fun setTracks(newTracks: MutableList<MediaItem>) {
+    fun setTracks(newTracks: List<MediaItem>) {
         _tracks.value = newTracks
     }
 
