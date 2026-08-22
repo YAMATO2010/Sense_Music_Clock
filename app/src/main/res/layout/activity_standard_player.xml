@@ -83,9 +83,10 @@
 
 
     <LinearLayout
+        android:id="@+id/linearLayout12"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
 
+        android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/guideline"
@@ -281,17 +282,19 @@
     <TextView
         android:id="@+id/sleepTimerTextView"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="20dp"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+
         android:autoSizeTextType="uniform"
+        android:autoSizeMaxTextSize="20sp"
         android:background="@drawable/gradient4"
         android:gravity="center"
         android:textColor="@color/white"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btnRepeat"
-        app:layout_constraintStart_toEndOf="@+id/btnBackEdge"
-        app:layout_constraintTop_toTopOf="@+id/btnRepeat" />
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guidelineHalf" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
