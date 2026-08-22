@@ -35,6 +35,18 @@ android {
 
 
         }
+        debug {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            // パッケージ名を分ける
+            applicationIdSuffix = ".test"
+
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21

@@ -80,7 +80,6 @@ import coil3.request.maxBitmapSize
 import coil3.size.Precision
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
-import jp.gr.java_conf.SenseMusicClock.IDENTIFIER_INITIAL_INDEX_PROBLEM
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.MainViewModel
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
@@ -406,7 +405,7 @@ class MainActivity : AppCompatActivity() {
                             .combinedClickable(
                                 onClick = {
                                     // タップ
-                                    jacketAdapter_onItemClick(mediaItem)
+                                    jacketAdapter_onItemClick(index)
                                 },
                                 onLongClick = {
                                     // 長押し
@@ -477,7 +476,7 @@ class MainActivity : AppCompatActivity() {
                             .combinedClickable(
                                 onClick = {
                                     // タップ
-                                    jacketAdapter_onItemClick(mediaItem)
+                                    jacketAdapter_onItemClick(index)
                                 },
                                 onLongClick = {
                                     // 長押し
@@ -806,62 +805,16 @@ class MainActivity : AppCompatActivity() {
         popupMenu.show()
     }
 
-    private fun jacketAdapter_onItemClick(clickedTrack: MediaItem) {
-        val clickedTrackMetadata = clickedTrack.mediaMetadata
-        Log.d(
-            "MainActivity",
-            "track clicked: ${clickedTrackMetadata.title}" + IDENTIFIER_INITIAL_INDEX_PROBLEM
-        )
+    private fun jacketAdapter_onItemClick(index: Int) {
         try {
-            // If it's a local track, prefer asking the service to play by index (service has authoritative queue)
-            var sent = false
+            val browser = mediaBrowser ?: return
+            val safeIndex = if (index in 0 until browser.mediaItemCount) index else 0
 
-
-            val index = getIndexById(clickedTrack)
-            if (index != null && index >= 0) {
-
-                sent = try {
-
-                    mediaBrowser?.seekTo(index, 0L)
-                    mediaBrowser?.play()
-
-                    true
-                } catch (e: Exception) {
-
-                    Log.w("MainActivity", "seekTo via MediaBrowser failed", e)
-                    false
-                }
-            }
-
-
-            // If we couldn't send via MediaController (or it's not a localTrack/service didn't know it), fallback to direct setQueue/play
-            if (!sent) {
-                val index = mainViewModel.lastIndex ?: 0
-                if (index >= 0) {
-
-                    mediaBrowser?.seekTo(index, 0L)
-                    mediaBrowser?.play()
-
-                }
-            }
+            browser.seekTo(safeIndex, 0L)
+            browser.play()
         } catch (e: Exception) {
             Log.w("MainActivity", "play request failed", e)
         }
-
-        // update texts and restart slide loop (Title -> Etc)
-        stopSlideLoop()
-        binding.TitleView.text = clickedTrackMetadata.title
-        binding.MusicEtcView.text =
-            "${clickedTrackMetadata.artist} / ${clickedTrackMetadata.albumTitle}"
-        // update marquee state for both views
-        updateMarqueeFor(binding.TitleView)
-        updateMarqueeFor(binding.MusicEtcView)
-
-
-        currentSlideTarget = SlideTarget.TITLE
-        startSlideLoop()
-
-
     }
 
     override fun onPause() {
@@ -1149,9 +1102,9 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread {
 
             val current = browser.currentMediaItem
-            getIndexById(current)
 
-            scrollToTrack()
+
+            scrollToTrack(current)
 
 
             if (current != null) {

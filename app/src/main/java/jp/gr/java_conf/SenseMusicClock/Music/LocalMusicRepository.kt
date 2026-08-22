@@ -50,6 +50,7 @@ object LocalMusicRepository {
     fun setTracks(newTracks: List<MediaItem>): List<MediaItem> {
         val filteredTracks = newTracks
         _tracksFlow.value = filteredTracks
+        createMap_idToIndex(filteredTracks)
         return filteredTracks
     }
 
@@ -280,8 +281,7 @@ object LocalMusicRepository {
 
     fun setTracksAndCreateMap(newTracks: List<MediaItem>, isBlock: Boolean) {
 
-        val filteredTracks = blockAndSetTracks(newTracks, isBlock)
-        createMap_idToIndex(filteredTracks)
+        blockAndSetTracks(newTracks, isBlock)
 
     }
 
