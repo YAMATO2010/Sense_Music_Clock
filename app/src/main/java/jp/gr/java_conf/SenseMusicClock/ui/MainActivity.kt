@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
@@ -40,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,10 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -185,6 +189,12 @@ class MainActivity : AppCompatActivity() {
             insets
         }
         setContentView(binding.root)
+        binding.TimerButton.setSpAutoSize(minSp = 8, maxSp = 24)
+        binding.alarmButton.setSpAutoSize(minSp = 8, maxSp = 24)
+        binding.stopWatchBtn.setSpAutoSize(minSp = 8, maxSp = 24)
+        if (resources.configuration.orientation == BackgroundResolver.ORIENTATION_OBLONG) {
+            binding.searchKeywordInput.setSpAutoSize(minSp = 10, maxSp = 24)
+        }
 
 
         ViewModelProvider(
@@ -642,6 +652,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
+    private fun FixedFontScale(content: @Composable () -> Unit) {
+        val density = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(density = density.density, fontScale = 1f),
+            content = content
+        )
+    }
+
+    private fun TextView.setSpAutoSize(
+        minSp: Int,
+        maxSp: Int,
+        stepSp: Int = 1
+    ) {
+        setAutoSizeTextTypeUniformWithConfiguration(
+            minSp,
+            maxSp,
+            stepSp,
+            TypedValue.COMPLEX_UNIT_SP
+        )
+    }
+
+    @Composable
     fun JacketItemComposable(mediaItem: MediaItem, imageLoader: ImageLoader) {
 
         val artworkUri = mediaItem.mediaMetadata.artworkUri
@@ -685,21 +717,29 @@ class MainActivity : AppCompatActivity() {
                     .aspectRatio(1f), // 表示領域を正方形に
                 contentScale = ContentScale.Fit,
             )
-            Text(
-                text = title.toString(),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 2.dp, horizontal = 4.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                softWrap = false,
-                autoSize = TextAutoSize.StepBased(
-                    minFontSize = 11.sp, maxFontSize = 13.sp, stepSize = 1.sp
-                ),
-                textAlign = TextAlign.Center,
-                color = androidx.compose.ui.graphics.Color.Black
+            val titleAreaModifier = Modifier
+                .weight(1f)
+                .padding(vertical = 2.dp, horizontal = 4.dp)
+            Box(
+                modifier = titleAreaModifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                FixedFontScale {
+                    Text(
+                        text = title.toString(),
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
+                        autoSize = TextAutoSize.StepBased(
+                            minFontSize = 10.sp, maxFontSize = 12.sp, stepSize = 1.sp
+                        ),
+                        textAlign = TextAlign.Center,
+                        color = androidx.compose.ui.graphics.Color.Black
 
-            )
+                    )
+                }
+            }
 
 
         }

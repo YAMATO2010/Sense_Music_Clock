@@ -12,10 +12,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.SeekBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -121,6 +123,11 @@ class StandardPlayerActivity : AppCompatActivity() {
 
         binding = ActivityStandardPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.CurrentTimeTextView.setSpAutoSize(minSp = 8, maxSp = 24)
+        binding.durationTextView.setSpAutoSize(minSp = 8, maxSp = 24)
+        binding.tvTitle.setSpAutoSize(minSp = 12, maxSp = 34)
+        binding.tvArtist.setSpAutoSize(minSp = 10, maxSp = 24)
+        binding.tvAlbumName.setSpAutoSize(minSp = 10, maxSp = 24)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
             // システムバーのインセット（余白）を取得
             val navigationBarsInsets =
@@ -372,6 +379,19 @@ class StandardPlayerActivity : AppCompatActivity() {
     private fun setDurationText(durationMs: Long) {
         binding.durationTextView.text = "/" + convertMsToTimeString(durationMs)
 
+    }
+
+    private fun TextView.setSpAutoSize(
+        minSp: Int,
+        maxSp: Int,
+        stepSp: Int = 1
+    ) {
+        setAutoSizeTextTypeUniformWithConfiguration(
+            minSp,
+            maxSp,
+            stepSp,
+            TypedValue.COMPLEX_UNIT_SP
+        )
     }
 
     override fun onPause() {
