@@ -732,7 +732,7 @@ class MainActivity : AppCompatActivity() {
                         overflow = TextOverflow.Ellipsis,
                         softWrap = false,
                         autoSize = TextAutoSize.StepBased(
-                            minFontSize = 10.sp, maxFontSize = 12.sp, stepSize = 1.sp
+                            minFontSize = 14.sp, maxFontSize = 18.sp, stepSize = 1.sp
                         ),
                         textAlign = TextAlign.Center,
                         color = androidx.compose.ui.graphics.Color.Black
