@@ -21,7 +21,12 @@
             app:min="0"
             app:showSeekBarValue="true"
             app:updatesContinuously="true" />
-    </PreferenceCategory>
+        <Preference
+            android:key="action_play_default"
+            android:selectable="true"
+            android:title="デフォルトモードにする" />
+
+
     <SwitchPreference
         android:defaultValue="true"
         android:key="tile_title_display"
@@ -39,44 +44,10 @@
         android:key="action_sleepTimer"
         android:selectable="true"
         android:title="スリープタイマー" />
-
-    <PreferenceCategory app:title="背景設定">
-
-        <Preference
-            android:key="background_add"
-            android:selectable="true"
-            android:title="背景画像の追加" />
-
-        <Preference
-            android:key="background_select"
-            android:selectable="true"
-            android:title="背景画像の選択" />
-
-        <Preference
-            android:key="background_clear"
-            android:selectable="true"
-            android:title="背景画像の選択（削除）" />
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="is_widget_background"
-            android:title="ウィジェットに画像背景をつける" />
-        <SwitchPreference
-            android:defaultValue="false"
-            android:key="is_random_background"
-            android:title="背景ランダムモード" />
     </PreferenceCategory>
-    <PreferenceCategory android:title="通常再生">
-        <Preference
-            android:key="action_selectDirectory_add"
-            android:selectable="true"
-            android:title="再生するディレクトリの追加" />
-        <Preference
-            android:key="action_selectDirectory_delete"
-            android:selectable="true"
-            android:title="再生するディレクトリの削除" />
 
 
-    </PreferenceCategory>
+
 
     <PreferenceCategory app:title="プレイリスト・ブロックリスト">
 
@@ -121,13 +92,48 @@
             android:key="isFilterByDir_added_at_Desc"
             android:title="フォルダでフィルタリングする" />
 
-        <Preference
-            android:key="action_play_default"
-            android:selectable="true"
-            android:title="デフォルトモードにする" />
 
 
     </PreferenceCategory>
+    <PreferenceCategory android:title="通常再生">
+        <Preference
+            android:key="action_selectDirectory_add"
+            android:selectable="true"
+            android:title="再生するディレクトリの追加" />
+        <Preference
+            android:key="action_selectDirectory_delete"
+            android:selectable="true"
+            android:title="再生するディレクトリの削除" />
+
+
+    </PreferenceCategory>
+    <PreferenceCategory app:title="背景設定">
+
+        <Preference
+            android:key="background_add"
+            android:selectable="true"
+            android:title="背景画像の追加" />
+
+        <Preference
+            android:key="background_select"
+            android:selectable="true"
+            android:title="背景画像の選択" />
+
+        <Preference
+            android:key="background_clear"
+            android:selectable="true"
+            android:title="背景画像の選択（削除）" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="is_widget_background"
+            android:title="ウィジェットに画像背景をつける" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="is_random_background"
+            android:title="背景ランダムモード" />
+    </PreferenceCategory>
+
+
 
     <PreferenceCategory app:title="設定の切り替え">
 
