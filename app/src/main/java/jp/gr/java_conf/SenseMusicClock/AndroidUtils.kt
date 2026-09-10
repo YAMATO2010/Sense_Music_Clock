@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.OpenableColumns
@@ -109,14 +110,22 @@ fun Context.getAllFile_inInternalStorage(childPath: String): List<File> {
 
 fun Context.vibrateOnceSafe(durationMs: Long = 1000L) {
     try {
+        val vibrator = getSystemService(Vibrator::class.java) ?: return
 
-        val vibrator = getSystemService(Vibrator::class.java)
-        vibrator?.vibrate(
-            VibrationEffect.createOneShot(
-                durationMs,
-                VibrationEffect.DEFAULT_AMPLITUDE
-            )
+        val effect = VibrationEffect.createOneShot(
+            durationMs,
+            VibrationEffect.DEFAULT_AMPLITUDE
         )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val attributes = VibrationAttributes.Builder()
+                .setUsage(VibrationAttributes.USAGE_ALARM)
+                .build()
+
+            vibrator.vibrate(effect, attributes)
+        } else {
+            vibrator.vibrate(effect)
+        }
     } catch (e: Exception) {
         Log.w("AndroidUtils", "vibrateOnceSafe failed", e)
     }
