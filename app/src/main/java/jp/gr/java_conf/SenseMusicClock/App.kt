@@ -13,7 +13,7 @@ import coil3.request.crossfade
 class App : Application(), SingletonImageLoader.Factory {
     val sharedMemoryCache: MemoryCache by lazy {
         MemoryCache.Builder()
-            .maxSizePercent(this, 0.15)
+            .maxSizePercent(this, 0.05)
             .build()
     }
 
