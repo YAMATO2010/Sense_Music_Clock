@@ -19,6 +19,7 @@ import coil3.request.error
 import coil3.request.fallback
 import coil3.request.crossfade
 import coil3.request.allowHardware
+import jp.gr.java_conf.SenseMusicClock.App
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
@@ -57,7 +58,9 @@ object ControlWidgetUpdater {
             if (isTall) BackgroundResolver.ORIENTATION_OBLONG else BackgroundResolver.ORIENTATION_LAND
         val isBackgroundEnabled = PrefsManager.getWidgetBackground(context)
         val result = if (isBackgroundEnabled) {
-            val loader = ImageLoader(context)
+            val loader = ImageLoader.Builder(context)
+                .memoryCache((context.applicationContext as App).sharedMemoryCache)
+                .build()
             val source = BackgroundResolver.loadBackgroundSource(
                 context,
                 orientation

@@ -77,13 +77,13 @@ import androidx.media3.session.SessionToken
 import coil3.load
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
-import coil3.memory.MemoryCache
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.request.maxBitmapSize
 import coil3.size.Precision
 import coil3.request.placeholder
 import coil3.request.error
+import jp.gr.java_conf.SenseMusicClock.App
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
@@ -373,11 +373,7 @@ class MainActivity : AppCompatActivity() {
                 .allowHardware(true)
                 .maxBitmapSize(coil3.size.Size(500, 500))
                 .precision(Precision.INEXACT)
-                .memoryCache(
-                    MemoryCache.Builder()
-                        .maxSizePercent(this, 0.2)
-                        .build()
-                )
+                .memoryCache((applicationContext as App).sharedMemoryCache)
                 .build()
         }
 

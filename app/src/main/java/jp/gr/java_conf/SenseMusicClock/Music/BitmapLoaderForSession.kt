@@ -19,6 +19,7 @@ import coil3.request.crossfade
 import coil3.request.allowHardware
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
+import jp.gr.java_conf.SenseMusicClock.App
 import jp.gr.java_conf.SenseMusicClock.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +28,9 @@ import kotlinx.coroutines.withContext
 
 @UnstableApi
 class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
-    private val imageLoader = ImageLoader(context)
+    private val imageLoader = ImageLoader.Builder(context)
+        .memoryCache((context.applicationContext as App).sharedMemoryCache)
+        .build()
     private val scope = CoroutineScope(Dispatchers.IO)
 
     override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> {
