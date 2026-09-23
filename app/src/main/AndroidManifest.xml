@@ -51,6 +51,7 @@
             </intent-filter>
         </receiver>
 
+
         <activity
             android:name=".ui.search.SearchActivity"
             android:exported="false" />
@@ -95,7 +96,8 @@
             android:label="@string/title_activity_settings" />
         <activity
             android:name=".ui.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -24,7 +24,7 @@
         <Preference
             android:key="action_play_default"
             android:selectable="true"
-            android:title="デフォルトモードにする" />
+            android:title="通常再生に戻す" />
 
 
     <SwitchPreference

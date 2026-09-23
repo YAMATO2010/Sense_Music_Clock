@@ -2,10 +2,12 @@ package jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionStartService
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.session.SessionCommand
@@ -22,6 +24,8 @@ class ActionPlayPause : ActionCallback {
         parameters: ActionParameters
     ) {
         val appContext = context.applicationContext
+        val intent = Intent(appContext, MusicService::class.java)
+        appContext.startForegroundService(intent)
         withContext(Dispatchers.Main.immediate) {
             val sessionToken = SessionToken(
                 appContext,
