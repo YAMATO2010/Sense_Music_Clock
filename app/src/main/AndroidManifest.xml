@@ -51,6 +51,7 @@
             </intent-filter>
         </receiver>
 
+
         <activity
             android:name=".ui.search.SearchActivity"
             android:exported="false" />

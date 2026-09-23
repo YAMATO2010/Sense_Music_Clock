@@ -2,6 +2,7 @@ package jp.gr.java_conf.SenseMusicClock.ui.Widget.Actions
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
@@ -20,6 +21,8 @@ class ActionPrev : ActionCallback {
         parameters: ActionParameters
     ) {
         val appContext = context.applicationContext
+        val intent = Intent(appContext, MusicService::class.java)
+        appContext.startForegroundService(intent)
         withContext(Dispatchers.Main.immediate) {
             val sessionToken = SessionToken(
                 appContext,

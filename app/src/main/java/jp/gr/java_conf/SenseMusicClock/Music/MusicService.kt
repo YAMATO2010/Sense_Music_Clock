@@ -73,6 +73,12 @@ class MusicService : MediaLibraryService() {
         const val MUSIC_ID = "music_id"
         const val ARTIST_ID = "jp.gr.java_conf.SenseMusicClock.action.LOAD_ONE_MUSIC_BY_ID"
 
+
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
+
     }
 
 
@@ -88,14 +94,17 @@ class MusicService : MediaLibraryService() {
 
     private var sleepTimerEndAtMillis: Long? = null
 
+    private var initialRepositoryJob: Job? = null
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
         session
 
 
-    val callback = object : MediaLibrarySession.Callback {
+    val callback = @OptIn(UnstableApi::class)
+    object : MediaLibrarySession.Callback {
 
         // ① 本棚の入り口IDを定義
-        @OptIn(UnstableApi::class)
+
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -236,6 +245,31 @@ class MusicService : MediaLibraryService() {
             )
         }
 
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            isForPlayback: Boolean
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            return CallbackToFutureAdapter.getFuture { completer ->
+                scope.launch {
+                    try {
+                        val loadJob = initialRepositoryJob
+                            ?: throw IllegalStateException("Initial music loading was not started")
+                        loadJob.join()
+                        val tracks = LocalMusicRepository.getTracks()
+                        if (tracks.isEmpty()) {
+                            throw IllegalStateException("No local tracks available for playback resumption")
+                        }
+                        val items = if (isForPlayback) tracks else tracks.take(1)
+                        completer.set(MediaSession.MediaItemsWithStartPosition(items, 0, 0L))
+                    } catch (e: Exception) {
+                        Log.e("MusicService", "Failed to load tracks for playback resumption", e)
+                        completer.setException(e)
+                    }
+                }
+                "onPlaybackResumption"
+            }
+        }
         // ② 「1MBの壁」を回避するページング実装
         override fun onGetChildren(
             session: MediaLibrarySession,
@@ -306,6 +340,8 @@ class MusicService : MediaLibraryService() {
         }
 
     }
+
+
 
 
     override fun onCreate() {
@@ -429,6 +465,7 @@ class MusicService : MediaLibraryService() {
             })
 
 
+
             Log.d("MusicService", "MediaLibrarySession created: session=$session")
 
 
@@ -441,7 +478,8 @@ class MusicService : MediaLibraryService() {
                     }
                 }
                 launch {
-                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).distinctUntilChanged().drop(1).collect { value ->
+                    PrefsManager.getCurrentBlocklistIdFlow(this@MusicService).distinctUntilChanged()
+                        .drop(1).collect { value ->
                         Log.d("LIST_/MusicService/loadBlocklistItem", "collect blocklistId=$value")
                         val blocklistItems = DBManager.loadBlocklistItem(this@MusicService, value)
                         Log.d(
@@ -456,7 +494,8 @@ class MusicService : MediaLibraryService() {
 
                 launch {
 
-                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).drop(1).distinctUntilChanged().collect{ value ->
+                    PrefsManager.getCurrentPlaylistIdFlow(this@MusicService).drop(1)
+                        .distinctUntilChanged().collect { value ->
                         repoLoadMusicAndCreateMap(value)
                     }
 
@@ -489,20 +528,22 @@ class MusicService : MediaLibraryService() {
                 // ディレクトリリストの監視
                 launch {
 
-                    PrefsManager.getMusicDirRelativePathFlow(this@MusicService).drop(1).collect { value ->
-                        if (PrefsManager.getCurrentPlaylistId(this@MusicService) < 0) {
-                            Log.d(
-                                "MusicService",
-                                "Music directory changed, reloading music. new dirs: $value"
-                            )
-                            repoLoadMusicAndCreateMap()
+                    PrefsManager.getMusicDirRelativePathFlow(this@MusicService).drop(1)
+                        .collect { value ->
+                            if (PrefsManager.getCurrentPlaylistId(this@MusicService) < 0) {
+                                Log.d(
+                                    "MusicService",
+                                    "Music directory changed, reloading music. new dirs: $value"
+                                )
+                                repoLoadMusicAndCreateMap()
+                            }
                         }
-                    }
                 }
 
                 launch {
 
-                    PrefsManager.getReloadTracksFlow(this@MusicService).drop(1).distinctUntilChanged().collect {
+                    PrefsManager.getReloadTracksFlow(this@MusicService).drop(1)
+                        .distinctUntilChanged().collect {
                         Log.d(
                             "MusicService",
                             "reload music directory requested  "
@@ -515,7 +556,10 @@ class MusicService : MediaLibraryService() {
                 launch {
                     LocalMusicRepository.tracksFlow.collect { value ->
                         if (value.isEmpty()) {
-                            Log.w("MusicService", "Tracks list is empty, skipping setSafeMediaItems")
+                            Log.w(
+                                "MusicService",
+                                "Tracks list is empty, skipping setSafeMediaItems"
+                            )
                             return@collect
                         }
                         player.setSafeMediaItems(
@@ -523,13 +567,14 @@ class MusicService : MediaLibraryService() {
                         )
                     }
                 }
-                initRepository()
-
-
             }
+
+            initialRepositoryJob = scope.launch { initRepository() }
 
         } catch (e: Exception) {
             Log.e("MusicService", "onCreate initialization failed", e)
+        } finally {
+            isRunning = true
         }
         Log.d("MusicService", "onCreate end")
     }
@@ -548,6 +593,8 @@ class MusicService : MediaLibraryService() {
             scope.cancel()
         } catch (e: Exception) {
             Log.e("MusicService", "onDestroy cleanup failed", e)
+        } finally {
+            isRunning = false
         }
 
         super.onDestroy()
