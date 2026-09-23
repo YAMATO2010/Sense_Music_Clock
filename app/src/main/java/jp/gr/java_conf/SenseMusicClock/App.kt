@@ -1,9 +1,11 @@
 package jp.gr.java_conf.SenseMusicClock
 
 import android.app.Application
-import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
+import coil3.ImageLoader
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
 
 
 class App : Application() {
@@ -16,14 +18,14 @@ class App : Application() {
         backgroundImageLoader = ImageLoader.Builder(this.applicationContext)
 
             .components {
-                add(ImageDecoderDecoder.Factory()) // Android 9以降のWebP/GIF用
-                add(GifDecoder.Factory())          // Android 8以前のGIF用
+                add(AnimatedImageDecoder.Factory())
+                add(GifDecoder.Factory())
 
             }
             .crossfade(true)
             .memoryCache {
-                coil.memory.MemoryCache.Builder(this.applicationContext)
-                    .maxSizePercent(0.01) // メモリの25%までキャッシュを使用
+                MemoryCache.Builder()
+                    .maxSizePercent(this.applicationContext, 0.01)
                     .strongReferencesEnabled(false)
                     .weakReferencesEnabled(true)
                     .build()

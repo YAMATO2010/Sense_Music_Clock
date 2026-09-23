@@ -29,9 +29,14 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
-import coil.load
-import coil.request.CachePolicy
-import coil.size.Precision
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.size.Precision
+import coil3.request.bitmapConfig
+import coil3.request.allowHardware
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.crossfade
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager

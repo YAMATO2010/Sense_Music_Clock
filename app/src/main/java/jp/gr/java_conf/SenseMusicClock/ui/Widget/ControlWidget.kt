@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import coil3.asDrawable
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -88,7 +89,8 @@ class ControlWidget : GlanceAppWidget() {
             ) {
 
                 value =
-                    ControlWidgetUpdater.resolveBackground(context, isTall)?.drawable?.toBitmap()
+                    ControlWidgetUpdater.resolveBackground(context, isTall)?.image
+                        ?.asDrawable(context.resources)?.toBitmap()
             }
             Box(modifier = GlanceModifier.fillMaxSize()) {
 

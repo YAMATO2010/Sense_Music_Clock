@@ -74,7 +74,7 @@ import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
-import coil.load
+import coil3.load
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.memory.MemoryCache
@@ -82,6 +82,8 @@ import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.request.maxBitmapSize
 import coil3.size.Precision
+import coil3.request.placeholder
+import coil3.request.error
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
@@ -1001,7 +1003,7 @@ class MainActivity : AppCompatActivity() {
                                 stopSlideLoop()
                                 binding.currentAlbumArt.load(R.drawable.default_album_art) {
                                     size(512, 512)
-                                    precision(coil.size.Precision.INEXACT)
+                                    precision(coil3.size.Precision.INEXACT)
 
                                     crossfade(false)
                                 }
@@ -1350,7 +1352,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     binding.currentAlbumArt.load(R.drawable.default_album_art) {
                         size(512, 512)
-                        precision(coil.size.Precision.INEXACT)
+                        precision(coil3.size.Precision.INEXACT)
 
                         crossfade(false)
                     }

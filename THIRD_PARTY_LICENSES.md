@@ -182,14 +182,12 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | AboutLibraries Core Library | 15.0.4 | com.mikepenz:aboutlibraries-core-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
 | okhttp | 4.12.0 | com.squareup.okhttp3:okhttp | Apache-2.0 | https://square.github.io/okhttp/ |
 | okio | 3.17.0 | com.squareup.okio:okio-jvm | Apache-2.0 | https://github.com/square/okio/ |
-| coil | 2.7.0 | io.coil-kt:coil | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-base | 2.7.0 | io.coil-kt:coil-base | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-gif | 2.7.0 | io.coil-kt:coil-gif | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-video | 2.7.0 | io.coil-kt:coil-video | Apache-2.0 | https://github.com/coil-kt/coil |
 | coil | 3.5.0 | io.coil-kt.coil3:coil-android | Apache-2.0 | https://github.com/coil-kt/coil |
 | coil-compose | 3.5.0 | io.coil-kt.coil3:coil-compose-android | Apache-2.0 | https://github.com/coil-kt/coil |
 | coil-compose-core | 3.5.0 | io.coil-kt.coil3:coil-compose-core-android | Apache-2.0 | https://github.com/coil-kt/coil |
 | coil-core | 3.5.0 | io.coil-kt.coil3:coil-core-android | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-gif | 3.5.0 | io.coil-kt.coil3:coil-gif | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-video | 3.5.0 | io.coil-kt.coil3:coil-video | Apache-2.0 | https://github.com/coil-kt/coil |
 | RxJava | 2.2.9 | io.reactivex.rxjava2:rxjava | Apache-2.0 | https://github.com/ReactiveX/RxJava |
 | RxJava | 3.0.0 | io.reactivex.rxjava3:rxjava | Apache-2.0 | https://github.com/ReactiveX/RxJava |
 | javax.inject | 1 | javax.inject:javax.inject | Apache-2.0 | http://code.google.com/p/atinject/ |

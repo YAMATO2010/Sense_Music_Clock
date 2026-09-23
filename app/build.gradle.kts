@@ -17,8 +17,8 @@ android {
         applicationId = "jp.gr.java_conf.SenseMusicClock"
         minSdk = 32
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.0_beta6"
+        versionCode = 8
+        versionName = "1.0_beta8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -195,11 +195,10 @@ dependencies {
     // Coil
     // --------------------------------------------------
 
-    // Coil 2.x for ImageView `load` extensions
     implementation(libs.coil)
     implementation(libs.coil.gif)
     implementation(libs.coil.video)
-    implementation("io.coil-kt.coil3:coil-compose:3.5.0")
+    implementation(libs.coil.compose)
 
 
     // --------------------------------------------------
