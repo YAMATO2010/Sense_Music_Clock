@@ -74,15 +74,16 @@ import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
-import coil3.load
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
+import coil3.load
 import coil3.request.allowHardware
 import coil3.request.crossfade
-import coil3.request.maxBitmapSize
-import coil3.size.Precision
-import coil3.request.placeholder
 import coil3.request.error
+import coil3.request.maxBitmapSize
+import coil3.request.placeholder
+import coil3.size.Precision
+import com.google.common.util.concurrent.ListenableFuture
 import jp.gr.java_conf.SenseMusicClock.App
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Clock.ClockUiController
@@ -110,7 +111,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
-import kotlin.random.Random
 
 
 class MainActivity : AppCompatActivity() {
@@ -118,6 +118,8 @@ class MainActivity : AppCompatActivity() {
 
 
     private var mediaBrowser: MediaBrowser? = null
+
+    private var browserFuture: ListenableFuture<MediaBrowser>? = null
 
     var storageAccessHelper: StorageAccessHelper? = null
 
@@ -240,7 +242,7 @@ class MainActivity : AppCompatActivity() {
         storageAccessHelper = StorageAccessHelper(
             this,
             onDirectoryPicked = { _, _ -> },
-            onPermissionGranted = { read_music_Granted_foronCreate() },
+            onPermissionGranted = {  },
             onPermissionDenied = {
                 allView_onParmissionInvalid()
                 AlertDialog.Builder(this)
@@ -345,11 +347,11 @@ class MainActivity : AppCompatActivity() {
                 .fillMaxSize()
                 .padding(8.dp)
                 .then(
-                    if(orientation == BackgroundResolver.ORIENTATION_OBLONG) {
-                        Modifier.clip(CircleShape)
+                    if (orientation == BackgroundResolver.ORIENTATION_OBLONG) {
+                        Modifier
+                            .clip(CircleShape)
                             .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
-                    }
-                    else Modifier
+                    } else Modifier
                 )
 
         ) {
@@ -358,7 +360,7 @@ class MainActivity : AppCompatActivity() {
                 contentDescription = "Settings",
                 tint = colorResource(id = R.color.white),
 
-            )
+                )
         }
     }
 
@@ -887,6 +889,11 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
 
+        browserFuture?.let {
+            MediaBrowser.releaseFuture(it)
+        }
+        browserFuture = null
+
 
         mediaBrowser?.release()
         mediaBrowser = null
@@ -926,102 +933,104 @@ class MainActivity : AppCompatActivity() {
         setLoadingVisible(true)
 
         token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        val browserFuture = MediaBrowser.Builder(this, token).buildAsync()
-
-
-        browserFuture.addListener({
-            mediaBrowser = browserFuture.get()
-            // これでサービスと接続完了！再生操作などができるようになる
-
-            mediaBrowser?.let {
-                loadSTEndATimeByService()
-                runOnUiThread {
-                    mainViewModel.clearTracks()
-                }
-                val newList = mutableListOf<MediaItem>()
-                loadAllMedias(newList, it)
+        browserFuture = MediaBrowser.Builder(this, token).buildAsync()
 
 
 
-                runOnUiThread {
-                    if (it.playWhenReady) {
-                        binding.playPauseButton.load(R.drawable.ic_pause)
-                    } else {
-                        binding.playPauseButton.load(R.drawable.ic_play)
+        browserFuture?.let {
+            it.addListener({
+                mediaBrowser = it.get()
+                // これでサービスと接続完了！再生操作などができるようになる
+
+                mediaBrowser?.let {
+                    loadSTEndATimeByService()
+                    runOnUiThread {
+                        mainViewModel.clearTracks()
                     }
-                }
+                    val newList = mutableListOf<MediaItem>()
+                    loadAllMedias(newList, it)
 
-                if (mainViewModel.lastOrientation != resources.configuration.orientation) {
 
-                    mainViewModel.setCurrentIndex(it.currentMediaItemIndex)
-                }
-                mainViewModel.lastOrientation = resources.configuration.orientation
 
-                it.addListener(object : Player.Listener {
-                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                        super.onPlayWhenReadyChanged(playWhenReady, reason)
-
-                        runOnUiThread {
-                            if (playWhenReady) {
-                                binding.playPauseButton.load(R.drawable.ic_pause)
-                            } else {
-                                binding.playPauseButton.load(R.drawable.ic_play)
-                            }
+                    runOnUiThread {
+                        if (it.playWhenReady) {
+                            binding.playPauseButton.load(R.drawable.ic_pause)
+                        } else {
+                            binding.playPauseButton.load(R.drawable.ic_play)
                         }
                     }
 
-                    override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                        super.onTimelineChanged(timeline, reason)
+                    if (mainViewModel.lastOrientation != resources.configuration.orientation) {
 
+                        mainViewModel.setCurrentIndex(it.currentMediaItemIndex)
+                    }
+                    mainViewModel.lastOrientation = resources.configuration.orientation
 
+                    it.addListener(object : Player.Listener {
+                        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                            super.onPlayWhenReadyChanged(playWhenReady, reason)
 
-                        if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
                             runOnUiThread {
-                                mainViewModel.clearTracks()
-                            }
-                            val newList = mutableListOf<MediaItem>()
-                            loadAllMedias(newList, it)
-
-
-                        }
-
-
-                    }
-
-                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                        super.onMediaItemTransition(mediaItem, reason)
-
-                        runOnUiThread {
-                            if (mediaItem != null) {
-                                applyCurrentTrackToUi(mediaItem)
-
-                            } else {
-                                stopSlideLoop()
-                                binding.currentAlbumArt.load(R.drawable.default_album_art) {
-                                    size(512, 512)
-                                    precision(coil3.size.Precision.INEXACT)
-
-                                    crossfade(false)
+                                if (playWhenReady) {
+                                    binding.playPauseButton.load(R.drawable.ic_pause)
+                                } else {
+                                    binding.playPauseButton.load(R.drawable.ic_play)
                                 }
-                                binding.TitleView.text = ""
-                                binding.MusicEtcView.text = ""
-                                updateMarqueeFor(binding.TitleView)
-                                updateMarqueeFor(binding.MusicEtcView)
                             }
                         }
 
-                    }
+                        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                            super.onTimelineChanged(timeline, reason)
 
 
-                })
+
+                            if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
+                                runOnUiThread {
+                                    mainViewModel.clearTracks()
+                                }
+                                val newList = mutableListOf<MediaItem>()
+                                loadAllMedias(newList, it)
 
 
-            }
+                            }
 
 
-        }, ContextCompat.getMainExecutor(this))
+                        }
+
+                        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                            super.onMediaItemTransition(mediaItem, reason)
+
+                            runOnUiThread {
+                                if (mediaItem != null) {
+                                    applyCurrentTrackToUi(mediaItem)
+
+                                } else {
+                                    stopSlideLoop()
+                                    binding.currentAlbumArt.load(R.drawable.default_album_art) {
+                                        size(512, 512)
+                                        precision(coil3.size.Precision.INEXACT)
+
+                                        crossfade(false)
+                                    }
+                                    binding.TitleView.text = ""
+                                    binding.MusicEtcView.text = ""
+                                    updateMarqueeFor(binding.TitleView)
+                                    updateMarqueeFor(binding.MusicEtcView)
+                                }
+                            }
+
+                        }
 
 
+                    })
+
+
+                }
+
+
+            }, ContextCompat.getMainExecutor(this))
+
+        }
     }
 
     private fun read_music_Granted_foronCreate() {

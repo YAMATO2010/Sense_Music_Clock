@@ -92,7 +92,7 @@ class ListsActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        binding.bottomController.initialize(this)
+        binding.bottomController.release()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
