@@ -20,8 +20,11 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
-import coil.load
-import coil.request.CachePolicy
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.crossfade
 import com.google.android.material.tabs.TabLayout
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager

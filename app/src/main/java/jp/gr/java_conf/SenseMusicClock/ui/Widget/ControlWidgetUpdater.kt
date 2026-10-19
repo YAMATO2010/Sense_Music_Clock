@@ -8,11 +8,18 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.updateAll
-import coil.ImageLoader
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.ImageResult
-import coil.request.SuccessResult
+import coil3.ImageLoader
+import coil3.asDrawable
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.ImageResult
+import coil3.request.SuccessResult
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.fallback
+import coil3.request.crossfade
+import coil3.request.allowHardware
+import jp.gr.java_conf.SenseMusicClock.App
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
 import jp.gr.java_conf.SenseMusicClock.R
@@ -36,7 +43,7 @@ object ControlWidgetUpdater {
 
             val result = context.imageLoader.execute(request)
 
-            val drawable = (result as? SuccessResult)?.drawable ?: return null
+            val drawable = (result as? SuccessResult)?.image?.asDrawable(context.resources) ?: return null
 
             drawable.toBitmap()
         }.onFailure {
@@ -51,7 +58,9 @@ object ControlWidgetUpdater {
             if (isTall) BackgroundResolver.ORIENTATION_OBLONG else BackgroundResolver.ORIENTATION_LAND
         val isBackgroundEnabled = PrefsManager.getWidgetBackground(context)
         val result = if (isBackgroundEnabled) {
-            val loader = ImageLoader(context)
+            val loader = ImageLoader.Builder(context)
+                .memoryCache((context.applicationContext as App).sharedMemoryCache)
+                .build()
             val source = BackgroundResolver.loadBackgroundSource(
                 context,
                 orientation

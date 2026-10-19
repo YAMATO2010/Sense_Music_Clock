@@ -15,7 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
+import coil3.load
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager

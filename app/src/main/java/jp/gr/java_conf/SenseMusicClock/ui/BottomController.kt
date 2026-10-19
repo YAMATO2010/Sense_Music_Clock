@@ -21,8 +21,13 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import coil.load
-import coil.request.CachePolicy
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.request.allowHardware
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.crossfade
+import com.google.common.util.concurrent.ListenableFuture
 import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.R
 import java.lang.ref.WeakReference
@@ -45,6 +50,7 @@ class BottomController @JvmOverloads constructor(
 
 
     private var mediaController: MediaController? = null
+    private var controllerFuture: ListenableFuture<MediaController>? = null
 
     private lateinit var token: SessionToken
     private val barHandler = Handler(Looper.getMainLooper())
@@ -84,6 +90,7 @@ class BottomController @JvmOverloads constructor(
 
 
     fun initialize(activity: AppCompatActivity) {
+        if (controllerFuture != null) return
 
         val activityRef = WeakReference(activity)
 
@@ -93,11 +100,18 @@ class BottomController @JvmOverloads constructor(
             SessionToken(activityWeak ?: return, ComponentName(activity, MusicService::class.java))
 
         val controllerFuture = MediaController.Builder(activityWeak, token).buildAsync()
+        this.controllerFuture = controllerFuture
 
 
 
         controllerFuture.addListener({
-            mediaController = controllerFuture.get()
+            if (this.controllerFuture !== controllerFuture) return@addListener
+            mediaController = try {
+                controllerFuture.get()
+            } catch (e: Exception) {
+                Log.w("BottomController", "MediaController connection failed", e)
+                return@addListener
+            }
             mediaController?.let {
 
 
@@ -193,8 +207,10 @@ class BottomController @JvmOverloads constructor(
 
     fun release() {
         barHandler.removeCallbacks(progressUpdateRunnable)
-        mediaController?.release()
+        val future = controllerFuture
+        controllerFuture = null
         mediaController = null
+        future?.let(MediaController::releaseFuture)
     }
 
 

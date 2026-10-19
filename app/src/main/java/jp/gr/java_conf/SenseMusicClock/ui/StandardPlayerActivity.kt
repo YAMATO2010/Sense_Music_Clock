@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -20,6 +19,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -29,9 +29,15 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
-import coil.load
-import coil.request.CachePolicy
-import coil.size.Precision
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
+import coil3.request.crossfade
+import coil3.request.error
+import coil3.request.placeholder
+import coil3.size.Precision
+import com.google.common.util.concurrent.ListenableFuture
 import jp.gr.java_conf.SenseMusicClock.BackgroundResolver
 import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.PrefsManager
@@ -43,7 +49,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import androidx.core.graphics.drawable.toDrawable
 
 class StandardPlayerActivity : AppCompatActivity() {
 
@@ -57,6 +62,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
     private var mediaController: MediaController? = null
 
+    private var controllerFuture: ListenableFuture<MediaController>? = null
 
     private val uiHandler = Handler(Looper.getMainLooper())
 
@@ -152,89 +158,6 @@ class StandardPlayerActivity : AppCompatActivity() {
                 resources.configuration.orientation
             )
         }
-
-        val controllerFuture = MediaController.Builder(this, token).buildAsync()
-
-
-
-        controllerFuture.addListener({
-            mediaController = controllerFuture.get()
-            mediaController?.let {
-                loadSTEndATimeByService()
-
-
-                runOnUiThread {
-                    try {
-                        animatePlayButton(it.playWhenReady)
-                        val title = it.mediaMetadata.title ?: ""
-                        val artist = it.mediaMetadata.artist ?: ""
-                        val album = it.mediaMetadata.albumTitle ?: ""
-                        val durationMs = it.mediaMetadata.durationMs ?: 0L
-
-                        setDurationText(durationMs)
-                        binding.tvTitle.text = title
-                        binding.tvArtist.text = artist
-                        binding.tvAlbumName.text = album
-
-
-                        binding.ivAlbumArt.load_albumArt(it.mediaMetadata.artworkUri)
-
-                        startProgressUpdates()
-
-
-                    } catch (e: Exception) {
-                        Log.w("StandardPlayerActivity", "metadata update failed", e)
-                    }
-                }
-
-
-
-
-
-                it.addListener(object : Player.Listener {
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-
-                    }
-
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-
-                    }
-
-
-                    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                        runOnUiThread {
-                            try {
-                                val title = mediaItem?.mediaMetadata?.title ?: ""
-                                val artist = mediaItem?.mediaMetadata?.artist ?: ""
-                                val album = mediaItem?.mediaMetadata?.albumTitle ?: ""
-
-                                binding.tvTitle.text = title
-                                binding.tvArtist.text = artist
-                                binding.tvAlbumName.text = album
-
-
-                                binding.ivAlbumArt.load_albumArt(mediaItem?.mediaMetadata?.artworkUri)
-
-
-                                val durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L
-                                setDurationText(durationMs)
-                                if (durationMs > 0) binding.seekBar.max =
-                                    (durationMs / 1000L).toInt()
-                                startProgressUpdates()
-                            } catch (e: Exception) {
-                                Log.w(
-                                    "StandardPlayerActivity",
-                                    "metadata update failed",
-                                    e
-                                )
-                            }
-                        }
-
-                    }
-                })
-            }
-        }, ContextCompat.getMainExecutor(this))
-
 
         // back button (edge) to return to MainActivity
         binding.btnBackEdge.setOnClickListener { finish() }
@@ -355,9 +278,107 @@ class StandardPlayerActivity : AppCompatActivity() {
 
     }
 
+    override fun onStart() {
+        super.onStart()
+        val future = MediaController.Builder(this, token).buildAsync()
+        controllerFuture = future
+        future.addListener({
+                if (controllerFuture !== future) return@addListener
+                mediaController = try {
+                    future.get()
+                } catch (e: Exception) {
+                    Log.w("StandardPlayerActivity", "MediaController connection failed", e)
+                    return@addListener
+                }
+                mediaController?.let {
+                    loadSTEndATimeByService()
+
+
+                    runOnUiThread {
+                        try {
+                            animatePlayButton(it.playWhenReady)
+                            val title = it.mediaMetadata.title ?: ""
+                            val artist = it.mediaMetadata.artist ?: ""
+                            val album = it.mediaMetadata.albumTitle ?: ""
+                            val durationMs = it.mediaMetadata.durationMs ?: 0L
+
+                            setDurationText(durationMs)
+                            binding.tvTitle.text = title
+                            binding.tvArtist.text = artist
+                            binding.tvAlbumName.text = album
+
+
+                            binding.ivAlbumArt.load_albumArt(it.mediaMetadata.artworkUri)
+
+                            startProgressUpdates()
+
+
+                        } catch (e: Exception) {
+                            Log.w("StandardPlayerActivity", "metadata update failed", e)
+                        }
+                    }
+
+
+
+
+
+                    it.addListener(object : Player.Listener {
+                        override fun onIsPlayingChanged(isPlaying: Boolean) {
+
+                        }
+
+                        override fun onPlaybackStateChanged(playbackState: Int) {
+
+                        }
+
+
+                        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                            runOnUiThread {
+                                try {
+                                    val title = mediaItem?.mediaMetadata?.title ?: ""
+                                    val artist = mediaItem?.mediaMetadata?.artist ?: ""
+                                    val album = mediaItem?.mediaMetadata?.albumTitle ?: ""
+
+                                    binding.tvTitle.text = title
+                                    binding.tvArtist.text = artist
+                                    binding.tvAlbumName.text = album
+
+
+                                    binding.ivAlbumArt.load_albumArt(mediaItem?.mediaMetadata?.artworkUri)
+
+
+                                    val durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L
+                                    setDurationText(durationMs)
+                                    if (durationMs > 0) binding.seekBar.max =
+                                        (durationMs / 1000L).toInt()
+                                    startProgressUpdates()
+                                } catch (e: Exception) {
+                                    Log.w(
+                                        "StandardPlayerActivity",
+                                        "metadata update failed",
+                                        e
+                                    )
+                                }
+                            }
+
+                        }
+                    })
+                }
+            }, ContextCompat.getMainExecutor(this))
+    }
+
+    override fun onStop() {
+        stopProgressUpdates()
+        val future = controllerFuture
+        controllerFuture = null
+        mediaController = null
+        future?.let(MediaController::releaseFuture)
+        super.onStop()
+    }
+
     private fun animatePlayButton(playing: Boolean) {
         val resId =
-            if (playing)  R.drawable.ic_pause else R.drawable.ic_play
+            if (playing) R.drawable.ic_pause else R.drawable.ic_play
         binding.btnPlayPause.setImageResource(resId)
     }
 
@@ -427,9 +448,6 @@ class StandardPlayerActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.w("StandardPlayerActivity", "unregisterReceiver failed", e)
         }
-        mediaController?.release()
-
-        mediaController = null
     }
 
     fun ImageView.load_albumArt(uri: Uri?) {

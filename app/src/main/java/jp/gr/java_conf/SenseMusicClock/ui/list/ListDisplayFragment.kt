@@ -16,8 +16,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
-import coil.load
-import coil.request.CachePolicy
+import coil3.load
+import coil3.request.CachePolicy
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.crossfade
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.DBManager
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlayList

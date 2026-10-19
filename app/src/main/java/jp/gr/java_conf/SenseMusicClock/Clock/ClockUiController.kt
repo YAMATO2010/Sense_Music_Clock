@@ -250,12 +250,17 @@ class ClockUiController(
 
     fun unbindService_Timer() {
         Log.d("ClockUiController", "unbindService_Timer called")
+        if (!isTimerBound) {
+            return
+        }
+
         try {
             activity.unbindService(timerConnection)
+        } catch (e: IllegalArgumentException) {
+            Log.w("ClockUiController", "Timer was not registered", e)
+        } finally {
             isTimerBound = false
-            Log.d("ClockUiController", "unbindService Timer succeeded")
-        } catch (e: Exception) {
-            Log.w("ClockUiController", "unbindService Timer failed", e)
+            timerService = null
         }
     }
 
@@ -267,7 +272,11 @@ class ClockUiController(
         }
         Log.d("ClockUiController", "BindService_Timer called")
         val intent = Intent(activity, TimerService::class.java)
-        isTimerBound = activity.bindService(intent, timerConnection, 0)
+        isTimerBound =  activity.bindService(
+            intent,
+            timerConnection,
+            Context.BIND_AUTO_CREATE
+        )
         Log.d("ClockUiController", "bindService requested for TimerService")
     }
 
@@ -281,11 +290,7 @@ class ClockUiController(
         // restore labels
 
 
-        activity.bindService(
-            Intent(activity, TimerService::class.java),
-            timerConnection,
-            Context.BIND_AUTO_CREATE
-        )
+        BindService_Timer()
         activity.lifecycleScope.launch {
             val alarmTime = PrefsManager.getSetAlarmTime(activity)
             binding.alarmButton.text = when {

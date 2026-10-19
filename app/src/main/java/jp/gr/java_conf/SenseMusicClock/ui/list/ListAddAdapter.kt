@@ -10,7 +10,10 @@ import android.widget.TextView
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
+import coil3.load
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.crossfade
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.R
 
@@ -51,8 +54,8 @@ class ListAddAdapter(
         holder.artWork.load(item?.albumArtUri) {
 
             crossfade(true)
-            memoryCachePolicy(coil.request.CachePolicy.DISABLED)
-            diskCachePolicy(coil.request.CachePolicy.ENABLED)
+            memoryCachePolicy(coil3.request.CachePolicy.DISABLED)
+            diskCachePolicy(coil3.request.CachePolicy.ENABLED)
             placeholder(R.drawable.outline_hide_image_24)
             error(R.drawable.outline_hide_image_24)
 

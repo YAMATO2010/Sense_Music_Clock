@@ -12,7 +12,10 @@ import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
+import coil3.load
+import coil3.request.placeholder
+import coil3.request.error
+import coil3.request.crossfade
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.keysForTrackTopLevel
 
