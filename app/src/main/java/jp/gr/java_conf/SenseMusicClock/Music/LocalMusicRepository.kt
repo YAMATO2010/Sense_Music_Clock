@@ -3,6 +3,8 @@ package jp.gr.java_conf.SenseMusicClock
 
 import android.content.ContentResolver
 import android.content.Context
+import android.os.CancellationSignal
+import android.os.OperationCanceledException
 import android.provider.MediaStore
 import android.util.Log
 import androidx.media3.common.MediaItem
@@ -12,6 +14,8 @@ import jp.gr.java_conf.SenseMusicClock.Music.MusicService
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher
 import jp.gr.java_conf.SenseMusicClock.Music.LocalMusicFetcher.playlist_selection
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,19 +44,70 @@ object LocalMusicRepository {
 
 
 
-    fun blockAndSetTracks(newTracks: List<MediaItem>, isBlock: Boolean): List<MediaItem> {
+    //Anyであることにいみはないが、ロック用のオブジェクトを作るためにAnyを使う。
+    private val tracksLoadLock = Any()
 
+    private class TracksLoadRequest(val cancellationSignal: CancellationSignal)
+
+    // CancellationSignalは再利用できないため、一覧更新ごとに保持する要求を差し替える。
+    private var currentTracksLoad: TracksLoadRequest? = null
+
+    private fun beginTracksLoad(cancellationSignal: CancellationSignal?): TracksLoadRequest {
+        val request = TracksLoadRequest(cancellationSignal ?: CancellationSignal())
+        val previous = synchronized(tracksLoadLock) {
+            val previous = currentTracksLoad
+            currentTracksLoad = request
+            previous
+        }
+        // cancelのコールバックをロック外で呼び、再入によるデッドロックを避ける。
+        if (previous?.cancellationSignal !== request.cancellationSignal) {
+            previous?.cancellationSignal?.cancel()
+        }
+        return request
+    }
+
+    private fun publishTracks(
+        newTracks: List<MediaItem>,
+        isBlock: Boolean,
+        request: TracksLoadRequest
+    ): List<MediaItem> = synchronized(tracksLoadLock) {
+        if (currentTracksLoad !== request || request.cancellationSignal.isCanceled) {
+            return@synchronized tracksFlow.value
+        }
         val filteredTracks = if (isBlock) newTracks.filterByBlocklist(blockItems) else newTracks
-        return setTracks(filteredTracks)
-
-    }
-
-    fun setTracks(newTracks: List<MediaItem>): List<MediaItem> {
-        val filteredTracks = newTracks
-        _tracksFlow.value = filteredTracks
+        if (request.cancellationSignal.isCanceled) return@synchronized tracksFlow.value
         createMap_idToIndex(filteredTracks)
-        return filteredTracks
+        _tracksFlow.value = filteredTracks
+        filteredTracks
     }
+
+    private suspend fun loadAndSetTracks(
+        cancellationSignal: CancellationSignal?,
+        isBlock: Boolean,
+        load: suspend (CancellationSignal) -> List<MediaItem>
+    ) {
+        val request = beginTracksLoad(cancellationSignal)
+        try {
+            request.cancellationSignal.throwIfCanceled()
+            val tracks = load(request.cancellationSignal)
+            currentCoroutineContext().ensureActive()
+            publishTracks(tracks, isBlock, request)
+        } catch (e: OperationCanceledException) {
+            // 新しい読み込みへの切り替えで、呼び出し元の設定監視collectまで終了させない。
+            if (!request.cancellationSignal.isCanceled) throw e
+        }
+    }
+
+    fun blockAndSetTracks(
+        newTracks: List<MediaItem>,
+        isBlock: Boolean,
+        cancellationSignal: CancellationSignal? = null
+    ): List<MediaItem> = publishTracks(newTracks, isBlock, beginTracksLoad(cancellationSignal))
+
+    fun setTracks(
+        newTracks: List<MediaItem>,
+        cancellationSignal: CancellationSignal? = null
+    ): List<MediaItem> = publishTracks(newTracks, false, beginTracksLoad(cancellationSignal))
 
 
     fun createMap_idToIndex(Tracks: List<MediaItem> = tracksFlow.value) {
@@ -73,42 +128,46 @@ object LocalMusicRepository {
         isBlock: Boolean,
         limit: Int,
         useCurrentShuffleMode: Boolean,
-
-
-        ) {
+        cancellationSignal: CancellationSignal? = null
+    ) {
         Log.d(
             "LocalMusicRepository",
             "loadMusicAndSetTracksAndCreateMap_addedAtDesc called with isFilterByDir=$isFilterByDir, isBlock=$isBlock, limit=$limit, useCurrentShuffleMode=$useCurrentShuffleMode"
         )
         val isShuffle = if (useCurrentShuffleMode) this.isShuffle else false
 
-        return withContext(Dispatchers.IO) {
-            val tracks = if (isFilterByDir) {
-                LocalMusicFetcher.loadMediaItemsFromDirectories(
-                    resolver = context.contentResolver,
-                    UserRelativePaths = UserRelativePaths,
-                    limit = limit,
-                    sortColumn = MediaStore.Audio.Media.DATE_ADDED,
-                    sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+        loadAndSetTracks(cancellationSignal, isBlock) { signal ->
+            withContext(Dispatchers.IO) {
+                val tracks = if (isFilterByDir) {
+                    LocalMusicFetcher.loadMediaItemsFromDirectories(
+                        resolver = context.contentResolver,
+                        UserRelativePaths = UserRelativePaths,
+                        limit = limit,
+                        sortColumn = MediaStore.Audio.Media.DATE_ADDED,
+                        sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING,
+                        cancellationSignal = signal
+                    )
+                } else {
+                    val queryArgs = LocalMusicFetcher.createQueryArgs(
+                        selection = null,
+                        selectionArgs = null,
+                        limit = limit,
+                        offset = 0,
+                        sortColumn = MediaStore.Audio.Media.DATE_ADDED,
+                        sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
+                    )
+                    LocalMusicFetcher.loadMediaItemFromMediaStore(
+                        context.contentResolver, queryArgs, cancellationSignal = signal
+                    )
+                }.let { tracks ->
+                    if (isShuffle) tracks.shuffled() else tracks
+                }
+                Log.d(
+                    "LocalMusicRepository",
+                    "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}"
                 )
-            } else {
-                val queryArgs = LocalMusicFetcher.createQueryArgs(
-                    selection = null,
-                    selectionArgs = null,
-                    limit = limit,
-                    offset = 0,
-                    sortColumn = MediaStore.Audio.Media.DATE_ADDED,
-                    sortDirection = ContentResolver.QUERY_SORT_DIRECTION_DESCENDING
-                )
-                LocalMusicFetcher.loadMediaItemFromMediaStore(context.contentResolver, queryArgs)
-            }.let { tracks ->
-                if (isShuffle) tracks.shuffled() else tracks
+                tracks
             }
-            Log.d(
-                "LocalMusicRepository",
-                "Loaded ${tracks.size} . first track: ${tracks.firstOrNull()?.mediaMetadata?.getDisplayName()}"
-            )
-            setTracksAndCreateMap(tracks, isBlock)
         }
 
 
@@ -117,61 +176,79 @@ object LocalMusicRepository {
     suspend fun loadMusicAndSetTracksAndCreateMap_playlist(
         context: Context,
         playlistItems: List<PlaylistItem>,
-        isBlock: Boolean = true
+        isBlock: Boolean = true,
+        cancellationSignal: CancellationSignal? = null
     ) {
-        setTracksAndCreateMap(loadPlaylistMusic(context, playlistItems), isBlock = isBlock)
+        loadAndSetTracks(cancellationSignal, isBlock) { signal ->
+            loadPlaylistMusic(context, playlistItems, signal)
+        }
     }
 
     suspend fun loadMusicAndSetTracksAndCreateMap_albumId(
         context: Context,
         albumId: Long,
-        isBlock: Boolean = false
+        isBlock: Boolean = false,
+        cancellationSignal: CancellationSignal? = null
     ) {
-        setTracksAndCreateMap(loadAlbumMusic(context, albumId), isBlock = isBlock)
+        loadAndSetTracks(cancellationSignal, isBlock) { signal ->
+            loadAlbumMusic(context, albumId, signal)
+        }
     }
 
     suspend fun loadMusicAndSetTracksAndCreateMap_artistId(
         context: Context,
         artistId: Long,
-        isBlock: Boolean = false
+        isBlock: Boolean = false,
+        cancellationSignal: CancellationSignal? = null
     ) {
-        setTracksAndCreateMap(loadArtistMusic(context, artistId), isBlock = isBlock)
+        loadAndSetTracks(cancellationSignal, isBlock) { signal ->
+            loadArtistMusic(context, artistId, signal)
+        }
     }
 
     suspend fun loadMusicAndSetTracksAndCreateMap_Id(
         context: Context,
         Id: Long,
-        isBlock: Boolean = false
+        isBlock: Boolean = false,
+        cancellationSignal: CancellationSignal? = null
     ) {
-        setTracksAndCreateMap(loadIdMusic(context, Id), isBlock = isBlock)
+        loadAndSetTracks(cancellationSignal, isBlock) { signal ->
+            loadIdMusic(context, Id, signal)
+        }
     }
 
     suspend fun loadAlbumMusic(
         context: Context,
-        albumId: Long
+        albumId: Long,
+        cancellationSignal: CancellationSignal? = null
     ): List<MediaItem> {
+        cancellationSignal?.throwIfCanceled()
         val (selection, selectionArgs) = LocalMusicFetcher.albumID_selection(albumId)
         val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
         return withContext(Dispatchers.IO) {
             if (isShuffle) {
                 LocalMusicFetcher.safeLoadMediaItemFromMediaStore(
                     context.contentResolver,
-                    queryArgs
+                    queryArgs,
+                    cancellationSignal = cancellationSignal
                 ).shuffled()
 
             } else {
                 LocalMusicFetcher.safeLoadMediaItemFromMediaStore(
                     context.contentResolver,
-                    queryArgs
+                    queryArgs,
+                    cancellationSignal = cancellationSignal
                 )
             }
-        }
+        }.also { cancellationSignal?.throwIfCanceled() }
     }
 
     suspend fun loadArtistMusic(
         context: Context,
-        artistId: Long
+        artistId: Long,
+        cancellationSignal: CancellationSignal? = null
     ): List<MediaItem> {
+        cancellationSignal?.throwIfCanceled()
         val (selection, selectionArgs) = LocalMusicFetcher.artistID_selection(artistId)
         val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
         return withContext(Dispatchers.IO) {
@@ -179,34 +256,42 @@ object LocalMusicRepository {
             if (isShuffle) {
                 LocalMusicFetcher.safeLoadMediaItemFromMediaStore(
                     context.contentResolver,
-                    queryArgs
+                    queryArgs,
+                    cancellationSignal = cancellationSignal
                 ).shuffled()
             } else {
                 LocalMusicFetcher.safeLoadMediaItemFromMediaStore(
                     context.contentResolver,
-                    queryArgs
+                    queryArgs,
+                    cancellationSignal = cancellationSignal
                 )
 
             }
-        }
+        }.also { cancellationSignal?.throwIfCanceled() }
     }
 
     suspend fun loadIdMusic(
         context: Context,
-        Id: Long
+        Id: Long,
+        cancellationSignal: CancellationSignal? = null
     ): List<MediaItem> {
+        cancellationSignal?.throwIfCanceled()
         val (selection, selectionArgs) = LocalMusicFetcher.id_selection(Id)
         val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
         return withContext(Dispatchers.IO) {
-            LocalMusicFetcher.safeLoadMediaItemFromMediaStore(context.contentResolver, queryArgs)
+            LocalMusicFetcher.safeLoadMediaItemFromMediaStore(
+                context.contentResolver, queryArgs, cancellationSignal = cancellationSignal
+            )
 
-        }
+        }.also { cancellationSignal?.throwIfCanceled() }
     }
 
     suspend fun loadPlaylistMusic(
         context: Context,
-        playlistItems: List<PlaylistItem>
+        playlistItems: List<PlaylistItem>,
+        cancellationSignal: CancellationSignal? = null
     ): List<MediaItem> {
+        cancellationSignal?.throwIfCanceled()
 
         if (playlistItems.isEmpty()) {
             return emptyList()
@@ -227,12 +312,17 @@ object LocalMusicRepository {
         val queryArgs = LocalMusicFetcher.createQueryArgs(selection, selectionArgs)
 
         val PlaylistTracks: MutableList<MediaItem> =
-            LocalMusicFetcher.safeLoadMediaItemFromMediaStore(context.contentResolver, queryArgs)
+            LocalMusicFetcher.safeLoadMediaItemFromMediaStore(
+                context.contentResolver, queryArgs, cancellationSignal = cancellationSignal
+            )
                 .toMutableList()
         return withContext(Dispatchers.Default) {
 
+            cancellationSignal?.throwIfCanceled()
             duplicateList.forEach { item ->
+                cancellationSignal?.throwIfCanceled()
                 for (i in 0 until item.first) {
+                    cancellationSignal?.throwIfCanceled()
 
                     val duplicateTrack = PlaylistTracks.find { it.isSamePath(item.second.fileItem) }
 
@@ -246,6 +336,7 @@ object LocalMusicRepository {
                 }
             }
 
+            cancellationSignal?.throwIfCanceled()
             if (isShuffle) {
                 return@withContext PlaylistTracks.shuffled()
             } else {
@@ -262,27 +353,28 @@ object LocalMusicRepository {
     suspend fun loadMusicAndSetTracksAndCreateMap(
         context: Context,
         UserRelativePaths: List<String> = emptyList(),
-        isBlock: Boolean = true
+        isBlock: Boolean = true,
+        cancellationSignal: CancellationSignal? = null
     ) {
-        val localTracks =
-            LocalMusicFetcher.loadMediaItemsFromDirectories(
+        loadAndSetTracks(cancellationSignal, isBlock) { signal ->
+            val localTracks = LocalMusicFetcher.loadMediaItemsFromDirectories(
                 resolver = context.contentResolver,
-                UserRelativePaths = UserRelativePaths
+                UserRelativePaths = UserRelativePaths,
+                cancellationSignal = signal
             )
-
-        withContext(Dispatchers.Default) {
-            localTracks.let { value ->
-                val shuffledTracks = if (isShuffle) value.shuffled() else value
-                setTracksAndCreateMap(shuffledTracks, isBlock)
+            withContext(Dispatchers.Default) {
+                if (isShuffle) localTracks.shuffled() else localTracks
             }
         }
     }
 
 
-    fun setTracksAndCreateMap(newTracks: List<MediaItem>, isBlock: Boolean) {
-
-        blockAndSetTracks(newTracks, isBlock)
-
+    fun setTracksAndCreateMap(
+        newTracks: List<MediaItem>,
+        isBlock: Boolean,
+        cancellationSignal: CancellationSignal? = null
+    ) {
+        blockAndSetTracks(newTracks, isBlock, cancellationSignal)
     }
 
 
