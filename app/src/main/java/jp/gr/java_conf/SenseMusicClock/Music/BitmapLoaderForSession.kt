@@ -73,6 +73,7 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
                 .allowHardware(false)
                 .crossfade(false)
                 .data(uri)
+                .size(512, 512) // Resize to 512x512 pixels
                 .placeholder(R.drawable.default_album_art)
                 .error(R.drawable.default_album_art)
                 .fallback(R.drawable.default_album_art)
@@ -105,6 +106,7 @@ class BitmapLoaderForSession(private val context: Context) : BitmapLoader {
             val request = ImageRequest.Builder(context)
                 .data(R.drawable.default_album_art)
                 .allowHardware(false)
+                .size(512, 512) // Resize to 512x512 pixels
                 .build()
 
 
