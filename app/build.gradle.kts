@@ -17,8 +17,8 @@ android {
         applicationId = "jp.gr.java_conf.SenseMusicClock"
         minSdk = 32
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.0_beta8"
+        versionCode = 9
+        versionName = "1.0_beta9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
