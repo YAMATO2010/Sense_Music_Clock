@@ -301,7 +301,8 @@ class MusicService : MediaLibraryService() {
         ): MediaSession.ConnectionResult {
             Log.d("MusicService", "onConnect called controller=${controller.packageName}")
 
-            val connectionResult = super.onConnect(session, controller)
+            val connectionResult = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller).build()
+
             val availableSessionCommands = connectionResult.availableSessionCommands.buildUpon()
 
             // ここでカスタムコマンドを明示的に追加する
@@ -589,6 +590,7 @@ class MusicService : MediaLibraryService() {
                 release()
                 session = null
             }
+            player.release()
 
             scope.cancel()
         } catch (e: Exception) {
