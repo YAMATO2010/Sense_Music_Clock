@@ -1217,6 +1217,7 @@ class MainActivity : AppCompatActivity() {
             this@MainActivity,
             binding.SearchResultView,
             binding.searchKeywordInput,
+            binding.searchTypeButton,
             onSearch = { index ->
                 mainViewModel.setCurrentIndex(index)
             }

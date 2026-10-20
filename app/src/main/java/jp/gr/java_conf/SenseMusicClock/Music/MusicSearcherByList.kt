@@ -5,18 +5,21 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil3.load
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.buildPositionMapFromIndexedTopLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -33,6 +36,7 @@ class MusicSearcherByList(
     private val activity: AppCompatActivity,
     private val recyclerView: RecyclerView,
     private val editText: EditText,
+    private val searchTypeButton: ImageButton,
     private val onSearch: (index: Int) -> Unit,
 
 
@@ -41,13 +45,45 @@ class MusicSearcherByList(
     private var targetTrackPositions: Map<String, Int> = mutableMapOf()
     private var targetTracks: List<MediaItem> = emptyList()
 
-    private var textWatcher : TextWatcher? = null
+    private var textWatcher: TextWatcher? = null
 
     private var searchJob: Job? = null
+
+    private var currentSearchType: SearchType = SearchType.TITLE
+
+    enum class SearchType {
+        TITLE, ARTIST, ALBUM, PATH
+    }
+
+
+    fun nextSearchType() {
+        val current = currentSearchType
+        val currentIndex = current.ordinal
+        val searchTypeMaxIndex = SearchType.entries.size - 1
+        val nextIndex = (currentIndex + 1).let {
+            if (it > searchTypeMaxIndex) 0 else it
+        }
+        val nextType = SearchType.entries[nextIndex]
+        currentSearchType = nextType
+    }
+
+    fun onclickSearchTypeButton() {
+        nextSearchType()
+        searchTypeButton.load(
+            when (currentSearchType) {
+                SearchType.TITLE -> R.drawable.music
+                SearchType.ARTIST -> R.drawable.artist
+                SearchType.ALBUM -> R.drawable.album
+                SearchType.PATH -> R.drawable.audio_file
+            }
+        )
+
+    }
 
     fun ini() {
 
         // Ensure recyclerView is ready to show a vertical list
+
 
         dispose()
         try {
@@ -68,8 +104,6 @@ class MusicSearcherByList(
                 delay(500)
 
 
-
-
                 val keyword = editText.text.toString().trim()
                 if (keyword.isBlank()) {
                     // 空キーワードなら何も表示しない
@@ -78,24 +112,44 @@ class MusicSearcherByList(
                     targetTrackPositions = buildPositionMapFromIndexedTopLevel(indexedAll)
                 } else {
                     withContext(Dispatchers.Default) {
+
                         val results = LocalMusicRepository.tracksFlow.value.withIndex()
-                            .filter { (_, track) ->
+                            .filter { (index, track) ->
+                                if (index % 100 == 0) {
+                                    ensureActive()
+                                }
                                 val metadata = track.mediaMetadata
-                                metadata.title?.contains(keyword, ignoreCase = true) ?: false ||
-                                        metadata.artist?.contains(
-                                            keyword,
-                                            ignoreCase = true
-                                        ) ?: false ||
-                                        metadata.albumTitle?.contains(
-                                            keyword,
-                                            ignoreCase = true
-                                        ) ?: false ||
-                                        metadata.extras?.getString("RELATIVE_PATH")
-                                            ?.contains(keyword, ignoreCase = true) ?: false
+
+                                when (currentSearchType) {
+
+                                    SearchType.TITLE -> metadata.title?.contains(
+                                        keyword,
+                                        ignoreCase = true
+                                    ) ?: false
+
+                                    SearchType.ARTIST -> metadata.artist?.contains(
+                                        keyword,
+                                        ignoreCase = true
+                                    ) ?: false
+
+                                    SearchType.ALBUM -> metadata.albumTitle?.contains(
+                                        keyword,
+                                        ignoreCase = true
+                                    ) ?: false
+
+                                    SearchType.PATH -> {
+                                        val extras = metadata.extras
+                                        extras?.getString(LocalMusicRepository.EXTRA_RELATIVE_PATH)?.contains(keyword, ignoreCase = true) ?: false ||
+                                                extras?.getString(LocalMusicRepository.EXTRA_DISPLAY_NAME)?.contains(keyword, ignoreCase = true) ?: false
+                                    }
+                                }
+
                             }
                         targetTracks = results.map { it.value }
                         // build mapping from the filtered results (keys -> original index)
                         targetTrackPositions = buildPositionMapFromIndexedTopLevel(results)
+
+
                     }
                 }
 
@@ -120,10 +174,17 @@ class MusicSearcherByList(
                         "MusicSearcher",
                         "applySearch: updating existing SearchMusicAdapter with ${targetTracks.size} items"
                     )
+                    existing.stateRestorationPolicy =
+                        RecyclerView.Adapter.StateRestorationPolicy.PREVENT
                     // ensure update runs on the RecyclerView's UI thread queue to avoid timing/layout races
                     recyclerView.post {
                         Log.d("MusicSearcher", "applySearch: posting setItems to recyclerView")
-                        existing.setItems(targetTracks, targetTrackPositions)
+                        existing.setItems(targetTracks, targetTrackPositions){
+                            // scroll to top after update
+                            recyclerView.scrollToPosition(0)
+                        }
+
+
                         // fallback check: if submitList/DIFF didn't update the visible itemCount shortly after, recreate adapter
                         recyclerView.postDelayed({
                             try {
@@ -193,7 +254,10 @@ class MusicSearcherByList(
                             onSearch(originalPosition ?: 0)
                         }
                     )
+
                 }
+
+
             }
 
         }
@@ -203,6 +267,12 @@ class MusicSearcherByList(
         textWatcher = editText.addTextChangedListener {
             applySearch()
         }
+        searchTypeButton.setOnClickListener {
+            onclickSearchTypeButton()
+            applySearch()
+
+        }
+
 
         // 初期表示は元のトラック一覧をセット
         applySearch()
