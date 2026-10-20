@@ -387,6 +387,27 @@ class MusicService : MediaLibraryService() {
 
             player.addListener(object : Player.Listener {
 
+                override fun onPositionDiscontinuity(
+                    oldPosition: Player.PositionInfo,
+                    newPosition: Player.PositionInfo,
+                    reason: Int
+                ) {
+                    Log.d(
+                        "PlayerTrace",
+                        "POSITION CHANGE reason=$reason " +
+                                "old=${oldPosition.positionMs} " +
+                                "new=${newPosition.positionMs}"
+                    )
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    Log.d("PlayerTrace", "STATE=$playbackState")
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    Log.d("PlayerTrace", "IS_PLAYING=$isPlaying")
+                }
+
                 override fun onPlayerError(error: PlaybackException) {
                     super.onPlayerError(error)
                     Log.e(
@@ -586,9 +607,9 @@ class MusicService : MediaLibraryService() {
 
         try {
             session?.run {
-                player.release()
                 release()
                 session = null
+                player.release()
             }
             player.release()
 
@@ -646,6 +667,14 @@ class MusicService : MediaLibraryService() {
     }
 
     suspend fun Player.setSafeMediaItems(List: List<MediaItem>) {
+        Log.d(
+            "PlayerTrace",
+            "setSafeMediaItems START " +
+                    "count=${List.size}, " +
+                    "currentIndex=$currentMediaItemIndex, " +
+                    "position=$currentPosition, " +
+                    "playWhenReady=$playWhenReady"
+        )
         val wasPlayWhenReady = withContext(Dispatchers.Main) { playWhenReady }
 
         withContext(Dispatchers.Main) {
@@ -678,6 +707,13 @@ class MusicService : MediaLibraryService() {
             playWhenReady = wasPlayWhenReady
         }
 
+        Log.d(
+            "PlayerTrace",
+            "setSafeMediaItems END " +
+                    "currentIndex=$currentMediaItemIndex, " +
+                    "position=$currentPosition, " +
+                    "playbackState=$playbackState"
+        )
     }
 
     suspend fun initRepository() {

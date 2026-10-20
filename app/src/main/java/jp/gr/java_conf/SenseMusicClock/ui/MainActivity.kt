@@ -111,6 +111,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 
 
 class MainActivity : AppCompatActivity() {
@@ -921,6 +923,7 @@ class MainActivity : AppCompatActivity() {
             unregisterReceiver(timeTickReceiver)
             clockUiController = null
             storageAccessHelper = null
+            musicSearcher?.dispose()
             musicSearcher = null
 
         } catch (e: Exception) {
@@ -932,14 +935,45 @@ class MainActivity : AppCompatActivity() {
 
         setLoadingVisible(true)
 
-        token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        browserFuture = MediaBrowser.Builder(this, token).buildAsync()
+        releaseAndInitMediaBrowser()
+    }
 
+
+    fun releaseAndInitMediaBrowser() {
+        releaseMediaBrowsers()
+        initializeMediaBrowser()
+    }
+
+    fun initializeMediaBrowser() {
+
+
+
+        token = SessionToken(this, ComponentName(this, MusicService::class.java))
+        val future =  MediaBrowser.Builder(this, token).buildAsync()
+        browserFuture = future
 
 
         browserFuture?.let {
             it.addListener({
-                mediaBrowser = it.get()
+                if (browserFuture !== future) {
+                    return@addListener
+                }
+                val browser = try {
+                    future.get()
+                } catch (e: CancellationException) {
+                    Log.d("MainActivity", "MediaBrowser connection cancelled")
+                    return@addListener
+                } catch (e: ExecutionException) {
+                    Log.e("MainActivity", "MediaBrowser connection failed", e)
+                    return@addListener
+                }
+
+                // get()成功後にも現在の接続か確認
+                if (browserFuture !== future) {
+                    return@addListener
+                }
+
+                mediaBrowser = browser
                 // これでサービスと接続完了！再生操作などができるようになる
 
                 mediaBrowser?.let {
@@ -1031,8 +1065,20 @@ class MainActivity : AppCompatActivity() {
             }, ContextCompat.getMainExecutor(this))
 
         }
+
     }
 
+    fun releaseMediaBrowsers() {
+        browserFuture?.let {
+            MediaBrowser.releaseFuture(it)
+        }
+        browserFuture = null
+
+
+        mediaBrowser?.release()
+        mediaBrowser = null
+
+    }
     private fun read_music_Granted_foronCreate() {
 
 
@@ -1171,6 +1217,7 @@ class MainActivity : AppCompatActivity() {
             this@MainActivity,
             binding.SearchResultView,
             binding.searchKeywordInput,
+            binding.searchTypeButton,
             onSearch = { index ->
                 mainViewModel.setCurrentIndex(index)
             }

@@ -34,9 +34,12 @@ class SearchMusicAdapter(
     /**
      * Update items and the position map in-place when adapter already exists.
      */
-    fun setItems(newItems: List<MediaItem>, newPositionMap: Map<String, Int>) {
+    fun setItems(newItems: List<MediaItem>, newPositionMap: Map<String, Int>, onComplete: (() -> Unit)? = null) {
         ItemPositionMap = newPositionMap
-        submitList(newItems.toList())
+        submitList(newItems.toList()){
+            onComplete?.invoke()
+        }
+
     }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
