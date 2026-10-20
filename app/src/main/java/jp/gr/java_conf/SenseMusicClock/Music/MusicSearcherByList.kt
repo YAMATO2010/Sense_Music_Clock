@@ -1,6 +1,7 @@
 package jp.gr.java_conf.SenseMusicClock.Music
 
 
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.widget.EditText
@@ -13,9 +14,11 @@ import androidx.recyclerview.widget.RecyclerView
 import jp.gr.java_conf.SenseMusicClock.LocalMusicRepository
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.buildPositionMapFromIndexedTopLevel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // --------------------
 // Top-level helpers
@@ -38,11 +41,15 @@ class MusicSearcherByList(
     private var targetTrackPositions: Map<String, Int> = mutableMapOf()
     private var targetTracks: List<MediaItem> = emptyList()
 
+    private var textWatcher : TextWatcher? = null
+
     private var searchJob: Job? = null
 
     fun ini() {
 
         // Ensure recyclerView is ready to show a vertical list
+
+        dispose()
         try {
             if (recyclerView.layoutManager == null) {
                 recyclerView.layoutManager = LinearLayoutManager(activity)
@@ -60,6 +67,9 @@ class MusicSearcherByList(
             searchJob = activity.lifecycleScope.launch {
                 delay(500)
 
+
+
+
                 val keyword = editText.text.toString().trim()
                 if (keyword.isBlank()) {
                     // 空キーワードなら何も表示しない
@@ -67,24 +77,26 @@ class MusicSearcherByList(
                     val indexedAll = emptyList<IndexedValue<MediaItem>>()
                     targetTrackPositions = buildPositionMapFromIndexedTopLevel(indexedAll)
                 } else {
-                    val results = LocalMusicRepository.tracksFlow.value.withIndex()
-                        .filter { (_, track) ->
-                            val metadata = track.mediaMetadata
-                            metadata.title?.contains(keyword, ignoreCase = true) ?: false ||
-                                    metadata.artist?.contains(
-                                        keyword,
-                                        ignoreCase = true
-                                    ) ?: false ||
-                                    metadata.albumTitle?.contains(
-                                        keyword,
-                                        ignoreCase = true
-                                    ) ?: false ||
-                                    metadata.extras?.getString("RELATIVE_PATH")
-                                        ?.contains(keyword, ignoreCase = true) ?: false
-                        }
-                    targetTracks = results.map { it.value }
-                    // build mapping from the filtered results (keys -> original index)
-                    targetTrackPositions = buildPositionMapFromIndexedTopLevel(results)
+                    withContext(Dispatchers.Default) {
+                        val results = LocalMusicRepository.tracksFlow.value.withIndex()
+                            .filter { (_, track) ->
+                                val metadata = track.mediaMetadata
+                                metadata.title?.contains(keyword, ignoreCase = true) ?: false ||
+                                        metadata.artist?.contains(
+                                            keyword,
+                                            ignoreCase = true
+                                        ) ?: false ||
+                                        metadata.albumTitle?.contains(
+                                            keyword,
+                                            ignoreCase = true
+                                        ) ?: false ||
+                                        metadata.extras?.getString("RELATIVE_PATH")
+                                            ?.contains(keyword, ignoreCase = true) ?: false
+                            }
+                        targetTracks = results.map { it.value }
+                        // build mapping from the filtered results (keys -> original index)
+                        targetTrackPositions = buildPositionMapFromIndexedTopLevel(results)
+                    }
                 }
 
                 // ログ: mapping のサンプルを出す（最大5件）
@@ -188,13 +200,23 @@ class MusicSearcherByList(
 
 
         // 入力変更でも即時検索（ユーザーが即時反映を期待するため）
-        editText.addTextChangedListener {
+        textWatcher = editText.addTextChangedListener {
             applySearch()
         }
 
         // 初期表示は元のトラック一覧をセット
         applySearch()
 
+    }
+
+    fun dispose() {
+        searchJob?.cancel()
+        searchJob = null
+
+        textWatcher?.let {
+            editText.removeTextChangedListener(it)
+        }
+        textWatcher = null
     }
 
 
