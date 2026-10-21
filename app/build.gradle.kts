@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 
 
-    //id("com.google.gms.google-services")
-    //id("com.google.firebase.crashlytics")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     id("com.mikepenz.aboutlibraries.plugin.android")
 }
 
@@ -17,8 +17,8 @@ android {
         applicationId = "jp.gr.java_conf.SenseMusicClock"
         minSdk = 32
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.0_beta10"
+        versionCode = 11
+        versionName = "1.0_beta11"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -79,8 +79,8 @@ dependencies {
     // Firebase
     // --------------------------------------------------
 
-    //implementation(platform(libs.firebase.bom))
-    //implementation(libs.firebase.crashlytics)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
 
     // --------------------------------------------------
