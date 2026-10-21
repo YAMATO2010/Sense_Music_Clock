@@ -98,9 +98,12 @@ class MusicSearcherByList(
         }
         // 共通検索処理にまとめる
         fun applySearch() {
+            val searchType = currentSearchType
+            Log.d("MusicSearcher", "applySearch: searchType=$searchType")
             searchJob?.cancel()
 
             searchJob = activity.lifecycleScope.launch {
+
                 delay(500)
 
 
@@ -120,7 +123,7 @@ class MusicSearcherByList(
                                 }
                                 val metadata = track.mediaMetadata
 
-                                when (currentSearchType) {
+                                when (searchType) {
 
                                     SearchType.TITLE -> metadata.title?.contains(
                                         keyword,

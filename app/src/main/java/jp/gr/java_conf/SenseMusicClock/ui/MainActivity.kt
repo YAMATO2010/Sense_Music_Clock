@@ -244,7 +244,7 @@ class MainActivity : AppCompatActivity() {
         storageAccessHelper = StorageAccessHelper(
             this,
             onDirectoryPicked = { _, _ -> },
-            onPermissionGranted = {  },
+            onPermissionGranted = { },
             onPermissionDenied = {
                 allView_onParmissionInvalid()
                 AlertDialog.Builder(this)
@@ -947,9 +947,8 @@ class MainActivity : AppCompatActivity() {
     fun initializeMediaBrowser() {
 
 
-
         token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        val future =  MediaBrowser.Builder(this, token).buildAsync()
+        val future = MediaBrowser.Builder(this, token).buildAsync()
         browserFuture = future
 
 
@@ -1079,6 +1078,7 @@ class MainActivity : AppCompatActivity() {
         mediaBrowser = null
 
     }
+
     private fun read_music_Granted_foronCreate() {
 
 
@@ -1213,16 +1213,19 @@ class MainActivity : AppCompatActivity() {
         }
         // scrolling was moved into the adapter commit callback; avoid duplicate calls here
 
-        musicSearcher = MusicSearcherByList(
-            this@MainActivity,
-            binding.SearchResultView,
-            binding.searchKeywordInput,
-            binding.searchTypeButton,
-            onSearch = { index ->
-                mainViewModel.setCurrentIndex(index)
-            }
-        )
-        musicSearcher?.ini()
+        if (musicSearcher == null) {
+
+            musicSearcher = MusicSearcherByList(
+                this@MainActivity,
+                binding.SearchResultView,
+                binding.searchKeywordInput,
+                binding.searchTypeButton,
+                onSearch = { index ->
+                    mainViewModel.setCurrentIndex(index)
+                }
+            )
+            musicSearcher?.ini()
+        }
 
 
     }

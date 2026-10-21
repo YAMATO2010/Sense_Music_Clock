@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 
 
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
+    //id("com.google.gms.google-services")
+    //id("com.google.firebase.crashlytics")
     id("com.mikepenz.aboutlibraries.plugin.android")
 }
 
@@ -79,8 +79,8 @@ dependencies {
     // Firebase
     // --------------------------------------------------
 
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.crashlytics)
+    //implementation(platform(libs.firebase.bom))
+    //implementation(libs.firebase.crashlytics)
 
 
     // --------------------------------------------------
