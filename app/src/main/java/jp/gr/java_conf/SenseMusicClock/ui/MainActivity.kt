@@ -69,8 +69,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.Timeline
 import androidx.media3.session.MediaBrowser
+import androidx.media3.session.MediaLibraryService.LibraryParams
+import androidx.media3.session.LibraryResult
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
@@ -108,6 +109,7 @@ import jp.gr.java_conf.SenseMusicClock.ui.search.SearchActivity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
@@ -122,6 +124,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaBrowser: MediaBrowser? = null
 
     private var browserFuture: ListenableFuture<MediaBrowser>? = null
+    private var mediaLoadJob: Job? = null
 
     var storageAccessHelper: StorageAccessHelper? = null
 
@@ -878,8 +881,7 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 mainViewModel.clearTracks()
             }
-            val newList = mutableListOf<MediaItem>()
-            loadAllMedias(newList, it)
+            loadAllMedias(it)
         }
     }
 
@@ -890,6 +892,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        mediaLoadJob?.cancel()
+        mediaLoadJob = null
 
         browserFuture?.let {
             MediaBrowser.releaseFuture(it)
@@ -948,7 +952,31 @@ class MainActivity : AppCompatActivity() {
 
 
         token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        val future = MediaBrowser.Builder(this, token).buildAsync()
+        val future = MediaBrowser.Builder(this, token)
+            .setListener(object : MediaBrowser.Listener {
+                override fun onChildrenChanged(
+                    browser: MediaBrowser,
+                    parentId: String,
+                    itemCount: Int,
+                    params: LibraryParams?
+                ) {
+                    if (mediaBrowser !== browser || parentId != MusicService.LIBRARY_ROOT_ID) return
+                    if (params?.extras?.getBoolean(MusicService.EXTRA_MEDIA_ITEMS_UPDATING) == true) {
+                        mediaLoadJob?.cancel()
+                        mediaLoadJob = null
+                        mainViewModel.clearTracks()
+                        setLoadingVisible(true)
+                    } else if (params?.extras?.getBoolean(MusicService.EXTRA_MEDIA_ITEMS_UPDATE_FAILED) == true) {
+                        mediaLoadJob?.cancel()
+                        mediaLoadJob = null
+                        Log.e("MainActivity", "Player media items update failed")
+                        setLoadingVisible(false)
+                    } else {
+                        loadAllMedias(browser)
+                    }
+                }
+            })
+            .buildAsync()
         browserFuture = future
 
 
@@ -980,8 +1008,23 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         mainViewModel.clearTracks()
                     }
-                    val newList = mutableListOf<MediaItem>()
-                    loadAllMedias(newList, it)
+                    lifecycleScope.launch {
+                        try {
+                            val result = browser.subscribe(MusicService.LIBRARY_ROOT_ID, null).await()
+                            if (mediaBrowser !== browser) return@launch
+                            if (result.resultCode != LibraryResult.RESULT_SUCCESS) {
+                                Log.e("MainActivity", "Library subscription failed: ${result.resultCode}")
+                                setLoadingVisible(false)
+                                return@launch
+                            }
+                            loadAllMedias(browser)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Library subscription failed", e)
+                            if (mediaBrowser === browser) setLoadingVisible(false)
+                        }
+                    }
 
 
 
@@ -1010,24 +1053,6 @@ class MainActivity : AppCompatActivity() {
                                     binding.playPauseButton.load(R.drawable.ic_play)
                                 }
                             }
-                        }
-
-                        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                            super.onTimelineChanged(timeline, reason)
-
-
-
-                            if (reason == Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) {
-                                runOnUiThread {
-                                    mainViewModel.clearTracks()
-                                }
-                                val newList = mutableListOf<MediaItem>()
-                                loadAllMedias(newList, it)
-
-
-                            }
-
-
                         }
 
                         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -1068,6 +1093,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun releaseMediaBrowsers() {
+        mediaLoadJob?.cancel()
+        mediaLoadJob = null
         browserFuture?.let {
             MediaBrowser.releaseFuture(it)
         }
@@ -1158,30 +1185,56 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadAllMedias(list: MutableList<MediaItem>, browser: MediaBrowser, page: Int = 0) {
-        val pageSize = 300 // 一度に取得するアイテム数を指定
-        val future = browser.getChildren("ROOT_ID", page, pageSize, null)
-        future.addListener({
-            val result = future.get()
-            val items = result?.value ?: return@addListener
-
-            if (items.isNotEmpty()) {
-                // Activity側のリストに追加
-                list.addAll(items)
-
-
-                // 次のページをリクエスト（再帰的に呼ぶ）
-                loadAllMedias(list, browser, page + 1)
-            } else {
-                // すべてのアイテムを取得し終わった後の処理
-                Log.d(
-                    "MainActivity",
-                    "All media items loaded: total=${mainViewModel.tracks.value.size}"
-                )
-                loadAllMediasComplete(list, browser)
-
+    private fun loadAllMedias(browser: MediaBrowser) {
+        mediaLoadJob?.cancel()
+        if (mediaBrowser !== browser) return
+        mainViewModel.clearTracks()
+        setLoadingVisible(true)
+        mediaLoadJob = lifecycleScope.launch {
+            val list = mutableListOf<MediaItem>()
+            var page = 0
+            var version: Long? = null
+            try {
+                while (isActive && mediaBrowser === browser) {
+                    val result = browser.getChildren(
+                        MusicService.LIBRARY_ROOT_ID, page, 300, null
+                    ).await()
+                    if (result.resultCode != LibraryResult.RESULT_SUCCESS) {
+                        Log.e("MainActivity", "Media page loading failed: ${result.resultCode}")
+                        setLoadingVisible(false)
+                        return@launch
+                    }
+                    val items = result.value ?: error("Media page has no items")
+                    val extras = result.params?.extras
+                    check(extras?.containsKey(MusicService.EXTRA_MEDIA_ITEMS_VERSION) == true) {
+                        "Media page has no version"
+                    }
+                    val pageVersion = extras.getLong(MusicService.EXTRA_MEDIA_ITEMS_VERSION)
+                    if (version != null && version != pageVersion) {
+                        // 更新前後のページが混在した場合は先頭から取り直す。
+                        list.clear()
+                        page = 0
+                        version = null
+                        continue
+                    }
+                    version = pageVersion
+                    if (items.isEmpty()) {
+                        if (mediaBrowser === browser) {
+                            Log.d("MainActivity", "All media items loaded: total=${list.size}")
+                            loadAllMediasComplete(list, browser)
+                        }
+                        return@launch
+                    }
+                    list.addAll(items)
+                    page++
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Media page loading failed", e)
+                if (mediaBrowser === browser) setLoadingVisible(false)
             }
-        }, ContextCompat.getMainExecutor(this))
+        }
     }
 
 
@@ -1226,7 +1279,6 @@ class MainActivity : AppCompatActivity() {
             )
             musicSearcher?.ini()
         }
-
 
     }
 
