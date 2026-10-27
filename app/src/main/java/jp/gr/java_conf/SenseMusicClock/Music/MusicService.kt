@@ -34,17 +34,24 @@ import jp.gr.java_conf.SenseMusicClock.ui.Widget.WidgetState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MusicService : MediaLibraryService() {
 
     companion object {
+
+        const val LIBRARY_ROOT_ID = "ROOT_ID"
+        const val EXTRA_MEDIA_ITEMS_VERSION = "media_items_version"
+        const val EXTRA_MEDIA_ITEMS_UPDATING = "media_items_updating"
+        const val EXTRA_MEDIA_ITEMS_UPDATE_FAILED = "media_items_update_failed"
 
         const val CUSTOM_ACTION_SLEEP_TIMER_SET =
             "jp.gr.java_conf.SenseMusicClock.action.SLEEP_TIMER_SET"
@@ -89,6 +96,9 @@ class MusicService : MediaLibraryService() {
     // サービス用コルーチンスコープ
     private val serviceJob = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + serviceJob)
+
+    private val mediaItemsAccess = MediaItemsAccess()
+    private var libraryItems: List<MediaItem> = emptyList()
 
     private var sleepTimerJob: Job? = null
 
@@ -233,7 +243,7 @@ class MusicService : MediaLibraryService() {
             return Futures.immediateFuture(
                 LibraryResult.ofItem(
                     MediaItem.Builder()
-                        .setMediaId("ROOT_ID")
+                        .setMediaId(LIBRARY_ROOT_ID)
                         .setMediaMetadata(
                             MediaMetadata.Builder()
                                 .setIsBrowsable(true)
@@ -271,6 +281,18 @@ class MusicService : MediaLibraryService() {
             }
         }
         // ② 「1MBの壁」を回避するページング実装
+        override fun onSubscribe(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<Void>> {
+            return Futures.immediateFuture(
+                if (parentId == LIBRARY_ROOT_ID) LibraryResult.ofVoid()
+                else LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+            )
+        }
+
         override fun onGetChildren(
             session: MediaLibrarySession,
             browser: MediaSession.ControllerInfo,
@@ -283,15 +305,28 @@ class MusicService : MediaLibraryService() {
                 "MusicService",
                 "onGetChildren called parentId=$parentId page=$page pageSize=$pageSize controller=${browser.packageName}"
             )
-            val allSongs = LocalMusicRepository.getTracks()
-            val fromIndex = page * pageSize
-            val toIndex = minOf(fromIndex + pageSize, allSongs.size)
+            return scope.future {
+                mediaItemsAccess.read { version ->
+                    // プレイヤーへの反映が完了した一覧だけを公開する。
+                    val allSongs = libraryItems
+                    val fromIndex = page * pageSize
+                    val toIndex = minOf(fromIndex + pageSize, allSongs.size)
+                    val resultParams = LibraryParams.Builder()
+                        .setRecent(params?.isRecent ?: false)
+                        .setOffline(params?.isOffline ?: false)
+                        .setSuggested(params?.isSuggested ?: false)
+                        .setExtras(Bundle(params?.extras ?: Bundle.EMPTY).apply {
+                            putLong(EXTRA_MEDIA_ITEMS_VERSION, version)
+                        })
+                        .build()
 
-            return if (fromIndex < allSongs.size) {
-                val pagedList = allSongs.subList(fromIndex, toIndex).map { it } // MediaItemに変換
-                Futures.immediateFuture(LibraryResult.ofItemList(pagedList, params))
-            } else {
-                Futures.immediateFuture(LibraryResult.ofItemList(listOf(), params))
+                    if (fromIndex < allSongs.size) {
+                        val pagedList = allSongs.subList(fromIndex, toIndex).map { it } // MediaItemに変換
+                        LibraryResult.ofItemList(pagedList, resultParams)
+                    } else {
+                        LibraryResult.ofItemList(listOf(), resultParams)
+                    }
+                }
             }
         }
 
@@ -667,52 +702,77 @@ class MusicService : MediaLibraryService() {
     }
 
     suspend fun Player.setSafeMediaItems(List: List<MediaItem>) {
-        Log.d(
-            "PlayerTrace",
-            "setSafeMediaItems START " +
-                    "count=${List.size}, " +
-                    "currentIndex=$currentMediaItemIndex, " +
-                    "position=$currentPosition, " +
-                    "playWhenReady=$playWhenReady"
-        )
-        val wasPlayWhenReady = withContext(Dispatchers.Main) { playWhenReady }
-
-        withContext(Dispatchers.Main) {
-            this@setSafeMediaItems.clearMediaItems()
-        }
-        withContext(Dispatchers.Default) {
-            val listSize = List.size
-            Log.d("MusicService", "Setting media items to player, count=${listSize}")
-            val pageSize = 900
-
-            val page = (listSize + pageSize - 1) / pageSize // 切り上げでページ数を計算
-            Log.d("MusicService", "Calculated pages: $page for pageSize=$pageSize")
-            for (i in 0 until page) {
-                val fromIndex = i * pageSize
-                val toIndex = minOf(fromIndex + pageSize, listSize)
-                val sublist = List.subList(fromIndex, toIndex)
-                Log.d(
-                    "MusicService",
-                    "Adding media items to player: page=${i + 1}/$page, items=${sublist.size}"
-                )
+        mediaItemsAccess.update {
+            var completed = false
+            try {
                 withContext(Dispatchers.Main) {
-                    addMediaItems(sublist)
+                    notifyLibraryItemsChanged(updating = true)
+                }
+                Log.d(
+                    "PlayerTrace",
+                    "setSafeMediaItems START " +
+                            "count=${List.size}, " +
+                            "currentIndex=$currentMediaItemIndex, " +
+                            "position=$currentPosition, " +
+                            "playWhenReady=$playWhenReady"
+                )
+                val wasPlayWhenReady = withContext(Dispatchers.Main) { playWhenReady }
 
+                withContext(Dispatchers.Main) {
+                    this@setSafeMediaItems.clearMediaItems()
+                }
+                withContext(Dispatchers.Default) {
+                    val listSize = List.size
+                    Log.d("MusicService", "Setting media items to player, count=${listSize}")
+                    val pageSize = 900
+
+                    val page = (listSize + pageSize - 1) / pageSize // 切り上げでページ数を計算
+                    Log.d("MusicService", "Calculated pages: $page for pageSize=$pageSize")
+                    for (i in 0 until page) {
+                        val fromIndex = i * pageSize
+                        val toIndex = minOf(fromIndex + pageSize, listSize)
+                        val sublist = List.subList(fromIndex, toIndex)
+                        Log.d(
+                            "MusicService",
+                            "Adding media items to player: page=${i + 1}/$page, items=${sublist.size}"
+                        )
+                        withContext(Dispatchers.Main) {
+                            addMediaItems(sublist)
+
+                        }
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    prepare()
+
+                    playWhenReady = wasPlayWhenReady
+                    libraryItems = List.toList()
+                }
+
+                Log.d(
+                    "PlayerTrace",
+                    "setSafeMediaItems END " +
+                            "currentIndex=$currentMediaItemIndex, " +
+                            "position=$currentPosition, " +
+                            "playbackState=$playbackState"
+                )
+                completed = true
+            } finally {
+                withContext(NonCancellable + Dispatchers.Main) {
+                    notifyLibraryItemsChanged(updating = false, failed = !completed)
                 }
             }
         }
-        withContext(Dispatchers.Main) {
-            prepare()
+    }
 
-            playWhenReady = wasPlayWhenReady
-        }
-
-        Log.d(
-            "PlayerTrace",
-            "setSafeMediaItems END " +
-                    "currentIndex=$currentMediaItemIndex, " +
-                    "position=$currentPosition, " +
-                    "playbackState=$playbackState"
+    private fun notifyLibraryItemsChanged(updating: Boolean, failed: Boolean = false) {
+        session?.notifyChildrenChanged(
+            LIBRARY_ROOT_ID,
+            libraryItems.size,
+            LibraryParams.Builder().setExtras(Bundle().apply {
+                putBoolean(EXTRA_MEDIA_ITEMS_UPDATING, updating)
+                putBoolean(EXTRA_MEDIA_ITEMS_UPDATE_FAILED, failed)
+            }).build()
         )
     }
 

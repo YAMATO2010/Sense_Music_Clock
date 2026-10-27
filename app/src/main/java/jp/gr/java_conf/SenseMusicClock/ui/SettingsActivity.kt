@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.session.MediaController
@@ -80,6 +81,11 @@ class SettingsActivity : AppCompatActivity() {
                 Log.w("SettingsActivity", "read audio permission denied")
             }
         )
+        val toolbar = findViewById<Toolbar>(R.id.toolbar2)
+
+        toolbar.setNavigationOnClickListener {
+            finish()
+        }
 
 
 

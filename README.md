@@ -38,6 +38,14 @@ Sense Music Clock は、時計・タイマー・アラーム・ストップウ�
 
 キャンセルによる一覧切り替えの回帰テストは `LocalMusicRepositoryCancellationTest` にあります。実機またはエミュレーター接続時に `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=jp.gr.java_conf.SenseMusicClock.LocalMusicRepositoryCancellationTest` で実行できます。
 
+## 再生リスト更新と画面の再取得
+
+`MusicService` は `setSafeMediaItems` の実行中・実行待ちにはページ取得を待機させ、更新を優先します。`onGetChildren` が返すのは、プレイヤーへの反映が完了した一覧です。
+
+`MainActivity` は更新開始通知で取得中の一覧を破棄し、更新完了通知を受けて先頭ページから再取得します。900曲ごとの追加では再取得しません。ページの世代が途中で変わった場合も先頭から取り直し、更新前後の一覧の混在を防ぎます。更新に失敗した場合は待機表示を終了し、失敗をログに記録します。
+
+優先順序とキャンセル・例外時のロック解放は、`./gradlew :app:testDebugUnitTest --tests jp.gr.java_conf.SenseMusicClock.Music.MediaItemsAccessTest` で確認できます。
+
 
 
 ## License
