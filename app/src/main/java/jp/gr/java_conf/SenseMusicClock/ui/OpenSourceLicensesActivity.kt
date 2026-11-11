@@ -1,8 +1,8 @@
 package jp.gr.java_conf.SenseMusicClock.ui
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.ui.ui.theme.SenseMusicClockTheme
 
-class OpenSourceLicensesActivity : ComponentActivity() {
+class OpenSourceLicensesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -34,7 +35,7 @@ class OpenSourceLicensesActivity : ComponentActivity() {
                             modifier = Modifier.weight(1f)
                         )
                         Button(onClick = { finish() }, modifier = Modifier.weight(0.1f).padding(8.dp)) {
-                            Text(text = "閉じる")
+                            Text(text = getString(R.string.close))
                         }
 
 

@@ -135,7 +135,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
 
         android:backgroundTint="@null"
-        android:contentDescription="play_pause"
+        android:contentDescription="@string/play_pause"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_play"
         android:padding="3dp"
@@ -154,7 +154,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
 
         android:backgroundTint="@null"
-        android:contentDescription="next"
+        android:contentDescription="@string/next_track"
         android:scaleType="fitCenter"
         android:src="@drawable/icon_next"
         app:layout_constraintBottom_toBottomOf="parent"

@@ -12,6 +12,7 @@ import android.media.RingtoneManager
 import android.os.IBinder
 import android.util.Log
 import androidx.annotation.RequiresPermission
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -143,7 +144,7 @@ class AlarmService : LifecycleService() {
         try {
 
             PrefsManager.setSetAlarmTime(this, hour, minute)
-            createAlarmInfoNotification(context, "アラームセット / $hour:${minute}")
+            createAlarmInfoNotification(context, ContextCompat.getContextForLanguage(context).getString(R.string.alarm_set, hour.toString(), minute.toString()))
             // 4. 正確な時間にアラームをセット
             // RTC_WAKEUP はスリープ中でも端末を起こして実行する設定
             alarmManager.setExactAndAllowWhileIdle(
@@ -233,12 +234,12 @@ class AlarmService : LifecycleService() {
 
 
         val notification = NotificationCompat.Builder(context, PLAY_ALARM_CHANNEL_ID)
-            .setContentTitle("SMC  アラーム")
+            .setContentTitle(ContextCompat.getString(context, R.string.alarm_notification))
             .setContentText("")
             .setSmallIcon(R.drawable.ic_notification) // 適切なアイコンを設定
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .addAction(R.drawable.ic_notification, "停止", createStopAlarmPendingIntent(context))
+            .addAction(R.drawable.ic_notification, ContextCompat.getString(context, R.string.stop), createStopAlarmPendingIntent(context))
             .build()
         startForeground(NOTIF_ID_ALARM, notification)
     }
@@ -246,7 +247,7 @@ class AlarmService : LifecycleService() {
     fun createAlarmInfoNotification(context: Context, infoText: String) {
 
         val notification = NotificationCompat.Builder(context, INFO_ALARM_CHANNEL_ID)
-            .setContentTitle("SMC アラームセット中")
+            .setContentTitle(ContextCompat.getString(context, R.string.alarm_scheduled))
             .setContentText(infoText)
             .setSmallIcon(R.drawable.ic_notification) // 適切なアイコンを設定
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

@@ -146,15 +146,15 @@ class ListAddFragment : Fragment() {
                             }
                             val message = when (sharedViewModel.listType.value) {
                                 ListsActivity.ListType.PLAYLIST -> {
-                                    if (saveSucceeded) "プレイリストに追加しました" else "プレイリストへの追加に失敗しました"
+                                    if (saveSucceeded) getString(R.string.playlist_items_added) else getString(R.string.playlist_add_failed)
                                 }
 
                                 ListsActivity.ListType.BLOCKLIST -> {
-                                    if (saveSucceeded) "ブロックリストに追加しました" else "ブロックリストへの追加に失敗しました"
+                                    if (saveSucceeded) getString(R.string.blocklist_items_added) else getString(R.string.blocklist_add_failed)
                                 }
 
                                 else -> {
-                                    if (saveSucceeded) "リストを保存しました" else "リストの保存に失敗しました"
+                                    if (saveSucceeded) getString(R.string.list_saved) else getString(R.string.list_save_failed)
                                 }
                             }
                             Toast.makeText(appContext, message, Toast.LENGTH_SHORT).show()

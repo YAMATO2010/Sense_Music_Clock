@@ -474,7 +474,7 @@ class StandardPlayerActivity : AppCompatActivity() {
 
                 binding.sleepTimerTextView.run {
 
-                    text = "${remaining / 60_000}分後に停止"
+                    text = getString(R.string.sleep_remaining, remaining / 60_000)
                     visibility = if (remaining > 0) View.VISIBLE else View.GONE
                 }
 

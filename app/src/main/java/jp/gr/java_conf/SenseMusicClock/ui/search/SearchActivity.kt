@@ -55,18 +55,9 @@ class SearchActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val ARTIST = "アーティスト"
-        const val TITLE = "タイトル"
-        const val ALBUM = "アルバム"
-
         const val HISTORY_ITEM_MAX_COUNT = 50
     }
 
-    private val searchType: Map<String, SearchType> = mapOf<String, SearchType>(
-        ARTIST to SearchType.ARTIST,
-        ALBUM to SearchType.ALBUM,
-        TITLE to SearchType.TITLE
-    )
     private val viewModel: SearchViewModel by viewModels()
 
     private lateinit var searchHistoryAdapter: SearchHistoryAdapter
@@ -105,15 +96,15 @@ class SearchActivity : AppCompatActivity() {
             }, ContextCompat.getMainExecutor(this))
         }
 
-        val types = arrayOf(ALBUM, TITLE, ARTIST)
+        val types = arrayOf(SearchType.ALBUM, SearchType.TITLE, SearchType.ARTIST)
         viewModel.setSearchType(
-            searchType[types[binding.typeTabLayout.selectedTabPosition]] ?: SearchType.ARTIST
+            types.getOrElse(binding.typeTabLayout.selectedTabPosition) { SearchType.ARTIST }
         )
 
         binding.typeTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 val selectedType = types[tab?.position ?: 0]
-                viewModel.setSearchType(searchType[selectedType] ?: SearchType.ARTIST)
+                viewModel.setSearchType(selectedType)
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab?) {
@@ -180,9 +171,9 @@ class SearchActivity : AppCompatActivity() {
         }
         viewModel.isSearchMode.observe(this) { isSearchMode ->
             if (isSearchMode) {
-                binding.currentModeTextView.text = "検索"
+                binding.currentModeTextView.text = getString(R.string.search)
             } else {
-                binding.currentModeTextView.text = "検索履歴"
+                binding.currentModeTextView.text = getString(R.string.search_history)
             }
         }
 
@@ -560,7 +551,12 @@ class SearchActivity : AppCompatActivity() {
             val metadata = loadHistoryMetadata(item)
             withContext(Dispatchers.Main) {
                 holder.Title?.text = metadata.title
-                holder.subText?.text = metadata.type
+                holder.subText?.text = when (metadata.type) {
+                    SearchHistory.TYPE_ALBUM -> getString(R.string.album)
+                    SearchHistory.TYPE_ARTIST -> getString(R.string.artist)
+                    SearchHistory.TYPE_SONG -> getString(R.string.song)
+                    else -> metadata.type
+                }
                 holder.Image?.artworkLoad(metadata.imageUrl)
             }
         }

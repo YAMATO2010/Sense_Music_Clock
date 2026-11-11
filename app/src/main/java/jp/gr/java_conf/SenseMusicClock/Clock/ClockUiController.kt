@@ -139,8 +139,8 @@ class ClockUiController(
                         it.remainingTime.collect { value ->
 
 
-                            if (binding.TimerButton.text != "Timer" && value <= 0L && it.isTimerFinished) {
-                                binding.TimerButton.text = "完了！"
+                            if (value <= 0L && it.isTimerFinished) {
+                                binding.TimerButton.text = activity.getString(R.string.timer_finished)
                             } else {
                                 binding.TimerButton.text = formatMillisToTime(value)
                             }
@@ -320,19 +320,19 @@ class ClockUiController(
                 1f
             )
             val etH = EditText(activity).apply {
-                hint = "時"
+                hint = activity.getString(R.string.hours_hint)
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
                 layoutParams = lp
                 setText("")
             }
             val etM = EditText(activity).apply {
-                hint = "分"
+                hint = activity.getString(R.string.minutes_hint)
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
                 layoutParams = lp
                 setText("")
             }
             val etS = EditText(activity).apply {
-                hint = "秒"
+                hint = activity.getString(R.string.seconds_hint)
                 inputType = android.text.InputType.TYPE_CLASS_NUMBER
                 layoutParams = lp
                 setText("")
@@ -342,9 +342,9 @@ class ClockUiController(
             container.addView(etS)
 
             AlertDialog.Builder(activity)
-                .setTitle("タイマーを設定（時 / 分 / 秒）")
+                .setTitle(activity.getString(R.string.set_timer))
                 .setView(container)
-                .setPositiveButton("開始") { _, _ ->
+                .setPositiveButton(activity.getString(R.string.start)) { _, _ ->
                     val h = etH.text.toString().toLongOrNull() ?: 0L
                     val m = etM.text.toString().toLongOrNull() ?: 0L
                     val s = etS.text.toString().toLongOrNull() ?: 0L
@@ -356,7 +356,7 @@ class ClockUiController(
                         binding.TimerButton.text = formatMillisToTime(millis)
                     }
                 }
-                .setNegativeButton("キャンセル", null)
+                .setNegativeButton(activity.getString(R.string.cancel), null)
                 .show()
         }
         binding.TimerButton.setOnLongClickListener {
@@ -474,6 +474,6 @@ class ClockUiController(
         // show marker if scheduled day is after today
         val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
         val scheduledDate = z.toLocalDate()
-        return if (scheduledDate.isAfter(today)) "$hhmm (翌日)" else hhmm
+        return if (scheduledDate.isAfter(today)) activity.getString(R.string.next_day, hhmm) else hhmm
     }
 }

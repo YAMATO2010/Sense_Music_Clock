@@ -55,7 +55,11 @@ class ListDisplayFragment : Fragment() {
         adapterInit()
 
         binding.listName.text = sharedViewModel.listName.value ?: "Unknown"
-        binding.listType.text = sharedViewModel.listType.value?.name ?: "Unknown"
+        binding.listType.text = when (sharedViewModel.listType.value) {
+            ListsActivity.ListType.PLAYLIST -> getString(R.string.playlist)
+            ListsActivity.ListType.BLOCKLIST -> getString(R.string.blocklist)
+            else -> "Unknown"
+        }
 
         binding.toolbar.run {
 
@@ -96,7 +100,7 @@ class ListDisplayFragment : Fragment() {
                                         sharedViewModel.listId.value
                                             ?: -1L
                                     )
-                                    "プレイリストを削除しました"
+                                    getString(R.string.playlist_deleted)
                                 }
 
                                 ListType.BLOCKLIST -> {
@@ -105,7 +109,7 @@ class ListDisplayFragment : Fragment() {
                                         sharedViewModel.listId.value
                                             ?: -1L
                                     )
-                                    "ブロックリストを削除しました"
+                                    getString(R.string.blocklist_deleted)
                                 }
 
                                 else -> {
@@ -228,7 +232,7 @@ class ListDisplayFragment : Fragment() {
                                             "LIST_/ListDisplayFragment/rename",
                                             "rename playlist id=${sharedViewModel.listId.value} newName=$value"
                                         )
-                                        "プレイリスト名を変更しました"
+                                        getString(R.string.playlist_renamed)
 
                                     }
 
@@ -242,7 +246,7 @@ class ListDisplayFragment : Fragment() {
                                             "LIST_/ListDisplayFragment/rename",
                                             "rename blocklist id=${sharedViewModel.listId.value} newName=$value"
                                         )
-                                        "ブロックリスト名を変更しました"
+                                        getString(R.string.blocklist_renamed)
                                     }
 
                                     else -> {
@@ -282,7 +286,7 @@ class ListDisplayFragment : Fragment() {
                                     PrefsManager.setReloadTracks_reverse_andGet(appContext)
                                     Toast.makeText(
                                         appContext,
-                                        "使用するプレイリストに設定しました",
+                                        getString(R.string.playlist_selected),
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -300,7 +304,7 @@ class ListDisplayFragment : Fragment() {
                                     PrefsManager.setReloadTracks_reverse_andGet(appContext)
                                     Toast.makeText(
                                         appContext,
-                                        "使用するブロックリストに設定しました",
+                                        getString(R.string.blocklist_selected),
                                         Toast.LENGTH_SHORT
                                     ).show()
 

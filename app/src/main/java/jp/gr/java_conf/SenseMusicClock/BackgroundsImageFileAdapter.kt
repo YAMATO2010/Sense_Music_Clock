@@ -73,8 +73,8 @@ class BackgroundsImageFileAdapter(
             }
 
 
-            holder.image.contentDescription = "デフォルト背景"
-            holder.fileName.text = "デフォルト背景"
+            holder.image.contentDescription = context.getString(R.string.default_background)
+            holder.fileName.text = context.getString(R.string.default_background)
         } else {
 
 

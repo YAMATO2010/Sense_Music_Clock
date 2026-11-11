@@ -56,17 +56,17 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
 
-            android:text="アルバム" />
+            android:text="@string/album" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:text="曲" />
+            android:text="@string/song" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:text="アーティスト" />
+            android:text="@string/artist" />
 
     </com.google.android.material.tabs.TabLayout>
 

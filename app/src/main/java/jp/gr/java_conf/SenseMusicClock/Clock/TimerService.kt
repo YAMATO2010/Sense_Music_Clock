@@ -8,6 +8,7 @@ import android.os.Binder
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.vibrateOnceSafe
@@ -109,7 +110,7 @@ class TimerService : Service() {
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification) // アイコンは必須
-            .setContentTitle("タイマー起動中")
+            .setContentTitle(ContextCompat.getString(this, R.string.timer_running))
             .setOngoing(true)                // ユーザーが消せないようにする
             .setOnlyAlertOnce(true)          // 更新時に音を鳴らさない
             .setUsesChronometer(true)        // ★OSが勝手に時間を進めてくれる
@@ -138,11 +139,12 @@ class TimerService : Service() {
 
             override fun onFinish() {
                 Log.d("TimerService", "CountDownTimer finished")
+                // Publish the finished state before the time update observed by the UI.
+                isTimerFinished = true
                 _remainingTime.value = 0L
                 vibrateOnceSafe()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 foregroundStarted = false
-                isTimerFinished = true
             }
         }.start()
         val endTime = System.currentTimeMillis() +
