@@ -51,4 +51,4 @@ Sense Music Clock は、時計・タイマー・アラーム・ストップウ�
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE).
