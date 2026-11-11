@@ -15,6 +15,6 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_save"
-        android:title="保存"
+        android:title="@string/save"
         app:showAsAction="ifRoom" />
 </menu>

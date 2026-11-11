@@ -46,14 +46,14 @@ val sleepTimerTimesToMinutes = mapOf(
     SleepTimerTimes.HOUR_5 to 300
 )
 
-val sleepTimerTimesToText = mapOf(
-    SleepTimerTimes.OFF to "OFF",
-    SleepTimerTimes.MIN_5 to "5分",
-    SleepTimerTimes.MIN_15 to "15分",
-    SleepTimerTimes.MIN_30 to "30分",
-    SleepTimerTimes.HOUR_1 to "1時間",
-    SleepTimerTimes.HOUR_2 to "2時間",
-    SleepTimerTimes.HOUR_5 to "5時間"
+val sleepTimerTimesToTextRes = mapOf(
+    SleepTimerTimes.OFF to R.string.sleep_off,
+    SleepTimerTimes.MIN_5 to R.string.sleep_5_minutes,
+    SleepTimerTimes.MIN_15 to R.string.sleep_15_minutes,
+    SleepTimerTimes.MIN_30 to R.string.sleep_30_minutes,
+    SleepTimerTimes.HOUR_1 to R.string.sleep_1_hour,
+    SleepTimerTimes.HOUR_2 to R.string.sleep_2_hours,
+    SleepTimerTimes.HOUR_5 to R.string.sleep_5_hours
 )
 
 suspend fun ImageView.load_forRoot(context: Context, orientation: Int): String {
@@ -187,7 +187,7 @@ fun AppCompatActivity.launchSelectBackgroundImageDialog(
                 R.id.radioButtonEvening -> BackgroundResolver.NOW_EVENING
                 R.id.radioButtonNight -> BackgroundResolver.NOW_NIGHT
                 else -> {
-                    Toast.makeText(this, "時間帯を選択してください", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.select_time_of_day), Toast.LENGTH_SHORT).show()
                     return@BackgroundsImageFileAdapter
                 }
             }
@@ -196,20 +196,20 @@ fun AppCompatActivity.launchSelectBackgroundImageDialog(
                 R.id.radioButtonOblong -> BackgroundResolver.ORIENTATION_OBLONG
                 R.id.radioButtonLand -> BackgroundResolver.ORIENTATION_LAND
                 else -> {
-                    Toast.makeText(this, "画像の向きを選択してください", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.select_orientation), Toast.LENGTH_SHORT).show()
                     return@BackgroundsImageFileAdapter
                 }
             }
             val partOfday_str = when (selectedPartOfDay) {
-                BackgroundResolver.NOW_MORNING -> "朝"
-                BackgroundResolver.NOW_NOON -> "昼"
-                BackgroundResolver.NOW_EVENING -> "夕"
-                BackgroundResolver.NOW_NIGHT -> "夜"
+                BackgroundResolver.NOW_MORNING -> getString(R.string.morning)
+                BackgroundResolver.NOW_NOON -> getString(R.string.noon)
+                BackgroundResolver.NOW_EVENING -> getString(R.string.evening_short)
+                BackgroundResolver.NOW_NIGHT -> getString(R.string.night)
                 else -> ""
             }
             val orientation_str = when (selectedOrientation) {
-                BackgroundResolver.ORIENTATION_OBLONG -> "縦"
-                BackgroundResolver.ORIENTATION_LAND -> "横"
+                BackgroundResolver.ORIENTATION_OBLONG -> getString(R.string.portrait)
+                BackgroundResolver.ORIENTATION_LAND -> getString(R.string.landscape)
                 else -> ""
             }
 
@@ -221,7 +221,7 @@ fun AppCompatActivity.launchSelectBackgroundImageDialog(
                 if (path == "") {
                     Toast.makeText(
                         this,
-                        "デフォルト画像を背景画像に設定　\n時間帯：${partOfday_str}   /   向き：${orientation_str}",
+                        getString(R.string.default_background_set, partOfday_str, orientation_str),
                         Toast.LENGTH_SHORT
                     ).show()
 
@@ -229,7 +229,7 @@ fun AppCompatActivity.launchSelectBackgroundImageDialog(
                 } else {
                     Toast.makeText(
                         this,
-                        "${path}を背景画像に設定　\n時間帯：${partOfday_str}   /   向き：${orientation_str}",
+                        getString(R.string.background_set, path, partOfday_str, orientation_str),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -243,7 +243,7 @@ fun AppCompatActivity.launchSelectBackgroundImageDialog(
     val dialog = AlertDialog.Builder(this)
 
     dialog.setView(customView)
-        .setNegativeButton("キャンセル") { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
             // キャンセルボタンを押したときの処理
             dialog.dismiss()
         }
@@ -282,7 +282,7 @@ fun AppCompatActivity.launchClearBackgroundImageFileDialog(
             file.delete()
             Toast.makeText(
                 this,
-                "${file.name}をアプリから削除しました",
+                getString(R.string.background_deleted, file.name),
                 Toast.LENGTH_SHORT
             ).show()
 
@@ -295,9 +295,9 @@ fun AppCompatActivity.launchClearBackgroundImageFileDialog(
     val dialog = AlertDialog.Builder(this)
 
     dialog
-        .setTitle("背景画像ファイルの削除")
+        .setTitle(getString(R.string.delete_background_files))
         .setView(customView)
-        .setNegativeButton("キャンセル") { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
             // キャンセルボタンを押したときの処理
             dialog.dismiss()
         }
@@ -461,7 +461,7 @@ fun AppCompatActivity.showEditTextDialog(
             onTextConfirmed(inputText)
             dialog.dismiss()
         }
-        .setNegativeButton("キャンセル") { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
             dialog.cancel()
         }
         .show()
@@ -475,7 +475,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
 
     ) {
     val dialog = AlertDialog.Builder(this)
-        .setTitle("プレイリストを選択")
+        .setTitle(getString(R.string.select_playlist))
         .setItems(playlists.map { it.playlistName }.toTypedArray(), { dialog, which ->
 
             if (item == null) {
@@ -501,11 +501,11 @@ fun AppCompatActivity.showPlaylistSelectDialog(
                 }
             }
         })
-        .setNeutralButton("新規作成") { dialog, _ ->
+        .setNeutralButton(getString(R.string.create_new)) { dialog, _ ->
 
 
             showEditTextDialog(
-                title = "新しいプレイリストの名前",
+                title = getString(R.string.new_playlist_name),
 
                 onTextConfirmed = { playlistName ->
                     if (playlistName.isNotBlank()) {
@@ -530,7 +530,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
                                 )
                                 Toast.makeText(
                                     this@showPlaylistSelectDialog,
-                                    "プレイリスト「$playlistName」を作成しました",
+                                    getString(R.string.playlist_created, playlistName),
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 onPlaylistSelected(newId)
@@ -547,7 +547,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
                             dialog.dismiss() // ダイアログを閉じる
                         }
                     } else {
-                        Toast.makeText(this, "プレイリスト名は空にできません", Toast.LENGTH_SHORT)
+                        Toast.makeText(this, getString(R.string.playlist_name_required), Toast.LENGTH_SHORT)
                             .show()
                     }
                 }
@@ -556,7 +556,7 @@ fun AppCompatActivity.showPlaylistSelectDialog(
 
 
         }
-        .setNegativeButton("キャンセル", { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel), { dialog, _ ->
             dialog.dismiss()
         })
         .create()
@@ -571,14 +571,14 @@ fun AppCompatActivity.showBlockSelectDialog(
     onBlockSelected: (Long) -> Unit
 ) {
     val dialog = AlertDialog.Builder(this)
-        .setTitle("ブロックリストを選択")
+        .setTitle(getString(R.string.select_blocklist))
         .setItems(blockList.map { it.blockListName }.toTypedArray(), { dialog, which ->
 
             onBlockSelected(blockList[which].blockListID)
         })
-        .setNeutralButton("新規作成") { dialog, _ ->
+        .setNeutralButton(getString(R.string.create_new)) { dialog, _ ->
             showEditTextDialog(
-                title = "新しいブロックリストの名前",
+                title = getString(R.string.new_blocklist_name),
 
                 onTextConfirmed = { blockListName ->
                     if (blockListName.isNotBlank()) {
@@ -604,7 +604,7 @@ fun AppCompatActivity.showBlockSelectDialog(
                                 )
                                 Toast.makeText(
                                     this@showBlockSelectDialog,
-                                    "ブロックリスト「$blockListName」を作成しました",
+                                    getString(R.string.blocklist_created, blockListName),
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 onBlockSelected(newId)
@@ -621,14 +621,14 @@ fun AppCompatActivity.showBlockSelectDialog(
                             dialog.dismiss() // ダイアログを閉じる
                         }
                     } else {
-                        Toast.makeText(this, "ブロックリスト名は空にできません", Toast.LENGTH_SHORT)
+                        Toast.makeText(this, getString(R.string.blocklist_name_required), Toast.LENGTH_SHORT)
                             .show()
                     }
                 }
             )
             dialog.dismiss()
         }
-        .setNegativeButton("キャンセル", { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel), { dialog, _ ->
             dialog.dismiss()
         })
         .create()
@@ -643,11 +643,11 @@ fun AppCompatActivity.showListSelectDialog(
 ) {
 
     val dialog = AlertDialog.Builder(this)
-        .setTitle("リストを選択")
+        .setTitle(getString(R.string.select_list))
         .setItems(lists.map { it.name }.toTypedArray(), { dialog, which ->
             onListSelected(lists[which])
         })
-        .setNegativeButton("キャンセル", { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel), { dialog, _ ->
             dialog.dismiss()
         })
         .create()
@@ -665,7 +665,7 @@ fun <T> Context.utilDialog(
         .setTitle(title)
         .setItems(initialStrings, { _, index ->
             if (index < 0 || index >= initItems.size) {
-                Toast.makeText(this, "無効な選択です", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.invalid_selection), Toast.LENGTH_SHORT).show()
                 return@setItems
             } else {
 
@@ -674,7 +674,7 @@ fun <T> Context.utilDialog(
             }
 
         })
-        .setNegativeButton("キャンセル", { dialog, _ ->
+        .setNegativeButton(getString(R.string.cancel), { dialog, _ ->
             dialog.dismiss()
         })
         .create()

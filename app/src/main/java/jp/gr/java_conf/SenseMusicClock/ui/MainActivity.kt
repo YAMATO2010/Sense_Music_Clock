@@ -251,8 +251,8 @@ class MainActivity : AppCompatActivity() {
             onPermissionDenied = {
                 allView_onParmissionInvalid()
                 AlertDialog.Builder(this)
-                    .setTitle("権限が必要です")
-                    .setMessage("音楽を読み取るための権限が必要です。設定から権限を付与してください。")
+                    .setTitle(getString(R.string.permission_required))
+                    .setMessage(getString(R.string.music_permission_message))
                     .setPositiveButton("OK") { dialog, _ ->
                         dialog.dismiss()
                     }
@@ -446,7 +446,7 @@ class MainActivity : AppCompatActivity() {
                         ) {
                             DropdownMenuItem(
                                 text = {
-                                    Text("プレイリストに追加")
+                                    Text(getString(R.string.addPlaylist))
                                 },
                                 onClick = {
                                     addPlaylistByPopup(mediaItem) {
@@ -457,7 +457,7 @@ class MainActivity : AppCompatActivity() {
 
                             DropdownMenuItem(
                                 text = {
-                                    Text("ブロックリストに追加")
+                                    Text(getString(R.string.blocklist_itemadd))
                                 },
                                 onClick = {
                                     addBlickListByPopup(mediaItem) {
@@ -517,7 +517,7 @@ class MainActivity : AppCompatActivity() {
                         ) {
                             DropdownMenuItem(
                                 text = {
-                                    Text("プレイリストに追加")
+                                    Text(getString(R.string.addPlaylist))
                                 },
                                 onClick = {
                                     addPlaylistByPopup(mediaItem) {
@@ -528,7 +528,7 @@ class MainActivity : AppCompatActivity() {
 
                             DropdownMenuItem(
                                 text = {
-                                    Text("ブロックリストに追加")
+                                    Text(getString(R.string.blocklist_itemadd))
                                 },
                                 onClick = {
                                     addBlickListByPopup(mediaItem) {
@@ -648,7 +648,7 @@ class MainActivity : AppCompatActivity() {
 
     fun toastOnListAddedByPopup(item: String) {
 
-        val text = "「$item」が追加されました"
+        val text = getString(R.string.item_added, item)
         Toast.makeText(
             this,
             text,
@@ -755,7 +755,7 @@ class MainActivity : AppCompatActivity() {
             if (isInvalid) {
                 Toast.makeText(
                     this,
-                    "設定ボタンを押して、権限を追加してください",
+                    getString(R.string.grant_permission_settings),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -1494,7 +1494,7 @@ class MainActivity : AppCompatActivity() {
 
                 binding.sleepTimerTextView.run {
 
-                    text = "${remaining / 60_000}分後に停止"
+                    text = getString(R.string.sleep_remaining, remaining / 60_000)
                     visibility = if (remaining > 0) View.VISIBLE else View.GONE
                 }
 

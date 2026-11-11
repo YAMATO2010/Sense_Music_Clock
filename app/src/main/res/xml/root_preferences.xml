@@ -5,162 +5,170 @@
     tools:context=".SettingsFragment">
 
 
-    <PreferenceCategory app:title="音楽(全般)">
+    <PreferenceCategory app:title="@string/music_general">
 
 
         <Preference
             android:key="reLoad_Tracks"
             android:selectable="true"
-            android:title="再読み込み" />
+            android:title="@string/reload_tracks" />
 
         <SeekBarPreference
             android:defaultValue="100"
             android:key="volume_adjustment"
             android:max="100"
-            android:title="音量調整 (%)"
+            android:title="@string/volume_adjustment_title"
             app:min="0"
             app:showSeekBarValue="true"
             app:updatesContinuously="true" />
         <Preference
             android:key="action_play_default"
             android:selectable="true"
-            android:title="通常再生に戻す" />
+            android:title="@string/return_default_playback" />
 
 
     <SwitchPreference
         android:defaultValue="true"
         android:key="tile_title_display"
-        android:title="タイルのタイトル表示" />
+        android:title="@string/tile_titles" />
     <SwitchPreference
         android:defaultValue="false"
         android:key="playMode_loop"
-        android:title="一曲ループ" />
+        android:title="@string/repeat_one" />
 
     <SwitchPreference
         android:defaultValue="true"
         android:key="is_shuffle"
-        android:title="シャッフルする" />
+        android:title="@string/shuffle" />
     <Preference
         android:key="action_sleepTimer"
         android:selectable="true"
-        android:title="スリープタイマー" />
+        android:title="@string/sleep_timer" />
     </PreferenceCategory>
 
 
 
 
-    <PreferenceCategory app:title="プレイリスト・ブロックリスト">
+    <PreferenceCategory app:title="@string/lists_category">
 
         <Preference
             android:key="action_playList"
             android:selectable="true"
-            android:title="プレイリスト" />
+            android:title="@string/playlist" />
 
         <Preference
             android:key="action_blockList"
             android:selectable="true"
-            android:title="ブロックリスト" />
+            android:title="@string/blocklist" />
 
 
     </PreferenceCategory>
-    <PreferenceCategory app:title="最近追加された曲">
+    <PreferenceCategory app:title="@string/recent_tracks">
 
         <Preference
             android:key="action_play_added_at_Desc"
             android:selectable="true"
-            android:title="再生する" />
+            android:title="@string/play_tracks" />
 
         <SeekBarPreference
             android:defaultValue="50"
             android:key="max_load_tracks_added_at_Desc"
             android:max="300"
-            android:title="最大読み込み曲数"
+            android:title="@string/max_tracks"
             app:min="0"
             app:showSeekBarValue="true"
             app:updatesContinuously="true" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="useCurrentShuffleMode_added_at_Desc"
-            android:title="他モードとシャッフルを同期" />
+            android:title="@string/sync_shuffle" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="isBlock_added_at_Desc"
-            android:title="ブロックリストを適用" />
+            android:title="@string/apply_blocklist" />
 
         <SwitchPreference
             android:defaultValue="false"
             android:key="isFilterByDir_added_at_Desc"
-            android:title="フォルダでフィルタリングする" />
+            android:title="@string/filter_directories" />
 
 
 
     </PreferenceCategory>
-    <PreferenceCategory android:title="通常再生">
+    <PreferenceCategory android:title="@string/normal_playback">
         <Preference
             android:key="action_selectDirectory_add"
             android:selectable="true"
-            android:title="再生するディレクトリの追加" />
+            android:title="@string/add_directory" />
         <Preference
             android:key="action_selectDirectory_delete"
             android:selectable="true"
-            android:title="再生するディレクトリの削除" />
+            android:title="@string/remove_directory" />
 
 
     </PreferenceCategory>
-    <PreferenceCategory app:title="背景設定">
+    <PreferenceCategory app:title="@string/background_settings">
 
         <Preference
             android:key="background_add"
             android:selectable="true"
-            android:title="背景画像の追加" />
+            android:title="@string/add_background" />
 
         <Preference
             android:key="background_select"
             android:selectable="true"
-            android:title="背景画像の選択" />
+            android:title="@string/select_background" />
 
         <Preference
             android:key="background_clear"
             android:selectable="true"
-            android:title="背景画像の選択（削除）" />
+            android:title="@string/remove_background" />
         <SwitchPreference
             android:defaultValue="true"
             android:key="is_widget_background"
-            android:title="ウィジェットに画像背景をつける" />
+            android:title="@string/widget_background" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="is_random_background"
-            android:title="背景ランダムモード" />
+            android:title="@string/random_background" />
     </PreferenceCategory>
 
 
 
-    <PreferenceCategory app:title="設定の切り替え">
+    <PreferenceCategory app:title="@string/switch_settings">
 
         <Preference
             android:key="action_switchSettings"
             android:selectable="true"
-            android:title="切り替え" />
+            android:title="@string/switch_action" />
 
         <Preference
             android:key="action_switchSettings_add"
             android:selectable="true"
-            android:title="今の設定を保存" />
+            android:title="@string/save_current_settings" />
 
         <Preference
             android:key="action_switchSettings_delete"
             android:selectable="true"
-            android:title="設定の削除" />
+            android:title="@string/delete_settings" />
 
 
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="その他">
+    <PreferenceCategory app:title="@string/other_settings">
+
+        <ListPreference
+            android:key="app_language"
+            android:title="@string/language_title"
+            android:entries="@array/app_language_entries"
+            android:entryValues="@array/app_language_values"
+            android:persistent="false"
+            app:useSimpleSummaryProvider="true" />
 
         <Preference
             android:key="action_openSource"
             android:selectable="true"
-            android:title="オープンソースライセンス" />
+            android:title="@string/open_source_licenses" />
 
 
 

@@ -151,7 +151,7 @@ class ListEditFragment : Fragment() {
                         "Saving list items: ${newItems.map { it.fileItem.fileName }}"
                     )
                     sharedViewModel.setFileItemListByListItems(newItems)
-                    "プレイリストを保存しました"
+                    getString(R.string.playlist_saved)
 
                 }
 
@@ -163,7 +163,7 @@ class ListEditFragment : Fragment() {
                         checkedItems.toBlockListItems(listId)
                     )
                     sharedViewModel.setFileItemListByListItems(newItems)
-                    "ブロックリストを保存しました"
+                    getString(R.string.blocklist_saved)
 
                 }
 

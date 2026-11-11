@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="7dp"
 
-            android:text="背景画像の選択"
+            android:text="@string/select_background"
             android:textSize="15sp" />
 
 
@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
 
-            android:text="時間帯" />
+            android:text="@string/time_of_day" />
 
         <RadioGroup
             android:id="@+id/PartOfDay_radioButtongroup"
@@ -52,21 +52,21 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="昼" />
+                android:text="@string/noon" />
 
             <RadioButton
                 android:id="@+id/radioButtonEvening"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="夕方" />
+                android:text="@string/evening" />
 
             <RadioButton
                 android:id="@+id/radioButtonNight"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="夜" />
+                android:text="@string/night" />
 
 
         </RadioGroup>
@@ -76,7 +76,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
 
-            android:text="画面の向き" />
+            android:text="@string/orientation" />
 
         <RadioGroup
 
@@ -93,14 +93,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:checked="true"
-                android:text="縦" />
+                android:text="@string/portrait" />
 
             <RadioButton
                 android:id="@+id/radioButtonLand"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="横" />
+                android:text="@string/landscape" />
 
         </RadioGroup>
     </LinearLayout>

@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import com.google.common.base.Stopwatch
 import jp.gr.java_conf.SenseMusicClock.R
@@ -116,7 +117,7 @@ class StopWatchService : Service() {
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification) // アイコンは必須
-            .setContentTitle("ストップウォッチ起動中")
+            .setContentTitle(ContextCompat.getString(this, R.string.stopwatch_running))
             .setOngoing(true)                // ユーザーが消せないようにする
             .setOnlyAlertOnce(true)          // 更新時に音を鳴らさない
             .setUsesChronometer(true)        // ★OSが勝手に時間を進めてくれる
@@ -132,7 +133,7 @@ class StopWatchService : Service() {
         Log.d("StopWatchService", "showNotification_Stop called")
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification) // アイコンは必須
-            .setContentTitle("ストップウォッチ停止中")
+            .setContentTitle(ContextCompat.getString(this, R.string.stopwatch_stopped))
             .setOngoing(false)                // ユーザーが消せるようにする
             .setOnlyAlertOnce(true)          // 更新時に音を鳴らさない
 

@@ -83,7 +83,7 @@
                 android:maxHeight="35dp"
                 android:maxLines="1"
                 android:singleLine="true"
-                android:text="読み込み中"
+                android:text="@string/loading"
                 android:textColor="@color/white" />
 
         </FrameLayout>
@@ -123,7 +123,7 @@
                 android:maxHeight="35dp"
                 android:maxLines="1"
                 android:singleLine="true"
-                android:text="読み込み中"
+                android:text="@string/loading"
                 android:textColor="@color/white" />
 
         </FrameLayout>
@@ -174,7 +174,7 @@
                     android:layout_height="match_parent"
                     android:layout_weight="4"
                     android:autoSizeTextType="uniform"
-                    android:hint="楽曲検索"
+                    android:hint="@string/search_music"
                     android:maxLines="1"
 
                     android:textColor="@color/white"
@@ -262,7 +262,7 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="1"
-                android:text="Timer"
+                android:text="@string/timer_button_label"
                 app:backgroundTint="@null"
 
                 />
@@ -288,7 +288,7 @@
                 android:autoSizeTextType="uniform"
                 android:background="@drawable/rectanglebutton"
                 android:maxLines="1"
-                android:text="Alarm"
+                android:text="@string/alarm_button_label"
                 app:backgroundTint="@null" />
 
             <View
@@ -311,7 +311,7 @@
                 android:background="@drawable/rectanglebutton"
                 android:textColor="@color/white"
                 android:maxLines="2"
-                android:text="Stop\nWatch"
+                android:text="@string/stop_watch_button_label"
                 app:backgroundTint="@null"
 
 
@@ -360,7 +360,7 @@
                 android:paddingTop="6dp"
                 android:paddingRight="10dp"
                 android:paddingBottom="6dp"
-                android:text="読み込み中"
+                android:text="@string/loading"
                 android:textColor="@color/white"
                 android:textSize="14sp" />
 

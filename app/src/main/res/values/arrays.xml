@@ -1,4 +1,14 @@
 <resources>
+    <string-array name="app_language_entries">
+        <item>@string/language_system</item>
+        <item>@string/language_japanese</item>
+        <item>@string/language_english</item>
+    </string-array>
+    <string-array name="app_language_values" translatable="false">
+        <item>system</item>
+        <item>ja</item>
+        <item>en</item>
+    </string-array>
     <!-- Reply Preference -->
     <string-array name="reply_entries">
         <item>Reply</item>

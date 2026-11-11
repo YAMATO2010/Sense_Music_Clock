@@ -11,14 +11,17 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import androidx.media3.session.SessionToken
 import androidx.preference.Preference
+import androidx.preference.ListPreference
 import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
@@ -46,7 +49,7 @@ import jp.gr.java_conf.SenseMusicClock.showBlockSelectDialog
 import jp.gr.java_conf.SenseMusicClock.showEditTextDialog
 import jp.gr.java_conf.SenseMusicClock.showPlaylistSelectDialog
 import jp.gr.java_conf.SenseMusicClock.sleepTimerTimesToMinutes
-import jp.gr.java_conf.SenseMusicClock.sleepTimerTimesToText
+import jp.gr.java_conf.SenseMusicClock.sleepTimerTimesToTextRes
 import jp.gr.java_conf.SenseMusicClock.toFileItem
 import jp.gr.java_conf.SenseMusicClock.ui.list.ListsActivity
 import jp.gr.java_conf.SenseMusicClock.utilDialog
@@ -125,6 +128,13 @@ class SettingsActivity : AppCompatActivity() {
 
     class SettingsFragment : PreferenceFragmentCompat() {
         private val gson = Gson()
+
+        override fun onResume() {
+            super.onResume()
+            // The saved preference UI state can predate the locale change.
+            findPreference<ListPreference>("app_language")?.value =
+                AppCompatDelegate.getApplicationLocales()[0]?.language ?: "system"
+        }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             // 明示的に名前付き SharedPreferences を使う（XML の属性に依存せず確実に同じ prefs を使用する）
@@ -215,6 +225,21 @@ class SettingsActivity : AppCompatActivity() {
             preferenceManager.preferenceDataStore = MyDataStore
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
+            findPreference<ListPreference>("app_language")?.apply {
+                value = AppCompatDelegate.getApplicationLocales()[0]?.language ?: "system"
+                setOnPreferenceChangeListener { _, newValue ->
+                    val language = newValue as String
+                    if (language !in listOf("system", "ja", "en")) {
+                        return@setOnPreferenceChangeListener false
+                    }
+                    AppCompatDelegate.setApplicationLocales(
+                        if (language == "system") LocaleListCompat.getEmptyLocaleList()
+                        else LocaleListCompat.forLanguageTags(language)
+                    )
+                    true
+                }
+            }
+
             val pickPref: Preference? = findPreference("action_selectDirectory_add")
             pickPref?.setOnPreferenceClickListener {
                 Log.d("SettingsFragment", "action_selectDirectory clicked")
@@ -228,7 +253,7 @@ class SettingsActivity : AppCompatActivity() {
                     val dirs = TargetDirectoryPrefJSONManager.getAll(requireContext())
 
                     context?.utilDialog(
-                        "再生ディレクトリの削除",
+                        getString(R.string.remove_playback_directory),
                         dirs,
                         dirs.toTypedArray()
                     ) { selected ->
@@ -239,13 +264,13 @@ class SettingsActivity : AppCompatActivity() {
                             if (removed) {
                                 Toast.makeText(
                                     requireContext(),
-                                    "「$selected」を再生ディレクトリから削除しました。",
+                                    getString(R.string.directory_removed, selected),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
                                 Toast.makeText(
                                     requireContext(),
-                                    "「$selected」の削除に失敗しました。",
+                                    getString(R.string.directory_remove_failed, selected),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -279,13 +304,13 @@ class SettingsActivity : AppCompatActivity() {
                     SleepTimerTimes.HOUR_2,
                     SleepTimerTimes.HOUR_5
                 )
-                val timerListTexts = timerLists.map { sleepTimerTimesToText[it] ?: it.name }
+                val timerListTexts = timerLists.map { getString(sleepTimerTimesToTextRes.getValue(it)) }
 
                 val activity = requireActivity() as AppCompatActivity
                 val executor = ContextCompat.getMainExecutor(activity)
 
                 AlertDialog.Builder(activity)
-                    .setTitle("スリープタイマー")
+                    .setTitle(getString(R.string.sleep_timer))
                     .setItems(
                         timerListTexts.toTypedArray()
                     ) { _, which ->
@@ -319,7 +344,7 @@ class SettingsActivity : AppCompatActivity() {
 
                                     Toast.makeText(
                                         activity,
-                                        "音楽サービスへの接続に失敗しました。",
+                                        getString(R.string.music_connection_failed),
                                         Toast.LENGTH_SHORT
                                     ).show()
 
@@ -360,9 +385,9 @@ class SettingsActivity : AppCompatActivity() {
                                             ) {
                                                 val message =
                                                     if (minutes > 0) {
-                                                        "スリープタイマーを${minutes}分に設定しました。"
+                                                        getString(R.string.sleep_timer_set, minutes)
                                                     } else {
-                                                        "スリープタイマーをオフにしました。"
+                                                        getString(R.string.sleep_timer_off)
                                                     }
 
                                                 Toast.makeText(
@@ -379,7 +404,7 @@ class SettingsActivity : AppCompatActivity() {
 
                                                 Toast.makeText(
                                                     activity,
-                                                    "スリープタイマーの設定に失敗しました。",
+                                                    getString(R.string.sleep_timer_failed),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             }
@@ -392,7 +417,7 @@ class SettingsActivity : AppCompatActivity() {
 
                                             Toast.makeText(
                                                 activity,
-                                                "スリープタイマーの設定に失敗しました。",
+                                                getString(R.string.sleep_timer_failed),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         } finally {
@@ -405,7 +430,7 @@ class SettingsActivity : AppCompatActivity() {
                             executor
                         )
                     }
-                    .setNegativeButton("キャンセル", null)
+                    .setNegativeButton(getString(R.string.cancel), null)
                     .show()
                 true
             }
@@ -453,7 +478,7 @@ class SettingsActivity : AppCompatActivity() {
                             listOf(
                                 PlayList(
                                     PlayList.CURRENT_REMOVAL_ID,
-                                    "デフォルト",
+                                    getString(R.string.default_mode),
                                 )
                             ) + withContext(
                                 Dispatchers.IO
@@ -524,7 +549,7 @@ class SettingsActivity : AppCompatActivity() {
                             listOf(
                                 BlockList(
                                     PlayList.CURRENT_REMOVAL_ID,
-                                    "ブロック無しモード",
+                                    getString(R.string.no_blocking),
                                 )
                             ) + withContext(
                                 Dispatchers.IO
@@ -628,8 +653,8 @@ class SettingsActivity : AppCompatActivity() {
         private fun showSaveSettingsDialog() {
             val activity = requireActivity() as? AppCompatActivity ?: return
             activity.showEditTextDialog(
-                title = "設定名",
-                positiveButtonTitle = "保存",
+                title = getString(R.string.profile_name),
+                positiveButtonTitle = getString(R.string.save),
                 initialText = DEFAULT_SETTINGS_PROFILE_NAME
             ) { input ->
                 val appContext = requireContext().applicationContext
@@ -644,14 +669,14 @@ class SettingsActivity : AppCompatActivity() {
                     }.onSuccess { file ->
                         Toast.makeText(
                             requireContext(),
-                            "設定を「${file.nameWithoutExtension}」として保存しました。",
+                            getString(R.string.profile_saved, file.nameWithoutExtension),
                             Toast.LENGTH_SHORT
                         ).show()
                     }.onFailure { e ->
                         Log.e("SettingsFragment", "Failed to save settings profile", e)
                         Toast.makeText(
                             requireContext(),
-                            "設定の保存に失敗しました。",
+                            getString(R.string.profile_save_failed),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -663,13 +688,13 @@ class SettingsActivity : AppCompatActivity() {
         private fun showSwitchSettingsDialog() {
             val files = getSettingsProfileFiles(requireContext())
             if (files.isEmpty()) {
-                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT)
+                Toast.makeText(requireContext(), getString(R.string.no_profiles), Toast.LENGTH_SHORT)
                     .show()
                 return
             }
 
             requireContext().utilDialog(
-                "設定の切り替え",
+                getString(R.string.switch_settings),
                 files,
                 files.map { it.nameWithoutExtension }.toTypedArray()
             ) { file ->
@@ -687,14 +712,14 @@ class SettingsActivity : AppCompatActivity() {
                         applySettingsProfileToUi(profile)
                         Toast.makeText(
                             requireContext(),
-                            "設定を「${file.nameWithoutExtension}」に切り替えました。",
+                            getString(R.string.profile_switched, file.nameWithoutExtension),
                             Toast.LENGTH_SHORT
                         ).show()
                     }.onFailure { e ->
                         Log.e("SettingsFragment", "Failed to switch settings profile", e)
                         Toast.makeText(
                             requireContext(),
-                            "設定の切り替えに失敗しました。",
+                            getString(R.string.profile_switch_failed),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -725,33 +750,33 @@ class SettingsActivity : AppCompatActivity() {
         private fun showDeleteSettingsDialog() {
             val files = getSettingsProfileFiles(requireContext())
             if (files.isEmpty()) {
-                Toast.makeText(requireContext(), "保存済みの設定がありません。", Toast.LENGTH_SHORT)
+                Toast.makeText(requireContext(), getString(R.string.no_profiles), Toast.LENGTH_SHORT)
                     .show()
                 return
             }
 
             requireContext().utilDialog(
-                "設定の削除",
+                getString(R.string.delete_settings),
                 files,
                 files.map { it.nameWithoutExtension }.toTypedArray()
             ) { file ->
                 AlertDialog.Builder(requireContext())
-                    .setTitle("設定の削除")
-                    .setMessage("「${file.nameWithoutExtension}」を削除しますか？")
-                    .setPositiveButton("削除") { _, _ ->
+                    .setTitle(getString(R.string.delete_settings))
+                    .setMessage(getString(R.string.profile_delete_confirm, file.nameWithoutExtension))
+                    .setPositiveButton(getString(R.string.Delete)) { _, _ ->
                         viewLifecycleOwner.lifecycleScope.launch {
                             val deleted = withContext(Dispatchers.IO) {
                                 file.isFile && file.delete()
                             }
                             val message = if (deleted) {
-                                "設定を削除しました。"
+                                getString(R.string.profile_deleted)
                             } else {
-                                "設定の削除に失敗しました。"
+                                getString(R.string.profile_delete_failed)
                             }
                             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .setNegativeButton("キャンセル", null)
+                    .setNegativeButton(getString(R.string.cancel), null)
                     .show()
             }
         }

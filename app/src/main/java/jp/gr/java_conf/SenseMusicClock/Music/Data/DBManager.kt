@@ -3,7 +3,9 @@ package jp.gr.java_conf.SenseMusicClock.Music.Data
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.room.withTransaction
+import jp.gr.java_conf.SenseMusicClock.R
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlockList
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Blacklists.BlocklistItem
 import jp.gr.java_conf.SenseMusicClock.Music.Data.Playlists.PlayList
@@ -346,9 +348,9 @@ object DBManager {
         val isSuccess = mutex.withLock { _upsertBlocklistItem(context, value) }
         withContext(Dispatchers.Main) {
             if (isSuccess && DoToast) {
-                Toast.makeText(context, "ブロックリストに追加しました ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, ContextCompat.getString(context, R.string.blocklist_items_added), Toast.LENGTH_SHORT).show()
             } else if (DoToast) {
-                Toast.makeText(context, "ブロックリストへの追加に失敗しました ", Toast.LENGTH_SHORT)
+                Toast.makeText(context, ContextCompat.getString(context, R.string.blocklist_add_failed), Toast.LENGTH_SHORT)
                     .show()
             }
         }
@@ -483,9 +485,9 @@ object DBManager {
             mutex.withLock { _addPlaylistItemSingle(context, playlistId, fileItem, index) }
         withContext(Dispatchers.Main) {
             if (isSuccess && DoToast) {
-                Toast.makeText(context, "プレイリストに追加しました ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, ContextCompat.getString(context, R.string.playlist_items_added), Toast.LENGTH_SHORT).show()
             } else if (DoToast) {
-                Toast.makeText(context, "プレイリストへの追加に失敗しました ", Toast.LENGTH_SHORT)
+                Toast.makeText(context, ContextCompat.getString(context, R.string.playlist_add_failed), Toast.LENGTH_SHORT)
                     .show()
             }
         }
@@ -540,9 +542,9 @@ object DBManager {
             mutex.withLock { _addPlaylistItemMultiple(context, playlistId, fileItem, index) }
         withContext(Dispatchers.Main) {
             if (isSuccess && DoToast) {
-                Toast.makeText(context, "プレイリストに追加しました ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, ContextCompat.getString(context, R.string.playlist_items_added), Toast.LENGTH_SHORT).show()
             } else if (DoToast) {
-                Toast.makeText(context, "プレイリストへの追加に失敗しました ", Toast.LENGTH_SHORT)
+                Toast.makeText(context, ContextCompat.getString(context, R.string.playlist_add_failed), Toast.LENGTH_SHORT)
                     .show()
             }
         }
@@ -566,13 +568,13 @@ object DBManager {
             if (isSuccess) {
                 Toast.makeText(
                     context,
-                    "${playlistName}を作成し、${fileItem.fileName}を追加しました ",
+                    ContextCompat.getContextForLanguage(context).getString(R.string.playlist_item_created, playlistName, fileItem.fileName),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
                 Toast.makeText(
                     context,
-                    "プレイリストの作成とアイテムの追加に失敗しました ",
+                    ContextCompat.getString(context, R.string.playlist_create_add_failed),
                     Toast.LENGTH_SHORT
                 )
                     .show()
@@ -604,13 +606,13 @@ object DBManager {
             if (isSuccess) {
                 Toast.makeText(
                     context,
-                    "${playlistName}を作成し、曲を追加しました ",
+                    ContextCompat.getContextForLanguage(context).getString(R.string.playlist_tracks_created, playlistName),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
                 Toast.makeText(
                     context,
-                    "プレイリストの作成とアイテムの追加に失敗しました ",
+                    ContextCompat.getString(context, R.string.playlist_create_add_failed),
                     Toast.LENGTH_SHORT
                 )
                     .show()
@@ -638,13 +640,13 @@ object DBManager {
             if (isSuccess) {
                 Toast.makeText(
                     context,
-                    "ブロックリスト${blocklistName}を作成し、${fileItem.fileName}を追加しました ",
+                    ContextCompat.getContextForLanguage(context).getString(R.string.blocklist_item_created, blocklistName, fileItem.fileName),
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
                 Toast.makeText(
                     context,
-                    "ブロックリストの作成とアイテムの追加に失敗しました ",
+                    ContextCompat.getString(context, R.string.blocklist_create_add_failed),
                     Toast.LENGTH_SHORT
                 )
                     .show()
@@ -685,9 +687,9 @@ object DBManager {
             mutex.withLock { _upsertBlockListItems(context, BlocklistId, fileItem) }
         withContext(Dispatchers.Main) {
             if (isSuccess && DoToast) {
-                Toast.makeText(context, "ブロックリストに追加しました ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, ContextCompat.getString(context, R.string.blocklist_items_added), Toast.LENGTH_SHORT).show()
             } else if (DoToast) {
-                Toast.makeText(context, "ブロックリストへの追加に失敗しました ", Toast.LENGTH_SHORT)
+                Toast.makeText(context, ContextCompat.getString(context, R.string.blocklist_add_failed), Toast.LENGTH_SHORT)
                     .show()
             }
         }
@@ -727,9 +729,9 @@ object DBManager {
         val isSuccess = mutex.withLock { _copyPlaylist(context, playlistId) }
         withContext(Dispatchers.Main) {
             if (isSuccess) {
-                Toast.makeText(context, "プレイリストをコピーしました ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, ContextCompat.getString(context, R.string.playlist_copied), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(context, "プレイリストのコピーに失敗しました ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, ContextCompat.getString(context, R.string.playlist_copy_failed), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -785,14 +787,14 @@ object DBManager {
             if (isSuccess) {
                 Toast.makeText(
                     context,
-                    "${fromListInfo.name}を${toListInfo.name}にコピーしました ",
+                    ContextCompat.getContextForLanguage(context).getString(R.string.list_contents_copied, fromListInfo.name, toListInfo.name),
                     Toast.LENGTH_SHORT
                 )
                     .show()
             } else {
                 Toast.makeText(
                     context,
-                    "リストの内容のコピーに失敗しました ",
+                    ContextCompat.getString(context, R.string.list_copy_failed),
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -831,14 +833,14 @@ object DBManager {
         }
         if (isSuccess) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "ブロックリストをコピーしました ", Toast.LENGTH_SHORT)
+                Toast.makeText(context, ContextCompat.getString(context, R.string.blocklist_copied), Toast.LENGTH_SHORT)
                     .show()
             }
         } else {
             withContext(Dispatchers.Main) {
                 Toast.makeText(
                     context,
-                    "ブロックリストのコピーに失敗しました ",
+                    ContextCompat.getString(context, R.string.blocklist_copy_failed),
                     Toast.LENGTH_SHORT
                 ).show()
             }
