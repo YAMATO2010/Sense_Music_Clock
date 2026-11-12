@@ -1010,10 +1010,14 @@ class MainActivity : AppCompatActivity() {
                     }
                     lifecycleScope.launch {
                         try {
-                            val result = browser.subscribe(MusicService.LIBRARY_ROOT_ID, null).await()
+                            val result =
+                                browser.subscribe(MusicService.LIBRARY_ROOT_ID, null).await()
                             if (mediaBrowser !== browser) return@launch
                             if (result.resultCode != LibraryResult.RESULT_SUCCESS) {
-                                Log.e("MainActivity", "Library subscription failed: ${result.resultCode}")
+                                Log.e(
+                                    "MainActivity",
+                                    "Library subscription failed: ${result.resultCode}"
+                                )
                                 setLoadingVisible(false)
                                 return@launch
                             }
@@ -1055,12 +1059,19 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
 
+
                         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                             super.onMediaItemTransition(mediaItem, reason)
 
                             runOnUiThread {
                                 if (mediaItem != null) {
                                     applyCurrentTrackToUi(mediaItem)
+                                    lifecycleScope.launch {
+
+                                        if (PrefsManager.getIsAutoScrollToCurrentTrack(this@MainActivity)){
+                                            scrollToTrack(mediaItem)
+                                        }
+                                    }
 
                                 } else {
                                     stopSlideLoop()
@@ -1074,6 +1085,7 @@ class MainActivity : AppCompatActivity() {
                                     binding.MusicEtcView.text = ""
                                     updateMarqueeFor(binding.TitleView)
                                     updateMarqueeFor(binding.MusicEtcView)
+
                                 }
                             }
 

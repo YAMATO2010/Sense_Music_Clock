@@ -33,6 +33,10 @@
         android:title="@string/tile_titles" />
     <SwitchPreference
         android:defaultValue="false"
+        android:key="isAutoScrollToCurrentTrack"
+        android:title="@string/auto_scroll_to_current_track" />
+    <SwitchPreference
+        android:defaultValue="false"
         android:key="playMode_loop"
         android:title="@string/repeat_one" />
 

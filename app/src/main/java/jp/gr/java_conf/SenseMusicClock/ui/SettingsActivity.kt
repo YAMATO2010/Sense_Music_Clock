@@ -728,6 +728,8 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun applySettingsProfileToUi(profile: PrefsManager.SettingsProfile) {
+            findPreference<SwitchPreference>("isAutoScrollToCurrentTrack")?.isChecked =
+                profile.isAutoScrollToCurrentTrack
             findPreference<SwitchPreference>("tile_title_display")?.isChecked =
                 profile.tileTitleDisplay
             findPreference<SwitchPreference>("playMode_loop")?.isChecked = profile.playModeLoop
@@ -905,6 +907,10 @@ class SettingsActivity : AppCompatActivity() {
 
                 when (key) {
                     "tile_title_display" -> PrefsManager.setTileTitleDisplay(context, value)
+                    "isAutoScrollToCurrentTrack" -> PrefsManager.setIsAutoScrollToCurrentTrack(
+                        context,
+                        value
+                    )
                     "playMode_loop" -> PrefsManager.setPlayModeLoop(context, value)
                     "is_shuffle" -> PrefsManager.setIsShuffle(context, value)
                     "is_widget_background" -> PrefsManager.setWidgetBackground(context, value)
@@ -933,6 +939,9 @@ class SettingsActivity : AppCompatActivity() {
             return runBlocking {
                 when (key) {
                     "tile_title_display" -> PrefsManager.getTileTitleDisplay(context)
+                    "isAutoScrollToCurrentTrack" -> PrefsManager.getIsAutoScrollToCurrentTrack(
+                        context
+                    )
                     "playMode_loop" -> PrefsManager.getPlayModeLoop(context)
                     "is_shuffle" -> PrefsManager.getIsShuffle(context)
                     "is_widget_background" -> PrefsManager.getWidgetBackground(context)

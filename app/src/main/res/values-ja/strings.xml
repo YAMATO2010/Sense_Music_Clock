@@ -64,6 +64,7 @@
     <string name="remove_background">背景画像の選択（削除）</string>
     <string name="widget_background">ウィジェットに画像背景をつける</string>
     <string name="random_background">背景ランダムモード</string>
+    <string name="auto_scroll_to_current_track">再生中の曲へ自動スクロール</string>
     <string name="switch_settings">設定の切り替え</string>
     <string name="switch_action">切り替え</string>
     <string name="save_current_settings">今の設定を保存</string>

@@ -66,6 +66,9 @@ object PrefsManager {
     private val IS_FILTER_BY_DIR_ADDED_AT_DESC =
         booleanPreferencesKey("isFilterByDir_added_at_Desc")
 
+    private val IS_AUTO_SCROLL_TO_CURRENT_TRACK =
+        booleanPreferencesKey("isAutoScrollToCurrentTrack")
+
     private val WIDGET_TITLE_KEY =
         stringPreferencesKey("widget_title")
 
@@ -110,7 +113,8 @@ object PrefsManager {
         val maxLoadTracksAddedAtDesc: Int,
         val useCurrentShuffleModeAddedAtDesc: Boolean,
         val isBlockAddedAtDesc: Boolean,
-        val isFilterByDirAddedAtDesc: Boolean
+        val isFilterByDirAddedAtDesc: Boolean,
+        val isAutoScrollToCurrentTrack: Boolean = false
     )
 
 
@@ -367,6 +371,20 @@ object PrefsManager {
     }
 
 
+    // 再生中の曲への自動スクロールフラグ
+    fun getIsAutoScrollToCurrentTrackFlow(context: Context, default: Boolean = false): Flow<Boolean> {
+        return context.getPrefsFlow(IS_AUTO_SCROLL_TO_CURRENT_TRACK, default)
+    }
+
+    suspend fun getIsAutoScrollToCurrentTrack(context: Context, default: Boolean = false): Boolean {
+        return context.getPrefsValue(IS_AUTO_SCROLL_TO_CURRENT_TRACK, default)
+    }
+
+    suspend fun setIsAutoScrollToCurrentTrack(context: Context, value: Boolean) {
+        context.setPrefsValue(IS_AUTO_SCROLL_TO_CURRENT_TRACK, value)
+    }
+
+
     // 再生モードのループフラグ
     fun getPlayModeLoopFlow(context: Context, default: Boolean = false): Flow<Boolean> {
 
@@ -506,7 +524,8 @@ object PrefsManager {
                     useCurrentShuffleModeAddedAtDesc =
                         prefs[USE_CURRENT_SHUFFLE_MODE_ADDED_AT_DESC] ?: false,
                     isBlockAddedAtDesc = prefs[IS_BLOCK_ADDED_AT_DESC] ?: false,
-                    isFilterByDirAddedAtDesc = prefs[IS_FILTER_BY_DIR_ADDED_AT_DESC] ?: false
+                    isFilterByDirAddedAtDesc = prefs[IS_FILTER_BY_DIR_ADDED_AT_DESC] ?: false,
+                    isAutoScrollToCurrentTrack = prefs[IS_AUTO_SCROLL_TO_CURRENT_TRACK] ?: false
                 )
             }
         }
@@ -538,6 +557,7 @@ object PrefsManager {
                         profile.useCurrentShuffleModeAddedAtDesc
                     prefs[IS_BLOCK_ADDED_AT_DESC] = profile.isBlockAddedAtDesc
                     prefs[IS_FILTER_BY_DIR_ADDED_AT_DESC] = profile.isFilterByDirAddedAtDesc
+                    prefs[IS_AUTO_SCROLL_TO_CURRENT_TRACK] = profile.isAutoScrollToCurrentTrack
 
                     profile.imageFilePaths.forEach { (key, value) ->
                         prefs[stringPreferencesKey(key)] = value

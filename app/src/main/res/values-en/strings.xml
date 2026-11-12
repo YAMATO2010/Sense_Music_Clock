@@ -48,6 +48,7 @@
     <string name="remove_background">Delete background images</string>
     <string name="widget_background">Show a background image in the widget</string>
     <string name="random_background">Random backgrounds</string>
+    <string name="auto_scroll_to_current_track">Auto-scroll to the current track</string>
     <string name="switch_settings">Switch settings</string>
     <string name="switch_action">Switch</string>
     <string name="save_current_settings">Save current settings</string>
