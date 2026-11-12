@@ -4,6 +4,10 @@ Sense Music Clock は、時計・タイマー・アラーム・ストップウ�
 
 端末内の音楽ファイルを読み込み、アルバムアート付きのリスト、検索、プレイリスト、ブロックリスト、背景画像の切り替え、ホーム画面ウィジェットからの再生操作に対応しています。
 
+## Download
+
+[Get it on Google Play](https://play.google.com/store/apps/details?id=jp.gr.java_conf.SenseMusicClock)
+
 ## Screenshots
 
 <p>

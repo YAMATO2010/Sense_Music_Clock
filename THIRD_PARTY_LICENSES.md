@@ -11,8 +11,8 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | Activity Kotlin Extensions | 1.13.0 | androidx.activity:activity-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/activity#1.13.0 |
 | Experimental annotation | 1.4.1 | androidx.annotation:annotation-experimental | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/annotation#1.4.1 |
 | Annotation | 1.10.0 | androidx.annotation:annotation-jvm | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/annotation#1.10.0 |
-| AppCompat | 1.7.1 | androidx.appcompat:appcompat | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/appcompat#1.7.1 |
-| AppCompat Resources | 1.7.1 | androidx.appcompat:appcompat-resources | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/appcompat#1.7.1 |
+| AppCompat | 1.8.0 | androidx.appcompat:appcompat | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/appcompat#1.8.0 |
+| AppCompat Resources | 1.8.0 | androidx.appcompat:appcompat-resources | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/appcompat#1.8.0 |
 | Android Arch-Common | 2.2.0 | androidx.arch.core:core-common | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/arch-core#2.2.0 |
 | Android Arch-Runtime | 2.2.0 | androidx.arch.core:core-runtime | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/arch-core#2.2.0 |
 | Support Async Layout Inflater | 1.0.0 | androidx.asynclayoutinflater:asynclayoutinflater | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
@@ -20,32 +20,32 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | Support CardView v7 | 1.0.0 | androidx.cardview:cardview | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
 | collections | 1.5.0 | androidx.collection:collection-jvm | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/collection#1.5.0 |
 | Collections Kotlin Extensions | 1.5.0 | androidx.collection:collection-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/collection#1.5.0 |
-| Jetpack Compose Libraries BOM | 2026.06.01 | androidx.compose:compose-bom | Apache-2.0 | https://developer.android.com/jetpack |
-| Compose Animation | 1.11.4 | androidx.compose.animation:animation-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-animation#1.11.4 |
-| Compose Animation Core | 1.11.4 | androidx.compose.animation:animation-core-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-animation#1.11.4 |
-| Compose Foundation | 1.11.4 | androidx.compose.foundation:foundation-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.11.4 |
-| Compose Layouts | 1.11.4 | androidx.compose.foundation:foundation-layout-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.11.4 |
-| Compose Material Components | 1.11.4 | androidx.compose.material:material-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-material#1.11.4 |
-| Compose Material Ripple | 1.11.4 | androidx.compose.material:material-ripple-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-material#1.11.4 |
+| Jetpack Compose Libraries BOM | 2026.09.00 | androidx.compose:compose-bom | Apache-2.0 | https://developer.android.com/jetpack |
+| Compose Animation | 1.12.1 | androidx.compose.animation:animation-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-animation#1.12.1 |
+| Compose Animation Core | 1.12.1 | androidx.compose.animation:animation-core-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-animation#1.12.1 |
+| Compose Foundation | 1.12.1 | androidx.compose.foundation:foundation-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.1 |
+| Compose Layouts | 1.12.1 | androidx.compose.foundation:foundation-layout-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.1 |
+| Compose Material Components | 1.12.1 | androidx.compose.material:material-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-material#1.12.1 |
+| Compose Material Ripple | 1.12.1 | androidx.compose.material:material-ripple-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-material#1.12.1 |
 | Compose Material3 Components | 1.4.0 | androidx.compose.material3:material3-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-material3#1.4.0 |
-| Compose Runtime | 1.11.4 | androidx.compose.runtime:runtime-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.11.4 |
-| Compose Runtime Annotation | 1.11.4 | androidx.compose.runtime:runtime-annotation-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.11.4 |
-| Compose Runtime Retain | 1.11.4 | androidx.compose.runtime:runtime-retain-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.11.4 |
-| Compose Saveable | 1.11.4 | androidx.compose.runtime:runtime-saveable-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.11.4 |
-| Compose UI | 1.11.4 | androidx.compose.ui:ui-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
-| Compose Geometry | 1.11.4 | androidx.compose.ui:ui-geometry-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
-| Compose Graphics | 1.11.4 | androidx.compose.ui:ui-graphics-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
-| Compose UI Text | 1.11.4 | androidx.compose.ui:ui-text-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
-| Compose UI Preview Tooling | 1.11.4 | androidx.compose.ui:ui-tooling-preview-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
-| Compose Unit | 1.11.4 | androidx.compose.ui:ui-unit-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
-| Compose Util | 1.11.4 | androidx.compose.ui:ui-util-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.11.4 |
+| Compose Runtime | 1.12.1 | androidx.compose.runtime:runtime-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1 |
+| Compose Runtime Annotation | 1.12.1 | androidx.compose.runtime:runtime-annotation-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1 |
+| Compose Runtime Retain | 1.12.1 | androidx.compose.runtime:runtime-retain-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1 |
+| Compose Saveable | 1.12.1 | androidx.compose.runtime:runtime-saveable-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1 |
+| Compose UI | 1.12.1 | androidx.compose.ui:ui-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
+| Compose Geometry | 1.12.1 | androidx.compose.ui:ui-geometry-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
+| Compose Graphics | 1.12.1 | androidx.compose.ui:ui-graphics-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
+| Compose UI Text | 1.12.1 | androidx.compose.ui:ui-text-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
+| Compose UI Preview Tooling | 1.12.1 | androidx.compose.ui:ui-tooling-preview-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
+| Compose Unit | 1.12.1 | androidx.compose.ui:ui-unit-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
+| Compose Util | 1.12.1 | androidx.compose.ui:ui-util-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1 |
 | AndroidX Futures | 1.1.0 | androidx.concurrent:concurrent-futures | Apache-2.0 | https://developer.android.com/topic/libraries/architecture/index.html |
 | Futures Kotlin Extensions | 1.2.0 | androidx.concurrent:concurrent-futures-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/concurrent#1.2.0 |
 | ConstraintLayout | 2.2.2 | androidx.constraintlayout:constraintlayout | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/constraintlayout#2.2.2 |
 | ConstraintLayout Core | 1.1.2 | androidx.constraintlayout:constraintlayout-core | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/constraintlayout#1.1.2 |
 | Support Coordinator Layout | 1.1.0 | androidx.coordinatorlayout:coordinatorlayout | Apache-2.0 | https://developer.android.com/jetpack/androidx |
-| Core | 1.19.0 | androidx.core:core | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/core#1.19.0 |
-| Core Kotlin Extensions | 1.19.0 | androidx.core:core-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/core#1.19.0 |
+| Core | 1.19.1 | androidx.core:core | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/core#1.19.1 |
+| Core Kotlin Extensions | 1.19.1 | androidx.core:core-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/core#1.19.1 |
 | RemoteViews | 1.1.0 | androidx.core:core-remoteviews | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/core#1.1.0 |
 | androidx.core:core-viewtree | 1.0.0 | androidx.core:core-viewtree | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/core#1.0.0 |
 | Support Cursor Adapter | 1.0.0 | androidx.cursoradapter:cursoradapter | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
@@ -67,12 +67,12 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | ExifInterface | 1.4.2 | androidx.exifinterface:exifinterface | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/exifinterface#1.4.2 |
 | Support fragment | 1.5.4 | androidx.fragment:fragment | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/fragment#1.5.4 |
 | Fragment Kotlin Extensions | 1.3.6 | androidx.fragment:fragment-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/fragment#1.3.6 |
-| Glance | 1.1.1 | androidx.glance:glance | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.1.1 |
-| Glance For App Widgets | 1.1.1 | androidx.glance:glance-appwidget | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.1.1 |
-| Glance AppWidget External Protobuf | 1.1.1 | androidx.glance:glance-appwidget-external-protobuf | BSD-3-Clause | https://developer.android.com/jetpack/androidx/releases/glance#1.1.1 |
-| Glance AppWidget Protos | 1.1.1 | androidx.glance:glance-appwidget-proto | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.1.1 |
-| Glance Material | 1.1.1 | androidx.glance:glance-material | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.1.1 |
-| Glance Material | 1.1.1 | androidx.glance:glance-material3 | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.1.1 |
+| Glance | 1.2.0 | androidx.glance:glance | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.2.0 |
+| Glance For App Widgets | 1.2.0 | androidx.glance:glance-appwidget | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.2.0 |
+| Glance AppWidget External Protobuf | 1.2.0 | androidx.glance:glance-appwidget-external-protobuf | BSD-3-Clause | https://developer.android.com/jetpack/androidx/releases/glance#1.2.0 |
+| Glance AppWidget Protos | 1.2.0 | androidx.glance:glance-appwidget-proto | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.2.0 |
+| Glance Material | 1.2.0 | androidx.glance:glance-material | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.2.0 |
+| Glance Material | 1.2.0 | androidx.glance:glance-material3 | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/glance#1.2.0 |
 | Android Graphics Path | 1.0.1 | androidx.graphics:graphics-path | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/graphics#1.0.1 |
 | Graphics Shapes | 1.0.1 | androidx.graphics:graphics-shapes-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/graphics#1.0.1 |
 | Support Interpolators | 1.0.0 | androidx.interpolator:interpolator | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
@@ -96,35 +96,34 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | Support loader | 1.0.0 | androidx.loader:loader | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
 | Support Local Broadcast Manager | 1.0.0 | androidx.localbroadcastmanager:localbroadcastmanager | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
 | Support media compat | 1.6.0 | androidx.media:media | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/media#1.6.0 |
-| Media3 Cast module | 1.10.1 | androidx.media3:media3-cast | Apache-2.0 |  |
-| Media3 common module | 1.10.1 | androidx.media3:media3-common | Apache-2.0 |  |
-| Media3 Container module | 1.10.1 | androidx.media3:media3-container | Apache-2.0 |  |
-| Media3 database module | 1.10.1 | androidx.media3:media3-database | Apache-2.0 |  |
-| Media3 DataSource module | 1.10.1 | androidx.media3:media3-datasource | Apache-2.0 |  |
-| Media3 decoder module | 1.10.1 | androidx.media3:media3-decoder | Apache-2.0 |  |
-| Media3 ExoPlayer module | 1.10.1 | androidx.media3:media3-exoplayer | Apache-2.0 |  |
-| Media3 Extractor module | 1.10.1 | androidx.media3:media3-extractor | Apache-2.0 |  |
-| Media3 Session module | 1.10.1 | androidx.media3:media3-session | Apache-2.0 |  |
-| Media3 UI module | 1.10.1 | androidx.media3:media3-ui | Apache-2.0 |  |
+| Media3 Cast module | 1.11.1 | androidx.media3:media3-cast | Apache-2.0 |  |
+| Media3 common module | 1.11.1 | androidx.media3:media3-common | Apache-2.0 |  |
+| Media3 Container module | 1.11.1 | androidx.media3:media3-container | Apache-2.0 |  |
+| Media3 database module | 1.11.1 | androidx.media3:media3-database | Apache-2.0 |  |
+| Media3 DataSource module | 1.11.1 | androidx.media3:media3-datasource | Apache-2.0 |  |
+| Media3 decoder module | 1.11.1 | androidx.media3:media3-decoder | Apache-2.0 |  |
+| Media3 ExoPlayer module | 1.11.1 | androidx.media3:media3-exoplayer | Apache-2.0 |  |
+| Media3 Extractor module | 1.11.1 | androidx.media3:media3-extractor | Apache-2.0 |  |
+| Media3 Session module | 1.11.1 | androidx.media3:media3-session | Apache-2.0 |  |
+| Media3 UI module | 1.11.1 | androidx.media3:media3-ui | Apache-2.0 |  |
 | MediaRouter | 1.8.0-beta01 | androidx.mediarouter:mediarouter | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/mediarouter#1.8.0-beta01 |
 | Navigation Event | 1.0.0 | androidx.navigationevent:navigationevent-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/navigationevent#1.0.0 |
 | NavigationEvent Compose | 1.0.0 | androidx.navigationevent:navigationevent-compose-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/navigationevent#1.0.0 |
-| Paging-Common | 3.5.0 | androidx.paging:paging-common-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/paging#3.5.0 |
-| Paging-Common Kotlin Extensions | 3.5.0 | androidx.paging:paging-common-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/paging#3.5.0 |
-| Paging-Runtime | 3.5.0 | androidx.paging:paging-runtime | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/paging#3.5.0 |
+| Paging-Common | 3.5.3 | androidx.paging:paging-common-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/paging#3.5.3 |
+| Paging-Common Kotlin Extensions | 3.5.3 | androidx.paging:paging-common-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/paging#3.5.3 |
+| Paging-Runtime | 3.5.3 | androidx.paging:paging-runtime | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/paging#3.5.3 |
 | Support Palette v7 | 1.0.0 | androidx.palette:palette | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
 | AndroidX Preference | 1.2.1 | androidx.preference:preference | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/preference#1.2.1 |
 | Support Print | 1.0.0 | androidx.print:print | Apache-2.0 | http://developer.android.com/tools/extras/support-library.html |
 | Profile Installer | 1.4.1 | androidx.profileinstaller:profileinstaller | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/profileinstaller#1.4.1 |
 | RecyclerView | 1.4.0 | androidx.recyclerview:recyclerview | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/recyclerview#1.4.0 |
 | Android Resource Inspection - Annotations | 1.0.1 | androidx.resourceinspection:resourceinspection-annotation | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/resourceinspection#1.0.1 |
-| Room-Common | 2.8.4 | androidx.room:room-common-jvm | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
-| Room Guava | 2.8.4 | androidx.room:room-guava | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
-| Room Kotlin Extensions | 2.8.4 | androidx.room:room-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
-| Room Paging | 2.8.4 | androidx.room:room-paging-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
-| Room-Runtime | 2.8.4 | androidx.room:room-runtime-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
-| Room RXJava2 | 2.8.4 | androidx.room:room-rxjava2 | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
-| Room RXJava3 | 2.8.4 | androidx.room:room-rxjava3 | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.4 |
+| Room-Common | 2.8.5 | androidx.room:room-common-jvm | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.5 |
+| Room Guava | 2.8.5 | androidx.room:room-guava | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.5 |
+| Room Kotlin Extensions | 2.8.5 | androidx.room:room-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.5 |
+| Room Paging | 2.8.5 | androidx.room:room-paging-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.5 |
+| Room-Runtime | 2.8.5 | androidx.room:room-runtime-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.5 |
+| Room RXJava3 | 2.8.5 | androidx.room:room-rxjava3 | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/room#2.8.5 |
 | Saved State | 1.4.0 | androidx.savedstate:savedstate-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/savedstate#1.4.0 |
 | Saved State Compose | 1.4.0 | androidx.savedstate:savedstate-compose-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/savedstate#1.4.0 |
 | SavedState Kotlin Extensions | 1.4.0 | androidx.savedstate:savedstate-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/savedstate#1.4.0 |
@@ -143,52 +142,50 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | AndroidX Widget ViewPager2 | 1.0.0 | androidx.viewpager2:viewpager2 | Apache-2.0 | https://developer.android.com/jetpack/androidx |
 | WindowManager | 1.5.0 | androidx.window:window | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/window#1.5.0 |
 | WindowManager Core | 1.5.0 | androidx.window:window-core-android | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/window#1.5.0 |
-| WorkManager Runtime | 2.11.2 | androidx.work:work-runtime | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/work#2.11.2 |
-| WorkManager Kotlin Extensions | 2.11.2 | androidx.work:work-runtime-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/work#2.11.2 |
+| WorkManager Runtime | 2.12.0 | androidx.work:work-runtime | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/work#2.12.0 |
+| WorkManager Kotlin Extensions | 2.12.0 | androidx.work:work-runtime-ktx | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/work#2.12.0 |
 | Accompanist Drawable Painter library | 0.37.3 | com.google.accompanist:accompanist-drawablepainter | Apache-2.0 | https://github.com/google/accompanist/ |
 | transport-api | 3.0.0 | com.google.android.datatransport:transport-api | Apache-2.0 |  |
 | transport-backend-cct | 3.1.3 | com.google.android.datatransport:transport-backend-cct | Apache-2.0 |  |
 | transport-runtime | 3.1.3 | com.google.android.datatransport:transport-runtime | Apache-2.0 |  |
-| play-services-base | 18.5.0 | com.google.android.gms:play-services-base | ASDKL |  |
-| play-services-basement | 18.8.0 | com.google.android.gms:play-services-basement | ASDKL |  |
-| play-services-cast | 22.1.0 | com.google.android.gms:play-services-cast | ASDKL |  |
-| play-services-cast-framework | 22.1.0 | com.google.android.gms:play-services-cast-framework | ASDKL |  |
+| play-services-base | 18.7.2 | com.google.android.gms:play-services-base | ASDKL |  |
+| play-services-basement | 18.9.0 | com.google.android.gms:play-services-basement | ASDKL |  |
+| play-services-cast | 22.3.1 | com.google.android.gms:play-services-cast | ASDKL |  |
+| play-services-cast-framework | 22.3.1 | com.google.android.gms:play-services-cast-framework | ASDKL |  |
 | play-services-flags | 18.1.0 | com.google.android.gms:play-services-flags | ASDKL |  |
 | play-services-tasks | 18.4.0 | com.google.android.gms:play-services-tasks | ASDKL |  |
 | Material Components for Android | 1.14.0 | com.google.android.material:material | Apache-2.0 | https://github.com/material-components/material-components-android |
 | FindBugs-jsr305 | 3.0.2 | com.google.code.findbugs:jsr305 | Apache-2.0 | http://findbugs.sourceforge.net/ |
-| Gson | 2.13.2 | com.google.code.gson:gson | Apache-2.0 | https://github.com/google/gson |
-| error-prone annotations | 2.41.0 | com.google.errorprone:error_prone_annotations | Apache-2.0 | https://errorprone.info/error_prone_annotations |
-| com.google.firebase:firebase-annotations | 17.0.0 | com.google.firebase:firebase-annotations | Apache-2.0 |  |
-| com.google.firebase:firebase-bom | 34.16.0 | com.google.firebase:firebase-bom | Apache-2.0 |  |
-| com.google.firebase:firebase-common | 22.1.0 | com.google.firebase:firebase-common | Apache-2.0 |  |
-| com.google.firebase:firebase-components | 19.0.0 | com.google.firebase:firebase-components | Apache-2.0 |  |
-| com.google.firebase:firebase-config-interop | 16.0.1 | com.google.firebase:firebase-config-interop | Apache-2.0 |  |
-| com.google.firebase:firebase-crashlytics | 20.1.0 | com.google.firebase:firebase-crashlytics | Apache-2.0 |  |
-| com.google.firebase:firebase-datatransport | 19.0.0 | com.google.firebase:firebase-datatransport | Apache-2.0 |  |
-| firebase-encoders | 17.0.0 | com.google.firebase:firebase-encoders | Apache-2.0 |  |
-| com.google.firebase:firebase-encoders-json | 18.0.1 | com.google.firebase:firebase-encoders-json | Apache-2.0 |  |
+| Gson | 2.14.0 | com.google.code.gson:gson | Apache-2.0 | https://github.com/google/gson |
+| error-prone annotations | 2.48.0 | com.google.errorprone:error_prone_annotations | Apache-2.0 | https://errorprone.info/error_prone_annotations |
+| com.google.firebase:firebase-annotations | 18.0.0 | com.google.firebase:firebase-annotations | Apache-2.0 |  |
+| com.google.firebase:firebase-bom | 35.0.2 | com.google.firebase:firebase-bom | Apache-2.0 |  |
+| com.google.firebase:firebase-common | 23.0.0 | com.google.firebase:firebase-common | Apache-2.0 |  |
+| com.google.firebase:firebase-components | 20.0.0 | com.google.firebase:firebase-components | Apache-2.0 |  |
+| com.google.firebase:firebase-config-interop | 17.0.0 | com.google.firebase:firebase-config-interop | Apache-2.0 |  |
+| com.google.firebase:firebase-crashlytics | 21.0.0 | com.google.firebase:firebase-crashlytics | Apache-2.0 |  |
+| com.google.firebase:firebase-datatransport | 21.0.0 | com.google.firebase:firebase-datatransport | Apache-2.0 |  |
+| com.google.firebase:firebase-encoders | 18.0.0 | com.google.firebase:firebase-encoders | Apache-2.0 |  |
+| com.google.firebase:firebase-encoders-json | 19.0.0 | com.google.firebase:firebase-encoders-json | Apache-2.0 |  |
 | firebase-encoders-proto | 16.0.0 | com.google.firebase:firebase-encoders-proto | Apache-2.0 |  |
-| com.google.firebase:firebase-installations | 19.1.2 | com.google.firebase:firebase-installations | Apache-2.0 |  |
-| com.google.firebase:firebase-installations-interop | 17.3.0 | com.google.firebase:firebase-installations-interop | Apache-2.0 |  |
+| com.google.firebase:firebase-installations | 20.0.0 | com.google.firebase:firebase-installations | Apache-2.0 |  |
+| com.google.firebase:firebase-installations-interop | 18.0.0 | com.google.firebase:firebase-installations-interop | Apache-2.0 |  |
 | firebase-measurement-connector | 20.0.1 | com.google.firebase:firebase-measurement-connector | ASDKL |  |
-| com.google.firebase:firebase-sessions | 3.0.7 | com.google.firebase:firebase-sessions | Apache-2.0 |  |
+| com.google.firebase:firebase-sessions | 4.0.0 | com.google.firebase:firebase-sessions | Apache-2.0 |  |
 | Guava InternalFutureFailureAccess and InternalFutures | 1.0.2 | com.google.guava:failureaccess | Apache-2.0 | https://github.com/google/guava/failureaccess |
 | Guava: Google Core Libraries for Java | 33.3.1-android | com.google.guava:guava | Apache-2.0 | https://github.com/google/guava |
 | Guava ListenableFuture only | 9999.0-empty-to-avoid-conflict-with-guava | com.google.guava:listenablefuture | Apache-2.0 | https://github.com/google/guava/listenablefuture |
 | J2ObjC Annotations | 3.0.0 | com.google.j2objc:j2objc-annotations | Apache-2.0 | https://github.com/google/j2objc/ |
-| AboutLibraries Compose UI Library | 15.0.4 | com.mikepenz:aboutlibraries-compose-core-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
-| AboutLibraries Compose Material 3 Library | 15.0.4 | com.mikepenz:aboutlibraries-compose-m3-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
-| AboutLibraries Core Library | 15.0.4 | com.mikepenz:aboutlibraries-core-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
-| okhttp | 4.12.0 | com.squareup.okhttp3:okhttp | Apache-2.0 | https://square.github.io/okhttp/ |
-| okio | 3.17.0 | com.squareup.okio:okio-jvm | Apache-2.0 | https://github.com/square/okio/ |
-| coil | 3.5.0 | io.coil-kt.coil3:coil-android | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-compose | 3.5.0 | io.coil-kt.coil3:coil-compose-android | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-compose-core | 3.5.0 | io.coil-kt.coil3:coil-compose-core-android | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-core | 3.5.0 | io.coil-kt.coil3:coil-core-android | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-gif | 3.5.0 | io.coil-kt.coil3:coil-gif | Apache-2.0 | https://github.com/coil-kt/coil |
-| coil-video | 3.5.0 | io.coil-kt.coil3:coil-video | Apache-2.0 | https://github.com/coil-kt/coil |
-| RxJava | 2.2.9 | io.reactivex.rxjava2:rxjava | Apache-2.0 | https://github.com/ReactiveX/RxJava |
+| AboutLibraries Compose UI Library | 15.3.0 | com.mikepenz:aboutlibraries-compose-core-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
+| AboutLibraries Compose Material 3 Library | 15.3.0 | com.mikepenz:aboutlibraries-compose-m3-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
+| AboutLibraries Core Library | 15.3.0 | com.mikepenz:aboutlibraries-core-android | Apache-2.0 | https://github.com/mikepenz/AboutLibraries |
+| okio | 3.18.1 | com.squareup.okio:okio-jvm | Apache-2.0 | https://github.com/lysine-dev/okio/ |
+| coil | 3.6.3 | io.coil-kt.coil3:coil-android | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-compose | 3.6.3 | io.coil-kt.coil3:coil-compose-android | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-compose-core | 3.6.3 | io.coil-kt.coil3:coil-compose-core-android | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-core | 3.6.3 | io.coil-kt.coil3:coil-core-android | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-gif | 3.6.3 | io.coil-kt.coil3:coil-gif | Apache-2.0 | https://github.com/coil-kt/coil |
+| coil-video | 3.6.3 | io.coil-kt.coil3:coil-video | Apache-2.0 | https://github.com/coil-kt/coil |
 | RxJava | 3.0.0 | io.reactivex.rxjava3:rxjava | Apache-2.0 | https://github.com/ReactiveX/RxJava |
 | javax.inject | 1 | javax.inject:javax.inject | Apache-2.0 | http://code.google.com/p/atinject/ |
 | Checker Qual | 3.43.0 | org.checkerframework:checker-qual | MIT | https://checkerframework.org/ |
@@ -196,39 +193,36 @@ This document is based on `app/build/generated/aboutLibraries/release/res/raw/ab
 | Lifecycle-Common | 2.9.6 | org.jetbrains.androidx.lifecycle:lifecycle-common | Apache-2.0 | https://github.com/JetBrains/compose-jb |
 | Lifecycle Runtime | 2.9.6 | org.jetbrains.androidx.lifecycle:lifecycle-runtime | Apache-2.0 | https://github.com/JetBrains/compose-jb |
 | Lifecycle Runtime Compose | 2.9.6 | org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose | Apache-2.0 | https://github.com/JetBrains/compose-jb |
-| Lifecycle ViewModel | 2.9.6 | org.jetbrains.androidx.lifecycle:lifecycle-viewmodel | Apache-2.0 | https://github.com/JetBrains/compose-jb |
-| Lifecycle ViewModel with SavedState | 2.9.6 | org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate | Apache-2.0 | https://github.com/JetBrains/compose-jb |
 | Saved State | 1.3.6 | org.jetbrains.androidx.savedstate:savedstate | Apache-2.0 | https://github.com/JetBrains/compose-jb |
 | Saved State Compose | 1.3.6 | org.jetbrains.androidx.savedstate:savedstate-compose | Apache-2.0 | https://github.com/JetBrains/compose-jb |
-| Compose Animation | 1.11.1 | org.jetbrains.compose.animation:animation | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Animation Core | 1.11.1 | org.jetbrains.compose.animation:animation-core | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Animation | 1.12.0 | org.jetbrains.compose.animation:animation-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Animation Core | 1.12.0 | org.jetbrains.compose.animation:animation-core-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
 | Annotation | 1.9.1 | org.jetbrains.compose.annotation-internal:annotation | Apache-2.0 | https://github.com/JetBrains/compose-jb |
 | collections | 1.9.1 | org.jetbrains.compose.collection-internal:collection | Apache-2.0 | https://github.com/JetBrains/compose-jb |
-| Compose Foundation | 1.11.1 | org.jetbrains.compose.foundation:foundation | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Layouts | 1.11.1 | org.jetbrains.compose.foundation:foundation-layout | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Foundation | 1.12.0 | org.jetbrains.compose.foundation:foundation-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Layouts | 1.12.0 | org.jetbrains.compose.foundation:foundation-layout-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
 | Compose Material Ripple | 1.9.1 | org.jetbrains.compose.material:material-ripple | Apache-2.0 | https://github.com/JetBrains/compose-jb |
 | Compose Material3 Components | 1.9.0 | org.jetbrains.compose.material3:material3 | Apache-2.0 | https://github.com/JetBrains/compose-jb |
-| Compose Runtime | 1.11.1 | org.jetbrains.compose.runtime:runtime | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Saveable | 1.11.1 | org.jetbrains.compose.runtime:runtime-saveable | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose UI | 1.11.1 | org.jetbrains.compose.ui:ui | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Multiplatform BackHandler | 1.9.1 | org.jetbrains.compose.ui:ui-backhandler-android | Apache-2.0 | https://github.com/JetBrains/compose-jb |
-| Compose Geometry | 1.11.1 | org.jetbrains.compose.ui:ui-geometry | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Graphics | 1.11.1 | org.jetbrains.compose.ui:ui-graphics | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose UI Text | 1.11.1 | org.jetbrains.compose.ui:ui-text | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose UI Preview Tooling | 1.11.1 | org.jetbrains.compose.ui:ui-tooling-preview | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Unit | 1.11.1 | org.jetbrains.compose.ui:ui-unit | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
-| Compose Util | 1.11.1 | org.jetbrains.compose.ui:ui-util | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Runtime | 1.12.0 | org.jetbrains.compose.runtime:runtime-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Saveable | 1.12.0 | org.jetbrains.compose.runtime:runtime-saveable-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose UI | 1.12.0 | org.jetbrains.compose.ui:ui-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose BackHandler | 1.12.1 | org.jetbrains.compose.ui:ui-backhandler-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Geometry | 1.12.0 | org.jetbrains.compose.ui:ui-geometry-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Graphics | 1.12.0 | org.jetbrains.compose.ui:ui-graphics-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose UI Text | 1.12.0 | org.jetbrains.compose.ui:ui-text-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose UI Preview Tooling | 1.12.1 | org.jetbrains.compose.ui:ui-tooling-preview-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Unit | 1.12.0 | org.jetbrains.compose.ui:ui-unit-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
+| Compose Util | 1.12.0 | org.jetbrains.compose.ui:ui-util-android | Apache-2.0 | https://github.com/JetBrains/compose-multiplatform |
 | Kotlin Libraries bill-of-materials | 1.8.22 | org.jetbrains.kotlin:kotlin-bom | Apache-2.0 | https://kotlinlang.org/ |
-| Kotlin Stdlib | 2.4.10 | org.jetbrains.kotlin:kotlin-stdlib | Apache-2.0 | https://kotlinlang.org/ |
-| Kotlin Stdlib Jdk7 | 1.8.21 | org.jetbrains.kotlin:kotlin-stdlib-jdk7 | Apache-2.0 | https://kotlinlang.org/ |
-| Kotlin Stdlib Jdk8 | 1.8.21 | org.jetbrains.kotlin:kotlin-stdlib-jdk8 | Apache-2.0 | https://kotlinlang.org/ |
+| Kotlin Stdlib | 2.4.21 | org.jetbrains.kotlin:kotlin-stdlib | Apache-2.0 | https://kotlinlang.org/ |
+| Kotlin Stdlib Jdk7 | 2.1.21 | org.jetbrains.kotlin:kotlin-stdlib-jdk7 | Apache-2.0 | https://kotlinlang.org/ |
+| Kotlin Stdlib Jdk8 | 2.1.21 | org.jetbrains.kotlin:kotlin-stdlib-jdk8 | Apache-2.0 | https://kotlinlang.org/ |
 | kotlinx-coroutines-android | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-android | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-coroutines-bom | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-bom | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-coroutines-core | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-coroutines-guava | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-guava | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-coroutines-play-services | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-play-services | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-coroutines-reactive | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-reactive | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
-| kotlinx-coroutines-rx2 | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-rx2 | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-coroutines-rx3 | 1.11.0 | org.jetbrains.kotlinx:kotlinx-coroutines-rx3 | Apache-2.0 | https://github.com/Kotlin/kotlinx.coroutines |
 | kotlinx-serialization-bom | 1.7.3 | org.jetbrains.kotlinx:kotlinx-serialization-bom | Apache-2.0 | https://github.com/Kotlin/kotlinx.serialization |
 | kotlinx-serialization-core | 1.7.3 | org.jetbrains.kotlinx:kotlinx-serialization-core-jvm | Apache-2.0 | https://github.com/Kotlin/kotlinx.serialization |
