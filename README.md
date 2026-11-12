@@ -35,23 +35,6 @@ Sense Music Clock は、時計・タイマー・アラーム・ストップウ�
 - 縦画面・横画面のプレイヤー UI
 - 設定画面の「その他 → 言語 / Language」から日本語・英語・端末の設定に従うを選択可能。選択は再起動後も保持され、再生設定や保存済みリストは変更しません。切替時には画面が再作成されます。
 
-## 楽曲読み込みのキャンセル
-
-`LocalMusicRepository` の読み込み・一覧更新関数は、省略可能な `cancellationSignal: CancellationSignal?` を受け取ります。`tracksFlow` を更新する関数を呼ぶと、Repositoryが保持している前の更新要求をキャンセルし、最新の要求だけが曲一覧とIDマップを更新します。キャンセルされた読み込みの途中結果は反映しません。
-
-引数を省略した場合は、更新要求ごとにRepositoryが新しいシグナルを作成します。明示的に渡す場合も、要求ごとに新しい `CancellationSignal` を使ってください。一度キャンセルしたシグナルは再利用できません。`loadAlbumMusic` など一覧を返すだけの関数は、渡されたシグナルを使いますが、他の更新要求をキャンセルしません。
-
-キャンセルによる一覧切り替えの回帰テストは `LocalMusicRepositoryCancellationTest` にあります。実機またはエミュレーター接続時に `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=jp.gr.java_conf.SenseMusicClock.LocalMusicRepositoryCancellationTest` で実行できます。
-
-## 再生リスト更新と画面の再取得
-
-`MusicService` は `setSafeMediaItems` の実行中・実行待ちにはページ取得を待機させ、更新を優先します。`onGetChildren` が返すのは、プレイヤーへの反映が完了した一覧です。
-
-`MainActivity` は更新開始通知で取得中の一覧を破棄し、更新完了通知を受けて先頭ページから再取得します。900曲ごとの追加では再取得しません。ページの世代が途中で変わった場合も先頭から取り直し、更新前後の一覧の混在を防ぎます。更新に失敗した場合は待機表示を終了し、失敗をログに記録します。
-
-優先順序とキャンセル・例外時のロック解放は、`./gradlew :app:testDebugUnitTest --tests jp.gr.java_conf.SenseMusicClock.Music.MediaItemsAccessTest` で確認できます。
-
-
 
 ## License
 
